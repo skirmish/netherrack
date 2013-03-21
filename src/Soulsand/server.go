@@ -16,7 +16,7 @@ type Gamemode int
 const (
 	GAMEMODE_SURVIVAL Gamemode = iota
 	GAMEMODE_CREATIVE
-	GAMEMODE_ADVENTURE 
+	GAMEMODE_ADVENTURE
 )
 
 type Server interface {

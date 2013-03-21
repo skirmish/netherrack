@@ -2,12 +2,12 @@
 package locale
 
 import (
-	"sync"
-	"os"
 	"bufio"
 	"log"
+	"os"
 	"path"
 	"strings"
+	"sync"
 )
 
 var (
@@ -19,19 +19,19 @@ func Load(pathDir string) {
 	lock.Lock()
 	defer lock.Unlock()
 	dir, err := os.Open(pathDir)
-	if err!=nil {
+	if err != nil {
 		log.Printf("Failed to load %s - %s", pathDir, err)
 		return
 	}
 	files, err := dir.Readdir(0)
-	if err!=nil {
+	if err != nil {
 		log.Printf("Failed to load %s - %s", pathDir, err)
 		return
 	}
 	for _, f := range files {
 		if path.Ext(f.Name()) != ".lang" {
 			continue
-		} 
+		}
 		file, err := os.Open(path.Join(pathDir, f.Name()))
 		if err != nil {
 			log.Println("Failed to load %s", f.Name())
@@ -49,7 +49,7 @@ func Load(pathDir string) {
 			}
 			if err != nil {
 				break
-			}			
+			}
 		}
 	}
 }
@@ -78,5 +78,5 @@ func get(locale, name string) string {
 			return v
 		}
 	}
-	return "!#!" + name + "!#!" 
+	return "!#!" + name + "!#!"
 }

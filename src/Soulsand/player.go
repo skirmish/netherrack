@@ -1,7 +1,6 @@
 package Soulsand
 
-import (
-)
+import ()
 
 //A currently online player
 type Player interface {
@@ -35,7 +34,7 @@ type SyncPlayer interface {
 	//Returns the player's view distance in chunks
 	GetViewDistanceSync() int
 	//Returns the player's locale
-	GetLocaleSync() string 
+	GetLocaleSync() string
 	//Sends a message to the player
 	SendMessageSync(msg string)
 	//UNSAFE: Returns a UnsafeConnection which provides ways to send packets to the player

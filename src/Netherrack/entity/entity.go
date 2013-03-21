@@ -87,7 +87,7 @@ func (e *Entity) SendMoveUpdate() (movedChunk bool) {
 		e.World.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.GetID(), entityTryDespawn(e.Chunk.LX, e.Chunk.LZ, e.CreateDespawn()))
 		e.Chunk.LX = e.Chunk.X
 		e.Chunk.LZ = e.Chunk.Z
-		movedChunk = true 
+		movedChunk = true
 	}
 	return
 }

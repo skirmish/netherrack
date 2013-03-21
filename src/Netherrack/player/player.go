@@ -1,11 +1,11 @@
 package player
 
 import (
-	"Soulsand/command"
 	"Netherrack/entity"
 	"Netherrack/event"
-	"Soulsand/locale"
 	"Soulsand"
+	"Soulsand/command"
+	"Soulsand/locale"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -71,7 +71,7 @@ func HandlePlayer(conn net.Conn) {
 	player.connection.conn = conn
 	player.connection.player = player
 	player.connection.Login()
-	
+
 	if Soulsand.GetServer().GetPlayer(player.name) != nil {
 		player.connection.WriteDisconnect(locale.Get(player.GetLocaleSync(), "disconnect.reason.loggedin"))
 		runtime.Goexit()

@@ -1,8 +1,6 @@
 package player
 
-import (
-
-)
+import ()
 
 func (player *Player) GetViewDistanceSync() int {
 	return player.settings.viewDistance

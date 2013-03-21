@@ -6,10 +6,10 @@ import (
 )
 
 type ItemStack struct {
-	ID     int16
-	Count  byte
-	Damage int16
-	Tag    *nbt.Compound
+	ID       int16
+	Count    byte
+	Damage   int16
+	Tag      *nbt.Compound
 	metaLock sync.RWMutex
 	metadata map[string]interface{}
 }
@@ -61,7 +61,7 @@ func (i *ItemStack) AddLore(line string) {
 		display.Name = "display"
 		i.Tag.Tags["display"] = display
 	}
-	display := i.Tag.Tags["display"].(*nbt.Compound);
+	display := i.Tag.Tags["display"].(*nbt.Compound)
 	if _, ok := display.Tags["Lore"]; !ok {
 		lore := nbt.List{}
 		lore.Name = "Lore"
@@ -70,7 +70,7 @@ func (i *ItemStack) AddLore(line string) {
 		display.Tags["Lore"] = lore
 	}
 	lore := display.Tags["Lore"].(nbt.List)
-	lore.Tags = append(lore.Tags, nbt.String{Value:line})
+	lore.Tags = append(lore.Tags, nbt.String{Value: line})
 }
 
 func (i *ItemStack) SetMetadata(key string, value interface{}) {

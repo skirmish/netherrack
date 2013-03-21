@@ -2,12 +2,12 @@ package player
 
 import (
 	//	"Netherrack/chunk"
-	"Soulsand/command"
 	"Netherrack/entity"
 	"Netherrack/event"
 	"Netherrack/items"
 	"Netherrack/nbt"
 	"Soulsand"
+	"Soulsand/command"
 	"bytes"
 	"compress/gzip"
 	"crypto/aes"
@@ -350,7 +350,7 @@ var packets map[byte]func(c *Connection) = map[byte]func(c *Connection){
 
 func (c *Connection) WriteDisconnect(reason string) {
 	reasonR := []rune(reason)
-	out := make([]byte, 1 + 2 + len(reasonR) * 2)
+	out := make([]byte, 1+2+len(reasonR)*2)
 	out[0] = 0xFF
 	WriteString(out[1:], reasonR)
 	c.Write(out)
@@ -867,26 +867,26 @@ func (c *Connection) WriteChangeGameState(res, gMode byte) {
 
 func (c *Connection) WriteParticle(particleName string, x, y, z, ox, oy, oz, speed float32, count int32) {
 	particleNameR := []rune(particleName)
-	out := make([]byte, 1 + 2 + len(particleNameR) * 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4)
+	out := make([]byte, 1+2+len(particleNameR)*2+4+4+4+4+4+4+4+4)
 	out[0] = 0x3F
 	pos := WriteString(out[1:], particleNameR) + 1
 	WriteFloat(out[pos:], x)
-	pos += 4;
+	pos += 4
 	WriteFloat(out[pos:], y)
-	pos += 4;
+	pos += 4
 	WriteFloat(out[pos:], z)
-	pos += 4;
+	pos += 4
 	WriteFloat(out[pos:], ox)
-	pos += 4;
+	pos += 4
 	WriteFloat(out[pos:], oy)
-	pos += 4;
+	pos += 4
 	WriteFloat(out[pos:], oz)
-	pos += 4;
+	pos += 4
 	WriteFloat(out[pos:], speed)
-	pos += 4;
+	pos += 4
 	WriteInt(out[pos:], count)
 	c.outStream.Write(out)
-} 
+}
 
 func (c *Connection) WriteNameSoundEffect(name string, posX, posY, posZ int32, vol float32, pitch byte) {
 	nameR := []rune(name)

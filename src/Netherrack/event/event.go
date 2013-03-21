@@ -1,9 +1,9 @@
 package event
 
 import (
-	"fmt"
 	"Soulsand"
 	"Soulsand/locale"
+	"fmt"
 )
 
 func init() {

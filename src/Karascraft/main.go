@@ -22,7 +22,7 @@ func main() {
 	server.SetFlag(Soulsand.RANDOM_NAMES, *randNames)
 
 	server.Start(*ip, *port)
-	
+
 	server.SetDefaultGamemode(Soulsand.GAMEMODE_ADVENTURE)
 
 	server.SetMessageOfTheDay(Soulsand.ColourRed + "Netherrack " + Soulsand.ChatReset + "Server")

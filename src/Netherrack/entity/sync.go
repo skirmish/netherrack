@@ -1,8 +1,6 @@
 package entity
 
-import (
-
-)
+import ()
 
 func (e *Entity) GetPositionSync() (float64, float64, float64) {
 	return e.Position.X, e.Position.Y, e.Position.Z

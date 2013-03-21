@@ -1,8 +1,6 @@
 package Soulsand
 
-import (
-
-)
+import ()
 
 type ItemStack interface {
 	//Gets the item's ID
@@ -10,7 +8,7 @@ type ItemStack interface {
 	//Gets the item's data
 	GetData() int16
 	//Gets the number of items in this stack
-	GetCount() byte 
+	GetCount() byte
 	//Sets the item's display name
 	SetDisplayName(name string)
 	//Removes all lore from this item
