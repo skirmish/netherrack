@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+//Executes the the command for the player. The command should
+//be in the format:
+//	commandName arg1 arg2 `arg 3` ...
 func Exec(com string, caller Soulsand.SyncPlayer) {
 	com = strings.TrimSpace(com)
 	if len(com) == 0 {
@@ -126,6 +129,8 @@ comLoop:
 	}
 }
 
+//Returns a \x00 seperated string containing possible options for completing
+//the next argument in the command
 func Complete(com string) string {
 	com = strings.TrimSpace(com)
 	if len(com) == 0 {
@@ -189,7 +194,6 @@ func Complete(com string) string {
 
 comLoop:
 	for _, c := range command {
-		//outArgs := make([]interface{}, 0, 5)
 		for i, a := range c.Arguments {
 			if i == len(args)-1 {
 				tabs, e := a.TabComplete(args[i])
@@ -207,7 +211,6 @@ comLoop:
 					if err != nil {
 						continue comLoop
 					}
-					//outArgs = append(outArgs, res)
 				} else {
 					cst := a.(*ca_Const)
 					if cst.Value != args[i] {
@@ -228,6 +231,9 @@ comLoop:
 	return ""
 }
 
+//Adds a command to the system. Commands must only be added at init time.
+//Commands should be in the format:
+//	commandName const $t:[optArgs] ...
 func Add(com string, f func(caller interface{}, args []interface{})) {
 	com = strings.TrimSpace(com)
 	pos := strings.Index(com, " ")
