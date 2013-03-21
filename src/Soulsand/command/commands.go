@@ -59,9 +59,9 @@ func Exec(com string, caller messageSenderSync) {
 			break
 		}
 		quote := false
-		if com[0] == '"' {
+		if com[0] == '`' {
 			com = com[1:]
-			end = strings.Index(com, "\"")
+			end = strings.Index(com, "`")
 			quote = true
 		} else {
 			end = strings.Index(com, " ")
@@ -162,9 +162,9 @@ func Complete(com string) string {
 			break
 		}
 		quote := false
-		if com[0] == '"' {
+		if com[0] == '`' {
 			com = com[1:]
-			end = strings.Index(com, "\"")
+			end = strings.Index(com, "\`")
 			quote = true
 		} else {
 			end = strings.Index(com, " ")
