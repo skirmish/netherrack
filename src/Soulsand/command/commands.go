@@ -193,10 +193,12 @@ comLoop:
 		//outArgs := make([]interface{}, 0, 5)
 		for i, a := range c.Arguments {
 			if i == len(args)-1 {
-				res, e := a.TabComplete(args[i])
+				tabs, e := a.TabComplete(args[i])
 				if e {
-					if _, ok := out[res]; !ok {
-						out[res] = true
+					for _, res := range tabs {
+						if _, ok := out[res]; !ok {
+							out[res] = true
+						}
 					}
 				}
 				continue comLoop
@@ -342,7 +344,7 @@ type commandDef struct {
 
 type commandArgument interface {
 	Parse(in, loc string) (interface{}, error)
-	TabComplete(in string) (string, bool)
+	TabComplete(in string) ([]string, bool)
 	Printable(loc string) string
 	IsConst() bool
 }
@@ -373,8 +375,8 @@ func (ca *ca_Int) Parse(in, loc string) (interface{}, error) {
 	return nil, nil
 }
 
-func (ca *ca_Int) TabComplete(in string) (string, bool) {
-	return "", false
+func (ca *ca_Int) TabComplete(in string) ([]string, bool) {
+	return []string{}, false
 }
 
 func (ca *ca_Int) IsConst() bool {
@@ -384,7 +386,7 @@ func (ca *ca_Int) IsConst() bool {
 func (ca *ca_Int) Printable(loc string) string {
 	if ca.HasLimits {
 		return fmt.Sprintf(locale.Get(loc, "command.usage.int.range"), ca.Min, ca.Max)
-	} 
+	}
 	return locale.Get(loc, "command.usage.int.norange")
 }
 
@@ -414,8 +416,8 @@ func (ca *ca_Float) Parse(in, loc string) (interface{}, error) {
 	return nil, nil
 }
 
-func (ca *ca_Float) TabComplete(in string) (string, bool) {
-	return "", false
+func (ca *ca_Float) TabComplete(in string) ([]string, bool) {
+	return []string{}, false
 }
 
 func (ca *ca_Float) IsConst() bool {
@@ -425,7 +427,7 @@ func (ca *ca_Float) IsConst() bool {
 func (ca *ca_Float) Printable(loc string) string {
 	if ca.HasLimits {
 		return fmt.Sprintf(locale.Get(loc, "command.usage.float.range"), ca.Min, ca.Max)
-	} 
+	}
 	return locale.Get(loc, "command.usage.float.norange")
 }
 
@@ -434,14 +436,14 @@ type ca_String struct {
 }
 
 func (ca *ca_String) Parse(in, loc string) (interface{}, error) {
-	if ca.MaxLength != 0 && len(in) > ca.MaxLength{
+	if ca.MaxLength != 0 && len(in) > ca.MaxLength {
 		return nil, errors.New(fmt.Sprintf(locale.Get(loc, "command.error.string.length"), ca.MaxLength))
 	}
 	return in, nil
 }
 
-func (ca *ca_String) TabComplete(in string) (string, bool) {
-	return "", false
+func (ca *ca_String) TabComplete(in string) ([]string, bool) {
+	return []string{}, false
 }
 
 func (ca *ca_String) IsConst() bool {
@@ -459,11 +461,11 @@ type ca_Const struct {
 	Value string
 }
 
-func (ca *ca_Const) TabComplete(in string) (string, bool) {
+func (ca *ca_Const) TabComplete(in string) ([]string, bool) {
 	if strings.HasPrefix(ca.Value, in) {
-		return ca.Value, true
+		return []string{ca.Value}, true
 	}
-	return "", false
+	return []string{}, false
 }
 
 func (ca *ca_Const) Parse(in, loc string) (interface{}, error) {

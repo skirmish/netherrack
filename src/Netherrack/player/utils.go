@@ -1,7 +1,7 @@
 package player
 
 import (
-	"Netherrack/command"
+	"Soulsand/command"
 	"Netherrack/entity"
 	"Soulsand"
 	"runtime"

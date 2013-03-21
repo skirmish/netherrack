@@ -2,7 +2,7 @@ package player
 
 import (
 	//	"Netherrack/chunk"
-	"Netherrack/command"
+	"Soulsand/command"
 	"Netherrack/entity"
 	"Netherrack/event"
 	"Netherrack/items"
