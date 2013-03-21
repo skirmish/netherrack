@@ -45,7 +45,7 @@ func (server *Server) Start(ip string, port int) {
 
 	server.ProtoVersion = 60
 	player.PROTOVERSION = byte(server.ProtoVersion)
-	server.ListPing.Version = "1.5pre"
+	server.ListPing.Version = "1.5.1"
 
 	server.event = make(chan func(), 1000)
 
