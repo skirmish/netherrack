@@ -33,6 +33,9 @@ import (
 
 var PROTOVERSION byte
 
+//Compile time checks
+var _ Soulsand.UnsafeConnection = &Connection{}
+
 type Connection struct {
 	conn   net.Conn
 	player *Player

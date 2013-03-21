@@ -15,6 +15,9 @@ import (
 	"strconv"
 )
 
+//Compile time checks
+var _ Soulsand.Server = &Server{}
+
 func init() {
 	log.SetFlags(log.Lshortfile | log.Ltime)
 	locale.Load("data/lang")

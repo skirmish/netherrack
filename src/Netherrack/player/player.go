@@ -55,6 +55,12 @@ func init() {
 	})
 }
 
+//Checks to make sure it matches the API
+var (
+	_ Soulsand.Player     = &Player{}
+	_ Soulsand.SyncPlayer = &Player{}
+)
+
 func HandlePlayer(conn net.Conn) {
 
 	player := &Player{}
