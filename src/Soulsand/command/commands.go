@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func Exec(com string, caller messageSenderSync) {
+func Exec(com string, caller Soulsand.SyncPlayer) {
 	com = strings.TrimSpace(com)
 	if len(com) == 0 {
 		return
@@ -346,9 +346,4 @@ type commandArgument interface {
 	TabComplete(in string) ([]string, bool)
 	Printable(loc string) string
 	IsConst() bool
-}
-
-type messageSenderSync interface {
-	SendMessageSync(string)
-	GetLocaleSync() string
 }
