@@ -1,0 +1,15 @@
+message.player.connect = §e%s boarded yer ship
+message.player.disconnect = §e%s abandoned yer ship
+
+command.error.unknown = §cErrror: Unknown order %s
+command.error.parse = §cErrror: %s
+command.error.int.range = Numberr yer scribed must be between %d-%d
+command.error.string.length = The text you scribed be too long (Max: %d)
+command.error.float.range = Numberr yer scribed must be between %.2f-%.2f
+command.usage.command = §7Order instructions: %s
+command.usage.int.range = [Numberr(%d-%d)]
+command.usage.int.norange = [Numberr]
+command.usage.string.norange = [Text]
+command.usage.string.range = [Text(Max Length:%d)]
+command.usage.float.range = [Pointy Numberr(%.2f-%.2f)]
+command.usage.float.norange = [Pointy Numberr]
