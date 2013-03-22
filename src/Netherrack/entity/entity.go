@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"Netherrack/event"
+	"Netherrack/system"
 	"Soulsand"
 )
 
@@ -39,7 +39,7 @@ func (e *Entity) Init(s Spawnable) {
 	e.EventChannel = make(chan func(Soulsand.SyncEntity), 500)
 	e.Spawnable = s
 	e.isActive = true
-	e.EID = event.GetFreeEntityID(e)
+	e.EID = system.GetFreeEntityID(e)
 }
 
 func (e *Entity) Finalise() {
@@ -51,7 +51,7 @@ func (e *Entity) kill() {
 		return
 	}
 	e.isActive = false
-	event.FreeEntityID(e)
+	system.FreeEntityID(e)
 }
 
 func (e *Entity) GetID() int32 {

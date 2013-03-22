@@ -3,7 +3,7 @@ package Netherrack
 import (
 	"Netherrack/chunk"
 	_ "Netherrack/debug"
-	"Netherrack/event"
+	"Netherrack/system"
 	"Netherrack/network"
 	"Netherrack/player"
 	"Soulsand"
@@ -80,7 +80,7 @@ func (server *Server) SetDefaultGamemode(mode Soulsand.Gamemode) {
 }
 
 func (server *Server) GetEntityCount() int {
-	return event.GetEntityCount()
+	return system.GetEntityCount()
 }
 
 func (server *Server) GetWorld(name string) Soulsand.World {
@@ -88,7 +88,7 @@ func (server *Server) GetWorld(name string) Soulsand.World {
 }
 
 func (server *Server) GetPlayer(name string) Soulsand.Player {
-	return event.GetPlayer(name)
+	return system.GetPlayer(name)
 }
 
 func (server *Server) SetMessageOfTheDay(message string) {

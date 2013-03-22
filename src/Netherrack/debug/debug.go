@@ -1,7 +1,7 @@
 package debug
 
 import (
-	"Netherrack/event"
+	"Netherrack/system"
 	"Soulsand"
 	"fmt"
 	"math"
@@ -34,7 +34,7 @@ func monitor() {
 }
 
 func message(str string) {
-	event.Broadcast(str)
+	system.Broadcast(str)
 }
 
 func formatBytes(size uint64) string {

@@ -2,7 +2,7 @@ package player
 
 import (
 	"Netherrack/entity"
-	"Netherrack/event"
+	"Netherrack/system"
 	"Soulsand"
 	"Soulsand/command"
 	"Soulsand/locale"
@@ -51,7 +51,7 @@ type Player struct {
 
 func init() {
 	command.Add("say $s[]", func(p interface{}, args []interface{}) {
-		event.Broadcast(fmt.Sprintf("["+Soulsand.ColourPurple+"Server"+Soulsand.ChatReset+"]:"+Soulsand.ColourPink+" %s", args[0].(string)))
+		system.Broadcast(fmt.Sprintf("["+Soulsand.ColourPurple+"Server"+Soulsand.ChatReset+"]:"+Soulsand.ColourPink+" %s", args[0].(string)))
 	})
 }
 
@@ -126,8 +126,8 @@ func HandlePlayer(conn net.Conn) {
 		log.Println("Player disconnected")
 	}()
 
-	event.AddPlayer(player)
-	defer event.RemovePlayer(player)
+	system.AddPlayer(player)
+	defer system.RemovePlayer(player)
 
 	vd := int32(player.settings.viewDistance)
 	for x := -vd; x < vd+1; x++ {
