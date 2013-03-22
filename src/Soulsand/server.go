@@ -45,6 +45,7 @@ type Server interface {
 }
 
 var server Server
+var provider serverProvider
 
 //Returns the current server implementation
 func GetServer() Server {
@@ -52,6 +53,7 @@ func GetServer() Server {
 }
 
 //Sets the current server implementation. Should only be called by the implementation
-func SetServer(s Server) {
+func SetServer(s Server, p serverProvider) {
 	server = s
+	provider = p
 }

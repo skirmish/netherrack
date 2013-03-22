@@ -3,9 +3,9 @@ package Netherrack
 import (
 	"Netherrack/chunk"
 	_ "Netherrack/debug"
-	"Netherrack/system"
 	"Netherrack/network"
 	"Netherrack/player"
+	"Netherrack/system"
 	"Soulsand"
 	"Soulsand/locale"
 	"log"
@@ -21,7 +21,7 @@ var _ Soulsand.Server = &Server{}
 func init() {
 	log.SetFlags(log.Lshortfile | log.Ltime)
 	locale.Load("data/lang")
-	Soulsand.SetServer(&Server{})
+	Soulsand.SetServer(&Server{}, provider{})
 }
 
 type Server struct {

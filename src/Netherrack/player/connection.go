@@ -3,9 +3,9 @@ package player
 import (
 	//	"Netherrack/chunk"
 	"Netherrack/entity"
-	"Netherrack/system"
 	"Netherrack/items"
 	"Netherrack/nbt"
+	"Netherrack/system"
 	"Soulsand"
 	"Soulsand/command"
 	"bytes"
