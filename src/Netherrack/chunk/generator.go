@@ -1,7 +1,7 @@
 package chunk
 
 import (
-	"Netherrack/blocks"
+	"Soulsand/blocks"
 )
 
 func generateChunk(chunk *Chunk) {
