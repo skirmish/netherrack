@@ -2,8 +2,12 @@ package items
 
 import (
 	"Netherrack/nbt"
+	"Soulsand"
 	"sync"
 )
+
+//Compile time checks
+var _ Soulsand.ItemStack = &ItemStack{}
 
 type ItemStack struct {
 	ID       int16

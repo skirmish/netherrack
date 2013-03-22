@@ -4,6 +4,9 @@ import (
 	"Soulsand"
 )
 
+//Compile time checks
+var _ Soulsand.World = &World{}
+
 func init() {
 	go worldWatcher()
 }

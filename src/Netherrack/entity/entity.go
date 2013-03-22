@@ -5,6 +5,10 @@ import (
 	"Soulsand"
 )
 
+//Compile time checks
+var _ Soulsand.Entity = &Entity{}
+var _ Soulsand.SyncEntity = &Entity{}
+
 type Entity struct {
 	EID         int32
 	CurrentTick uint64
