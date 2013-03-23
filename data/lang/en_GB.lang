@@ -15,3 +15,4 @@ command.usage.float.range = [Float(%.2f-%.2f)]
 command.usage.float.norange = [Float]
 
 disconnect.reason.loggedin = Someone is already logged in with that name
+disconnect.reason.unknown = Disconnected

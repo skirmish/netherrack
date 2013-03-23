@@ -52,23 +52,10 @@ func (es *Source) Fire(eventType soulevent.Type, event internal.Event) bool {
 		for _, cb := range m {
 			event.Add()
 			cb <- event
+			event.Wait()
 		}
-		event.Wait()
 	}
 	return event.IsCanceled()
-}
-
-func (es *Source) FireInstant(eventType soulevent.Type, event internal.Event) {
-	es.handlersLock.RLock()
-	defer es.handlersLock.RUnlock()
-	event.Set(eventType, es)
-	if m, ok := es.handlers[eventType]; ok {
-		for _, cb := range m {
-			event.Add()
-			cb <- event
-		}
-	}
-
 }
 
 type Event struct {

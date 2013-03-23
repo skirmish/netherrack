@@ -8,6 +8,8 @@ import (
 	"Soulsand/command"
 	"Soulsand/locale"
 	"encoding/binary"
+	"Netherrack/event"
+	sevent "Soulsand/event"
 	"fmt"
 	"log"
 	"net"
@@ -82,6 +84,10 @@ func HandlePlayer(conn net.Conn) {
 	if Soulsand.GetServer().GetPlayer(player.name) != nil {
 		player.connection.WriteDisconnect(locale.Get(player.GetLocaleSync(), "disconnect.reason.loggedin"))
 		runtime.Goexit()
+	}
+	if system.EventSource.Fire(sevent.PLAYER_JOIN, event.NewJoin(player)) {
+		player.connection.WriteDisconnect(locale.Get(player.GetLocaleSync(), "disconnect.reason.unknown"))
+		runtime.Goexit()		
 	}
 
 	player.Init(player)

@@ -7,6 +7,7 @@ import (
 	"flag"
 	"log"
 	"runtime"
+	"strings"
 )
 
 func main() {
@@ -31,13 +32,12 @@ func main() {
 	server.SetMaxPlayers(100)
 
 	test := make(chan Soulsand.Event, 1000)
-	eID := server.Register(event.PLAYER_MESSAGE, test)
+	server.Register(event.PLAYER_JOIN, test)
 	for {
-		e := (<-test).(Soulsand.EventPlayerMessage)
-		log.Println("Got message: ", e.GetMessage())
-		if e.GetMessage() == "stop" {
+		e := (<-test).(Soulsand.EventPlayerJoin)
+		log.Println("A player joined: ", e.GetPlayer().GetName())
+		if strings.Contains(e.GetPlayer().GetName(), "think") {
 			e.Cancel()
-			e.Remove(eID)
 		}
 		e.Done()
 	}

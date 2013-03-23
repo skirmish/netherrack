@@ -5,6 +5,7 @@ import (
 )
 
 var _ Soulsand.EventPlayerMessage = &Message{}
+var _ Soulsand.EventPlayerJoin = &Join{}
 
 type Message struct {
 	Event
@@ -27,4 +28,21 @@ func (m *Message) GetMessage() string {
 
 func (m *Message) GetPlayer() Soulsand.Player {
 	return m.player
+}
+
+type Join struct {
+	Event
+
+	player  Soulsand.SyncPlayer
+}
+
+func NewJoin(player Soulsand.SyncPlayer) *Join {
+	return &Join{
+		Event:   Event{},
+		player:  player,
+	}
+}
+
+func (j *Join) GetPlayer() Soulsand.SyncPlayer {
+	return j.player
 }
