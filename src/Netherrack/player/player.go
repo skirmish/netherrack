@@ -2,8 +2,8 @@ package player
 
 import (
 	"Netherrack/entity"
-	"Netherrack/system"
 	"Netherrack/internal"
+	"Netherrack/system"
 	"Soulsand"
 	"Soulsand/command"
 	"Soulsand/locale"

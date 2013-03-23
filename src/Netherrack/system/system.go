@@ -1,7 +1,9 @@
 package system
 
 import (
+	"Netherrack/event"
 	"Soulsand"
+	sevent "Soulsand/event"
 	"Soulsand/locale"
 	"fmt"
 )
@@ -11,6 +13,7 @@ func init() {
 }
 
 var channel chan func() = make(chan func(), 1000)
+var EventSource event.Source
 
 func watcher() {
 	for {
@@ -37,6 +40,17 @@ func Broadcast(message string) {
 	channel <- func() {
 		for _, p := range playersByName {
 			p.SendMessage(message)
+		}
+	}
+}
+
+func PlayerChat(player Soulsand.Player, message string) {
+	channel <- func() {
+		if !EventSource.Fire(sevent.PLAYER_MESSAGE, event.NewMessage(player, message)) {
+			message = fmt.Sprintf("["+Soulsand.ColourCyan+"%s"+Soulsand.ChatReset+"]: %s", player.GetDisplayName(), message)
+			for _, p := range playersByName {
+				p.SendMessage(message)
+			}
 		}
 	}
 }

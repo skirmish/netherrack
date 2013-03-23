@@ -3,6 +3,7 @@ package Netherrack
 import (
 	"Netherrack/chunk"
 	_ "Netherrack/debug"
+	"Netherrack/event"
 	"Netherrack/network"
 	"Netherrack/player"
 	"Netherrack/system"
@@ -21,10 +22,14 @@ var _ Soulsand.Server = &Server{}
 func init() {
 	log.SetFlags(log.Lshortfile | log.Ltime)
 	locale.Load("data/lang")
-	Soulsand.SetServer(&Server{}, provider{})
+	server := &Server{}
+	server.init()
+	Soulsand.SetServer(server, provider{})
 }
 
 type Server struct {
+	event.Source
+
 	flags        uint64
 	ProtoVersion int
 	ListPing     struct {
@@ -37,6 +42,11 @@ type Server struct {
 	Config struct {
 		Gamemode Soulsand.Gamemode
 	}
+}
+
+func (server *Server) init() {
+	server.Source.Init()
+	system.EventSource = server.Source
 }
 
 func (server *Server) Start(ip string, port int) {

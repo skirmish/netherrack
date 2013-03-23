@@ -20,6 +20,7 @@ const (
 )
 
 type Server interface {
+	EventSource
 	//Start the server on the specified ip and port
 	Start(ip string, port int)
 	//Changes a flag on the server. See constants

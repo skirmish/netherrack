@@ -222,7 +222,7 @@ var packets map[byte]func(c *Connection) = map[byte]func(c *Connection){
 		if msg[0] == '/' {
 			command.Exec(msg[1:], c.player)
 		} else {
-			system.Broadcast(fmt.Sprintf("["+Soulsand.ColourCyan+"%s"+Soulsand.ChatReset+"]: %s", c.player.displayName, msg))
+			system.PlayerChat(c.player, msg)
 		}
 		//log.Printf("[%s]: %s\n", c.player.Name, msg)
 		//c.WriteChatMessage(msg)

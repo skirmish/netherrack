@@ -3,7 +3,9 @@ package main
 import (
 	_ "Netherrack"
 	"Soulsand"
+	"Soulsand/event"
 	"flag"
+	"log"
 	"runtime"
 )
 
@@ -28,6 +30,15 @@ func main() {
 	server.SetMessageOfTheDay(Soulsand.ColourRed + "Netherrack " + Soulsand.ChatReset + "Server")
 	server.SetMaxPlayers(100)
 
-	var test chan bool
-	<-test
+	test := make(chan Soulsand.Event, 1000)
+	eID := server.Register(event.PLAYER_MESSAGE, test)
+	for {
+		e := (<-test).(Soulsand.EventPlayerMessage)
+		log.Println("Got message: ", e.GetMessage())
+		if e.GetMessage() == "stop" {
+			e.Cancel()
+			e.Remove(eID)
+		}
+		e.Done()
+	}
 }
