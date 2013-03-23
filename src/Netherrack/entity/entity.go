@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"Netherrack/internal"
 	"Netherrack/system"
 	"Soulsand"
 )
@@ -13,7 +14,7 @@ type Entity struct {
 	EID         int32
 	CurrentTick uint64
 
-	World Soulsand.World
+	World internal.World
 	Chunk struct {
 		X, Z   int32
 		LX, LZ int32

@@ -3,6 +3,7 @@ package player
 import (
 	"Netherrack/entity"
 	"Netherrack/system"
+	"Netherrack/internal"
 	"Soulsand"
 	"Soulsand/command"
 	"Soulsand/locale"
@@ -85,7 +86,7 @@ func HandlePlayer(conn net.Conn) {
 
 	player.Init(player)
 	defer player.Finalise()
-	player.World = Soulsand.GetServer().GetWorld("main")
+	player.World = Soulsand.GetServer().GetWorld("main").(internal.World)
 	player.gamemode = Soulsand.GetServer().GetDefaultGamemode()
 
 	player.Position.X = 0
