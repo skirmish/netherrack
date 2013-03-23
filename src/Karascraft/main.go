@@ -37,7 +37,7 @@ func main() {
 		e := (<-test).(Soulsand.EventPlayerJoin)
 		log.Println("A player joined: ", e.GetPlayer().GetName())
 		if strings.Contains(e.GetPlayer().GetName(), "think") {
-			e.Cancel()
+			e.Disconnect("Nope: " + e.GetPlayer().GetName())
 		}
 		e.Done()
 	}

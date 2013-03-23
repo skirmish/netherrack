@@ -2,14 +2,14 @@ package player
 
 import (
 	"Netherrack/entity"
+	"Netherrack/event"
 	"Netherrack/internal"
 	"Netherrack/system"
 	"Soulsand"
 	"Soulsand/command"
+	sevent "Soulsand/event"
 	"Soulsand/locale"
 	"encoding/binary"
-	"Netherrack/event"
-	sevent "Soulsand/event"
 	"fmt"
 	"log"
 	"net"
@@ -85,9 +85,10 @@ func HandlePlayer(conn net.Conn) {
 		player.connection.WriteDisconnect(locale.Get(player.GetLocaleSync(), "disconnect.reason.loggedin"))
 		runtime.Goexit()
 	}
-	if system.EventSource.Fire(sevent.PLAYER_JOIN, event.NewJoin(player)) {
-		player.connection.WriteDisconnect(locale.Get(player.GetLocaleSync(), "disconnect.reason.unknown"))
-		runtime.Goexit()		
+	ev := event.NewJoin(player, locale.Get(player.GetLocaleSync(), "disconnect.reason.unknown"))
+	if system.EventSource.Fire(sevent.PLAYER_JOIN, ev) {
+		player.connection.WriteDisconnect(ev.Reason)
+		runtime.Goexit()
 	}
 
 	player.Init(player)

@@ -13,7 +13,7 @@ var _ internal.Event = &Event{}
 
 type Source struct {
 	handlers     map[soulevent.Type]map[int]chan Soulsand.Event
-	handlersLock sync.RWMutex
+	handlersLock sync.Mutex
 	handlePos    int
 }
 
@@ -45,8 +45,8 @@ func (es *Source) Unregister(eventType soulevent.Type, id int) {
 }
 
 func (es *Source) Fire(eventType soulevent.Type, event internal.Event) bool {
-	es.handlersLock.RLock()
-	defer es.handlersLock.RUnlock()
+	es.handlersLock.Lock()
+	defer es.handlersLock.Unlock()
 	event.Set(eventType, es)
 	if m, ok := es.handlers[eventType]; ok {
 		for _, cb := range m {
@@ -61,7 +61,7 @@ func (es *Source) Fire(eventType soulevent.Type, event internal.Event) bool {
 type Event struct {
 	canceled  bool
 	waitGroup sync.WaitGroup
-	source *Source
+	source    *Source
 	eventType soulevent.Type
 }
 

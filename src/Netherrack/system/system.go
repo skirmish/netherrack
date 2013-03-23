@@ -46,8 +46,9 @@ func Broadcast(message string) {
 
 func PlayerChat(player Soulsand.Player, message string) {
 	channel <- func() {
-		if !EventSource.Fire(sevent.PLAYER_MESSAGE, event.NewMessage(player, message)) {
-			message = fmt.Sprintf("["+Soulsand.ColourCyan+"%s"+Soulsand.ChatReset+"]: %s", player.GetDisplayName(), message)
+		ev := event.NewMessage(player, message)
+		if !EventSource.Fire(sevent.PLAYER_MESSAGE, ev) {
+			message = fmt.Sprintf("["+Soulsand.ColourCyan+"%s"+Soulsand.ChatReset+"]: %s", player.GetDisplayName(), ev.GetMessage())
 			for _, p := range playersByName {
 				p.SendMessage(message)
 			}
