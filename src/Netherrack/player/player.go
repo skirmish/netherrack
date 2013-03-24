@@ -19,6 +19,7 @@ import (
 
 type Player struct {
 	entity.Entity
+	event.Source
 
 	connection Connection
 	name       string
@@ -67,6 +68,7 @@ var (
 func HandlePlayer(conn net.Conn) {
 
 	player := &Player{}
+	player.Source.Init()
 	player.settings.viewDistance = 10
 	player.errorChannel = make(chan bool, 1)
 	player.currentPacketChannel = make(chan byte)
@@ -136,6 +138,7 @@ func HandlePlayer(conn net.Conn) {
 
 	system.AddPlayer(player)
 	defer system.RemovePlayer(player)
+	defer system.EventSource.Fire(sevent.PLAYER_LEAVE, event.NewLeave(player))
 
 	vd := int32(player.settings.viewDistance)
 	for x := -vd; x < vd+1; x++ {

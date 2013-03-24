@@ -14,3 +14,8 @@ type EventPlayerJoin interface {
 	GetPlayer() SyncPlayer
 	Disconnect(reason string)
 }
+
+type EventPlayerLeave interface {
+	Event
+	GetPlayer() SyncPlayer
+}

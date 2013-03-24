@@ -57,3 +57,20 @@ func (j *Join) Disconnect(reason string) {
 	j.Reason = reason
 	j.Cancel()
 }
+
+type Leave struct {
+	Event
+
+	player Soulsand.SyncPlayer
+}
+
+func NewLeave(player Soulsand.SyncPlayer) *Join {
+	return &Join{
+		Event:  Event{},
+		player: player,
+	}
+}
+
+func (l *Leave) GetPlayer() Soulsand.SyncPlayer {
+	return l.player
+}
