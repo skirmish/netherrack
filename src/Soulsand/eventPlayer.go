@@ -6,7 +6,7 @@ type EventPlayerMessage interface {
 	Event
 	GetMessage() string
 	SetMessage(msg string)
-	GetPlayer() Player
+	GetPlayer() SyncPlayer
 }
 
 type EventPlayerJoin interface {

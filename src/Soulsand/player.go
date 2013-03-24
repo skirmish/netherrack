@@ -5,6 +5,7 @@ import ()
 //A currently online player
 type Player interface {
 	Entity
+	EventSource
 	//Returns the player's name
 	GetName() string
 	//Sends a message to the player
@@ -29,8 +30,13 @@ type Player interface {
 
 type SyncPlayer interface {
 	SyncEntity
+	EventSource
 	//Returns the player's name
 	GetName() string
+	//Returns the player's display name
+	GetDisplayNameSync() string
+	//Sets the player's display name
+	SetDisplayNameSync(name string)
 	//Returns the player's view distance in chunks
 	GetViewDistanceSync() int
 	//Returns the player's locale

@@ -13,3 +13,11 @@ func (player *Player) GetLocaleSync() string {
 func (player *Player) SendMessageSync(msg string) {
 	player.connection.WriteChatMessage(msg)
 }
+
+func (player *Player) GetDisplayNameSync() string {
+	return player.displayName
+}
+
+func (player *Player) SetDisplayNameSync(name string) {
+	player.displayName = name
+}

@@ -138,7 +138,7 @@ func HandlePlayer(conn net.Conn) {
 
 	system.AddPlayer(player)
 	defer system.RemovePlayer(player)
-	defer system.EventSource.Fire(sevent.PLAYER_LEAVE, event.NewLeave(player))
+	defer player.Fire(sevent.PLAYER_LEAVE, event.NewLeave(player))
 
 	vd := int32(player.settings.viewDistance)
 	for x := -vd; x < vd+1; x++ {

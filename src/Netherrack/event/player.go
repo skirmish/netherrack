@@ -10,11 +10,11 @@ var _ Soulsand.EventPlayerJoin = &Join{}
 type Message struct {
 	Event
 
-	player  Soulsand.Player
+	player  Soulsand.SyncPlayer
 	message string
 }
 
-func NewMessage(player Soulsand.Player, message string) *Message {
+func NewMessage(player Soulsand.SyncPlayer, message string) *Message {
 	return &Message{
 		Event:   Event{},
 		player:  player,
@@ -30,7 +30,7 @@ func (m *Message) GetMessage() string {
 	return m.message
 }
 
-func (m *Message) GetPlayer() Soulsand.Player {
+func (m *Message) GetPlayer() Soulsand.SyncPlayer {
 	return m.player
 }
 
@@ -64,8 +64,8 @@ type Leave struct {
 	player Soulsand.SyncPlayer
 }
 
-func NewLeave(player Soulsand.SyncPlayer) *Join {
-	return &Join{
+func NewLeave(player Soulsand.SyncPlayer) *Leave {
+	return &Leave{
 		Event:  Event{},
 		player: player,
 	}

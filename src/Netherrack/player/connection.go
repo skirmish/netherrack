@@ -3,11 +3,13 @@ package player
 import (
 	//	"Netherrack/chunk"
 	"Netherrack/entity"
+	"Netherrack/event"
 	"Netherrack/items"
 	"Netherrack/nbt"
 	"Netherrack/system"
 	"Soulsand"
 	"Soulsand/command"
+	sevent "Soulsand/event"
 	"bytes"
 	"compress/gzip"
 	"crypto/aes"
@@ -222,7 +224,10 @@ var packets map[byte]func(c *Connection) = map[byte]func(c *Connection){
 		if msg[0] == '/' {
 			command.Exec(msg[1:], c.player)
 		} else {
-			system.PlayerChat(c.player, msg)
+			ev := event.NewMessage(c.player, msg)
+			if !c.player.Fire(sevent.PLAYER_MESSAGE, ev) {
+				system.PlayerChat(c.player, ev.GetMessage())
+			}
 		}
 		//log.Printf("[%s]: %s\n", c.player.Name, msg)
 		//c.WriteChatMessage(msg)

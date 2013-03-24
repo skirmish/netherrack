@@ -3,7 +3,6 @@ package system
 import (
 	"Netherrack/event"
 	"Soulsand"
-	sevent "Soulsand/event"
 	"Soulsand/locale"
 	"fmt"
 )
@@ -46,12 +45,9 @@ func Broadcast(message string) {
 
 func PlayerChat(player Soulsand.Player, message string) {
 	channel <- func() {
-		ev := event.NewMessage(player, message)
-		if !EventSource.Fire(sevent.PLAYER_MESSAGE, ev) {
-			message = fmt.Sprintf("["+Soulsand.ColourCyan+"%s"+Soulsand.ChatReset+"]: %s", player.GetDisplayName(), ev.GetMessage())
-			for _, p := range playersByName {
-				p.SendMessage(message)
-			}
+		//message = fmt.Sprintf("["+Soulsand.ColourCyan+"%s"+Soulsand.ChatReset+"]: %s", player.GetDisplayName(), message)
+		for _, p := range playersByName {
+			p.SendMessage(message)
 		}
 	}
 }

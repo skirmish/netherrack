@@ -3,6 +3,7 @@ package main
 import (
 	_ "Netherrack"
 	"Soulsand"
+	"Soulsand/event"
 	"flag"
 	"runtime"
 )
@@ -28,6 +29,15 @@ func main() {
 	server.SetMessageOfTheDay(Soulsand.ColourRed + "Netherrack " + Soulsand.ChatReset + "Server")
 	server.SetMaxPlayers(100)
 
-	var test chan bool
-	<-test
+	playerJoinWatcher(server)
+}
+
+func playerJoinWatcher(server Soulsand.Server) {
+	playerJoin := make(chan Soulsand.Event, 100)
+	server.Register(event.PLAYER_JOIN, playerJoin)
+	for {
+		e := (<-playerJoin).(Soulsand.EventPlayerJoin)
+		go playerWatcher(e.GetPlayer())
+		e.Done()
+	}
 }
