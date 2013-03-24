@@ -93,8 +93,8 @@ func HandlePlayer(conn net.Conn) {
 		runtime.Goexit()
 	}
 
-	player.Init(player)
-	defer player.Finalise()
+	player.Entity.Init(player)
+	defer player.Entity.Finalise()
 	player.World = Soulsand.GetServer().GetWorld("main").(internal.World)
 	player.gamemode = Soulsand.GetServer().GetDefaultGamemode()
 
