@@ -160,8 +160,6 @@ func HandlePlayer(conn net.Conn) {
 	go player.dataWatcher()
 	defer log.Println("Player disconnecting")
 
-	player.connection.WritePlayerListItem("thinkofdeath", true, 0)
-
 	timer := time.NewTicker(time.Second / 20)
 	defer timer.Stop()
 
