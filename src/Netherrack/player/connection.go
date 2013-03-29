@@ -226,11 +226,9 @@ var packets map[byte]func(c *Connection) = map[byte]func(c *Connection){
 		} else {
 			ev := event.NewMessage(c.player, msg)
 			if !c.player.Fire(sevent.PLAYER_MESSAGE, ev) {
-				system.PlayerChat(c.player, ev.GetMessage())
+				system.Broadcast(ev.GetMessage())
 			}
 		}
-		//log.Printf("[%s]: %s\n", c.player.Name, msg)
-		//c.WriteChatMessage(msg)
 	},
 	0x07: func(c *Connection) { //Use Entity
 		c.ReadUseEntity()

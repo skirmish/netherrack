@@ -5,6 +5,7 @@ import (
 	"Soulsand"
 	"Soulsand/locale"
 	"fmt"
+	"log"
 )
 
 func init() {
@@ -37,15 +38,7 @@ func GetEntityCount() int {
 
 func Broadcast(message string) {
 	channel <- func() {
-		for _, p := range playersByName {
-			p.SendMessage(message)
-		}
-	}
-}
-
-func PlayerChat(player Soulsand.Player, message string) {
-	channel <- func() {
-		//message = fmt.Sprintf("["+Soulsand.ColourCyan+"%s"+Soulsand.ChatReset+"]: %s", player.GetDisplayName(), message)
+		log.Println(message)
 		for _, p := range playersByName {
 			p.SendMessage(message)
 		}

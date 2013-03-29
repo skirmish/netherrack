@@ -1,8 +1,8 @@
 package command
 
 import (
-	"strings"
 	"reflect"
+	"strings"
 )
 
 type caConst struct {

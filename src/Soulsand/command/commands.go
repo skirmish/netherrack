@@ -3,12 +3,44 @@ package command
 import (
 	"Soulsand"
 	"Soulsand/locale"
+	"bufio"
 	"bytes"
 	"fmt"
+	"log"
+	"os"
+	"reflect"
 	"strconv"
 	"strings"
-	"reflect"
 )
+
+func init() {
+	go consoleWatcher()
+}
+
+var _ Soulsand.CommandSender = consoleSender{}
+
+type consoleSender struct {
+}
+
+func (consoleSender) GetLocaleSync() string {
+	return "en_GB"
+}
+
+func (consoleSender) SendMessageSync(msg string) {
+	log.Println("[MESSAGE]: ", msg)
+}
+
+func consoleWatcher() {
+	buf := bufio.NewReader(os.Stdin)
+	cs := consoleSender{}
+	for {
+		line, err := buf.ReadString('\n')
+		if err != nil {
+			return
+		}
+		Exec(line, cs)
+	}
+}
 
 //Executes the the command for the player. The command should
 //be in the format:
@@ -86,7 +118,7 @@ func Exec(com string, caller Soulsand.CommandSender) {
 		}
 	}
 	var lastError error
-	
+
 	callerValue := reflect.ValueOf(caller)
 comLoop:
 	for _, c := range command {
@@ -257,7 +289,7 @@ func Add(com string, f interface{}) {
 	if funcType.NumIn() < 1 || !reflect.TypeOf((*Soulsand.CommandSender)(nil)).Elem().AssignableTo(funcType.In(0)) {
 		panic("Commands needs a CommandSender as the first argument. " + funcType.In(0).String())
 	}
-	
+
 	commands[comName] = append(commands[comName], def)
 	def.Arguments = make([]commandArgument, 0, 10)
 	if pos == -1 {
@@ -267,9 +299,9 @@ func Add(com string, f interface{}) {
 		return
 	}
 	com = com[pos+1:]
-	
+
 	argPos := 1
-	
+
 	for true {
 		pos = strings.Index(com, " ")
 		var a string
@@ -286,10 +318,10 @@ func Add(com string, f interface{}) {
 				panic("Invalid command argument type")
 				return
 			}
-			if funcType.NumIn() < argPos + 1 {
-				panic("Argument count mis-match (Too little arguments)")			
+			if funcType.NumIn() < argPos+1 {
+				panic("Argument count mis-match (Too little arguments)")
 			}
-			argType := cAT(a[3:len(a)-1])
+			argType := cAT(a[3 : len(a)-1])
 			if !argType.Type().AssignableTo(funcType.In(argPos)) {
 				panic(fmt.Sprintf("'%s' cannot be used as '%s'", funcType.In(argPos).Name(), argType.Type().Name()))
 			}

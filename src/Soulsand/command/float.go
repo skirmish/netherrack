@@ -4,8 +4,8 @@ import (
 	"Soulsand/locale"
 	"errors"
 	"fmt"
-	"strconv"
 	"reflect"
+	"strconv"
 )
 
 type caFloat struct {
