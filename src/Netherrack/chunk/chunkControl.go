@@ -57,13 +57,15 @@ func chunkControler(chunk *Chunk) {
 					p.RunSync(msg.Msg)
 				}
 			}
-		case bR := <-chunk.blockRequest:
-			bR.Ret <- []byte{chunk.GetBlock(bR.X, bR.Y, bR.Z), chunk.GetMeta(bR.X, bR.Y, bR.Z)}
+		//case bR := <-chunk.blockRequest:
+		//	bR.Ret <- []byte{chunk.GetBlock(bR.X, bR.Y, bR.Z), chunk.GetMeta(bR.X, bR.Y, bR.Z)}
+		case f := <-chunk.eventChannel:
+			f(chunk)
 		case <-tOut.C:
 			if len(chunk.Players) == 0 &&
 				len(chunk.watcherJoin) == 0 &&
 				len(chunk.Entitys) == 0 &&
-				len(chunk.blockRequest) == 0 &&
+				len(chunk.eventChannel) == 0 &&
 				len(chunk.entityJoin) == 0 &&
 				len(chunk.entityLeave) == 0 &&
 				len(chunk.messageChannel) == 0 &&

@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"Soulsand"
+	"sync"
 )
 
 //Compile time checks
@@ -12,32 +13,50 @@ func init() {
 }
 
 type World struct {
-	Name                      string
-	chunkChannel              chan *ChunkRequest
-	chunkJoinChannel          chan *chunkEntityRequest
-	chunkLeaveChannel         chan *chunkEntityRequest
-	chunkJoinWatcherChannel   chan *chunkWatcherRequest
-	chunkLeaveWatcherChannel  chan *chunkWatcherRequest
-	chunkMessageChannel       chan *chunkMessage
-	chunkBlocksRequestChannel chan *chunkBlocksRequest
-	chunkKillChannel          chan *ChunkPosition
-	chunks                    map[ChunkPosition]*Chunk
+	Name                     string
+	chunkChannel             chan *ChunkRequest
+	chunkJoinChannel         chan *chunkEntityRequest
+	chunkLeaveChannel        chan *chunkEntityRequest
+	chunkJoinWatcherChannel  chan *chunkWatcherRequest
+	chunkLeaveWatcherChannel chan *chunkWatcherRequest
+	chunkMessageChannel      chan *chunkMessage
+	chunkKillChannel         chan *ChunkPosition
+	chunkEventChannel        chan chunkEvent
+	chunks                   map[ChunkPosition]*Chunk
 }
 
 func NewWorld() *World {
 	world := &World{
-		chunkChannel:              make(chan *ChunkRequest, 500),
-		chunkJoinChannel:          make(chan *chunkEntityRequest, 500),
-		chunkLeaveChannel:         make(chan *chunkEntityRequest, 500),
-		chunkJoinWatcherChannel:   make(chan *chunkWatcherRequest, 500),
-		chunkLeaveWatcherChannel:  make(chan *chunkWatcherRequest, 500),
-		chunkMessageChannel:       make(chan *chunkMessage, 5000),
-		chunkBlocksRequestChannel: make(chan *chunkBlocksRequest, 5000),
-		chunkKillChannel:          make(chan *ChunkPosition, 500),
-		chunks:                    make(map[ChunkPosition]*Chunk),
+		chunkChannel:             make(chan *ChunkRequest, 500),
+		chunkJoinChannel:         make(chan *chunkEntityRequest, 500),
+		chunkLeaveChannel:        make(chan *chunkEntityRequest, 500),
+		chunkJoinWatcherChannel:  make(chan *chunkWatcherRequest, 500),
+		chunkLeaveWatcherChannel: make(chan *chunkWatcherRequest, 500),
+		chunkMessageChannel:      make(chan *chunkMessage, 5000),
+		chunkKillChannel:         make(chan *ChunkPosition, 500),
+		chunkEventChannel:        make(chan chunkEvent, 5000),
+		chunks:                   make(map[ChunkPosition]*Chunk),
 	}
 	go world.chunkWatcher()
 	return world
+}
+
+func (world *World) RunSync(x, z int, f func(Soulsand.SyncChunk)) {
+	world.chunkEventChannel <- chunkEvent{
+		Pos: ChunkPosition{int32(x), int32(z)},
+		F:   f,
+	}
+}
+
+func (world *World) GetBlock(x, y, z int) []byte {
+	cx := x >> 4
+	cz := z >> 4
+	ret := make(chan []byte, 1)
+	world.RunSync(cx, cz, func(c Soulsand.SyncChunk) {
+		ret <- []byte{c.GetBlock(x-cx*16, y, z-cz*16),
+			c.GetMeta(x-cx*16, y, z-cz*16)}
+	})
+	return <-ret
 }
 
 func (world *World) GetBlocks(x, y, z, w, h, d int) *Blocks {
@@ -46,36 +65,25 @@ func (world *World) GetBlocks(x, y, z, w, h, d int) *Blocks {
 		make([]byte, w*h*d),
 		w, h, d,
 	}
-	chans := make([]chan []byte, w*h*d)
+	var wait sync.WaitGroup
 	for by := 0; by < h; by++ {
 		for bx := 0; bx < w; bx++ {
 			for bz := 0; bz < d; bz++ {
-				ret := make(chan []byte, 1)
 				tx := x + bx
 				ty := y + by
 				tz := z + bz
 				cx := tx >> 4
 				cz := tz >> 4
-				world.chunkBlocksRequestChannel <- &chunkBlocksRequest{
-					ChunkPosition{int32(cx), int32(cz)},
-					tx - cx*16,
-					ty,
-					tz - cz*16,
-					ret,
-				}
-				chans[bx|(bz*w)|(by*w*d)] = ret
+				wait.Add(1)
+				world.RunSync(cx, cz, func(c Soulsand.SyncChunk) {
+					out.setBlock(bx, by, bz, c.GetBlock(tx-cx*16, ty, tz-cz*16))
+					out.setMeta(bx, by, bz, c.GetMeta(tx-cx*16, ty, tz-cz*16))
+					wait.Done()
+				})
 			}
 		}
 	}
-	for by := 0; by < h; by++ {
-		for bx := 0; bx < w; bx++ {
-			for bz := 0; bz < d; bz++ {
-				res := <-chans[bx|(bz*w)|(by*w*d)]
-				out.setBlock(bx, by, bz, res[0])
-				out.setMeta(bx, by, bz, res[1])
-			}
-		}
-	}
+	wait.Wait()
 	return out
 }
 

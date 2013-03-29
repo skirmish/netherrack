@@ -4,6 +4,10 @@ import (
 	"Soulsand"
 )
 
+var (
+	_ Soulsand.SyncChunk = &Chunk{}
+)
+
 type (
 	Chunk struct {
 		World          *World
@@ -18,7 +22,7 @@ type (
 		entityJoin     chan *chunkEntityRequest
 		entityLeave    chan *chunkEntityRequest
 		messageChannel chan *chunkMessage
-		blockRequest   chan *chunkBlocksRequest
+		eventChannel   chan func(Soulsand.SyncChunk)
 	}
 	SubChunk struct {
 		Type       []byte
@@ -52,18 +56,10 @@ type (
 		X, Y, Z int
 		Ret     chan []byte
 	}
-)
-
-var (
-/*chunkChannel              chan *ChunkRequest        = make(chan *ChunkRequest, 500)
-chunkJoinChannel          chan *chunkEntityRequest  = make(chan *chunkEntityRequest, 500)
-chunkLeaveChannel         chan *chunkEntityRequest  = make(chan *chunkEntityRequest, 500)
-chunkJoinWatcherChannel   chan *chunkWatcherRequest = make(chan *chunkWatcherRequest, 500)
-chunkLeaveWatcherChannel  chan *chunkWatcherRequest = make(chan *chunkWatcherRequest, 500)
-chunkMessageChannel       chan *chunkMessage        = make(chan *chunkMessage, 5000)
-chunkBlocksRequestChannel chan *chunkBlocksRequest  = make(chan *chunkBlocksRequest, 5000)
-chunkKillChannel          chan *ChunkPosition       = make(chan *ChunkPosition, 500)
-chunks                    map[ChunkPosition]*Chunk  = make(map[ChunkPosition]*Chunk)*/
+	chunkEvent struct {
+		Pos ChunkPosition
+		F   func(Soulsand.SyncChunk)
+	}
 )
 
 func (world *World) chunkWatcher() {
@@ -84,8 +80,8 @@ func (world *World) chunkWatcher() {
 			world.getChunk(msg.Pos).entityLeave <- msg
 		case msg := <-world.chunkMessageChannel:
 			world.getChunk(msg.Pos).messageChannel <- msg
-		case msg := <-world.chunkBlocksRequestChannel:
-			world.getChunk(msg.Pos).blockRequest <- msg
+		case msg := <-world.chunkEventChannel:
+			world.getChunk(msg.Pos).eventChannel <- msg.F
 		}
 
 	}
@@ -192,11 +188,8 @@ func CreateChunk(x, z int32) *Chunk {
 		entityJoin:     make(chan *chunkEntityRequest, 200),
 		entityLeave:    make(chan *chunkEntityRequest, 200),
 		messageChannel: make(chan *chunkMessage, 1000),
-		blockRequest:   make(chan *chunkBlocksRequest, 200),
+		eventChannel:   make(chan func(Soulsand.SyncChunk), 500),
 	}
-	/*for i := 0; i < 16; i++ {
-		chunk.SubChunks[i] = CreateSubChunk()
-	}*/
 	return chunk
 }
 
