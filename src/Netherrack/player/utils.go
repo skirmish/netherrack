@@ -3,17 +3,7 @@ package player
 import (
 	"Netherrack/entity"
 	"Soulsand"
-	"Soulsand/command"
-	"runtime"
 )
-
-func init() {
-	command.Add("gc", func(caller interface{}, args []interface{}) {
-		player := caller.(*Player)
-		runtime.GC()
-		player.SendMessageSync("GC Run")
-	})
-}
 
 func (player *Player) SetGamemode(mode Soulsand.Gamemode) {
 	player.playerEventChannel <- func(Soulsand.SyncPlayer) {

@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"reflect"
 )
 
 //Executes the the command for the player. The command should
 //be in the format:
 //	commandName arg1 arg2 `arg 3` ...
-func Exec(com string, caller Soulsand.SyncPlayer) {
+func Exec(com string, caller Soulsand.CommandSender) {
 	com = strings.TrimSpace(com)
 	if len(com) == 0 {
 		return
@@ -36,7 +37,7 @@ func Exec(com string, caller Soulsand.SyncPlayer) {
 	if pos == -1 {
 		for _, c := range command {
 			if len(c.Arguments) == 0 {
-				c.Function(caller, nil)
+				c.Function.Call([]reflect.Value{reflect.ValueOf(caller)})
 				return
 			}
 		}
@@ -85,12 +86,15 @@ func Exec(com string, caller Soulsand.SyncPlayer) {
 		}
 	}
 	var lastError error
+	
+	callerValue := reflect.ValueOf(caller)
 comLoop:
 	for _, c := range command {
 		if len(c.Arguments) != len(args) {
 			continue
 		}
-		outArgs := make([]interface{}, 0, 5)
+		outArgs := make([]reflect.Value, 0, 5)
+		outArgs = append(outArgs, callerValue)
 		for i, a := range c.Arguments {
 			if !a.IsConst() {
 				res, err := a.Parse(args[i], caller.GetLocaleSync())
@@ -98,15 +102,15 @@ comLoop:
 					lastError = err
 					continue comLoop
 				}
-				outArgs = append(outArgs, res)
+				outArgs = append(outArgs, reflect.ValueOf(res))
 			} else {
-				cst := a.(*ca_Const)
+				cst := a.(*caConst)
 				if cst.Value != args[i] {
 					continue comLoop
 				}
 			}
 		}
-		c.Function(caller, outArgs)
+		c.Function.Call(outArgs)
 		return
 	}
 
@@ -212,7 +216,7 @@ comLoop:
 						continue comLoop
 					}
 				} else {
-					cst := a.(*ca_Const)
+					cst := a.(*caConst)
 					if cst.Value != args[i] {
 						continue comLoop
 					}
@@ -233,8 +237,8 @@ comLoop:
 
 //Adds a command to the system. Commands must only be added at init time.
 //Commands should be in the format:
-//	commandName const $t:[optArgs] ...
-func Add(com string, f func(caller interface{}, args []interface{})) {
+//	commandName const $t[optArgs] ...
+func Add(com string, f interface{}) {
 	com = strings.TrimSpace(com)
 	pos := strings.Index(com, " ")
 	var comName string
@@ -245,16 +249,27 @@ func Add(com string, f func(caller interface{}, args []interface{})) {
 	}
 
 	def := &commandDef{}
-	def.Function = f
+	def.Function = reflect.ValueOf(f)
 	if _, ok := commands[comName]; !ok {
 		commands[comName] = make([]*commandDef, 0, 1)
 	}
+	funcType := def.Function.Type()
+	if funcType.NumIn() < 1 || !reflect.TypeOf((*Soulsand.CommandSender)(nil)).Elem().AssignableTo(funcType.In(0)) {
+		panic("Commands needs a CommandSender as the first argument. " + funcType.In(0).String())
+	}
+	
 	commands[comName] = append(commands[comName], def)
 	def.Arguments = make([]commandArgument, 0, 10)
 	if pos == -1 {
+		if funcType.NumIn() != 1 {
+			panic("Argument count mis-match (Too many arguments)")
+		}
 		return
 	}
 	com = com[pos+1:]
+	
+	argPos := 1
+	
 	for true {
 		pos = strings.Index(com, " ")
 		var a string
@@ -271,13 +286,24 @@ func Add(com string, f func(caller interface{}, args []interface{})) {
 				panic("Invalid command argument type")
 				return
 			}
-			def.Arguments = append(def.Arguments, cAT(a[3:len(a)-1]))
+			if funcType.NumIn() < argPos + 1 {
+				panic("Argument count mis-match (Too little arguments)")			
+			}
+			argType := cAT(a[3:len(a)-1])
+			if !argType.Type().AssignableTo(funcType.In(argPos)) {
+				panic(fmt.Sprintf("'%s' cannot be used as '%s'", funcType.In(argPos).Name(), argType.Type().Name()))
+			}
+			def.Arguments = append(def.Arguments, argType)
+			argPos++
 		} else { //Constant
-			def.Arguments = append(def.Arguments, &ca_Const{a})
+			def.Arguments = append(def.Arguments, &caConst{a})
 		}
 		if pos == -1 {
 			break
 		}
+	}
+	if funcType.NumIn() > argPos {
+		panic("Argument count mis-match (Too many arguments)")
 	}
 }
 
@@ -291,10 +317,10 @@ var (
 			} else {
 				maxLen, _ = strconv.Atoi(a)
 			}
-			return &ca_String{maxLen}
+			return &caString{maxLen}
 		},
 		'i': func(a string) commandArgument {
-			out := &ca_Int{}
+			out := &caInt{}
 			if len(a) == 0 {
 				out.HasLimits = false
 			} else {
@@ -317,7 +343,7 @@ var (
 			return out
 		},
 		'f': func(a string) commandArgument {
-			out := &ca_Float{}
+			out := &caFloat{}
 			if len(a) == 0 {
 				out.HasLimits = false
 			} else {
@@ -343,7 +369,7 @@ var (
 )
 
 type commandDef struct {
-	Function  func(caller interface{}, args []interface{})
+	Function  reflect.Value
 	Arguments []commandArgument
 }
 
@@ -352,4 +378,5 @@ type commandArgument interface {
 	TabComplete(in string) ([]string, bool)
 	Printable(loc string) string
 	IsConst() bool
+	Type() reflect.Type
 }

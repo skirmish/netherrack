@@ -4,30 +4,35 @@ import (
 	"Soulsand/locale"
 	"errors"
 	"fmt"
+	"reflect"
 )
 
-type ca_String struct {
+type caString struct {
 	MaxLength int
 }
 
-func (ca *ca_String) Parse(in, loc string) (interface{}, error) {
+func (ca *caString) Parse(in, loc string) (interface{}, error) {
 	if ca.MaxLength != 0 && len(in) > ca.MaxLength {
 		return nil, errors.New(fmt.Sprintf(locale.Get(loc, "command.error.string.length"), ca.MaxLength))
 	}
 	return in, nil
 }
 
-func (ca *ca_String) TabComplete(in string) ([]string, bool) {
+func (ca *caString) TabComplete(in string) ([]string, bool) {
 	return []string{}, false
 }
 
-func (ca *ca_String) IsConst() bool {
+func (ca *caString) IsConst() bool {
 	return false
 }
 
-func (ca *ca_String) Printable(loc string) string {
+func (ca *caString) Printable(loc string) string {
 	if ca.MaxLength == 0 {
 		return locale.Get(loc, "command.usage.string.norange")
 	}
 	return fmt.Sprintf(locale.Get(loc, "command.usage.string.range"), ca.MaxLength)
+}
+
+func (ca *caString) Type() reflect.Type {
+	return reflect.TypeOf("")
 }

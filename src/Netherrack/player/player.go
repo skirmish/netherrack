@@ -54,8 +54,12 @@ type Player struct {
 }
 
 func init() {
-	command.Add("say $s[]", func(p interface{}, args []interface{}) {
-		system.Broadcast(fmt.Sprintf("["+Soulsand.ColourPurple+"Server"+Soulsand.ChatReset+"]:"+Soulsand.ColourPink+" %s", args[0].(string)))
+	command.Add("say $s[]", func(p Soulsand.CommandSender, msg string) {
+		system.Broadcast(fmt.Sprintf("["+Soulsand.ColourPurple+"Server"+Soulsand.ChatReset+"]:"+Soulsand.ColourPink+" %s", msg))
+	})
+	command.Add("gc", func(caller Soulsand.CommandSender) {
+		runtime.GC()
+		caller.SendMessageSync("GC Run")
 	})
 }
 

@@ -31,6 +31,7 @@ type Player interface {
 type SyncPlayer interface {
 	SyncEntity
 	EventSource
+	CommandSender
 	//Returns the player's name
 	GetName() string
 	//Returns the player's display name
@@ -39,10 +40,6 @@ type SyncPlayer interface {
 	SetDisplayNameSync(name string)
 	//Returns the player's view distance in chunks
 	GetViewDistanceSync() int
-	//Returns the player's locale
-	GetLocaleSync() string
-	//Sends a message to the player
-	SendMessageSync(msg string)
 	//UNSAFE: Returns a UnsafeConnection which provides ways to send packets to the player
 	GetConnection() UnsafeConnection
 }

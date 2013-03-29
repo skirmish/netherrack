@@ -2,27 +2,32 @@ package command
 
 import (
 	"strings"
+	"reflect"
 )
 
-type ca_Const struct {
+type caConst struct {
 	Value string
 }
 
-func (ca *ca_Const) TabComplete(in string) ([]string, bool) {
+func (ca *caConst) TabComplete(in string) ([]string, bool) {
 	if strings.HasPrefix(ca.Value, in) {
 		return []string{ca.Value}, true
 	}
 	return []string{}, false
 }
 
-func (ca *ca_Const) Parse(in, loc string) (interface{}, error) {
+func (ca *caConst) Parse(in, loc string) (interface{}, error) {
 	return nil, nil
 }
 
-func (ca *ca_Const) IsConst() bool {
+func (ca *caConst) IsConst() bool {
 	return true
 }
 
-func (ca *ca_Const) Printable(loc string) string {
+func (ca *caConst) Printable(loc string) string {
 	return ca.Value
+}
+
+func (ca *caConst) Type() reflect.Type {
+	return nil
 }

@@ -5,15 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"reflect"
 )
 
-type ca_Float struct {
+type caFloat struct {
 	HasLimits bool
 	Min       float64
 	Max       float64
 }
 
-func (ca *ca_Float) Parse(in, loc string) (interface{}, error) {
+func (ca *caFloat) Parse(in, loc string) (interface{}, error) {
 	if ca.HasLimits {
 		i, err := strconv.ParseFloat(in, 64)
 		if err != nil {
@@ -33,17 +34,21 @@ func (ca *ca_Float) Parse(in, loc string) (interface{}, error) {
 	return nil, nil
 }
 
-func (ca *ca_Float) TabComplete(in string) ([]string, bool) {
+func (ca *caFloat) TabComplete(in string) ([]string, bool) {
 	return []string{}, false
 }
 
-func (ca *ca_Float) IsConst() bool {
+func (ca *caFloat) IsConst() bool {
 	return false
 }
 
-func (ca *ca_Float) Printable(loc string) string {
+func (ca *caFloat) Printable(loc string) string {
 	if ca.HasLimits {
 		return fmt.Sprintf(locale.Get(loc, "command.usage.float.range"), ca.Min, ca.Max)
 	}
 	return locale.Get(loc, "command.usage.float.norange")
+}
+
+func (ca *caFloat) Type() reflect.Type {
+	return reflect.TypeOf(float64(0))
 }
