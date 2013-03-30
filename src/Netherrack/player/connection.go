@@ -175,7 +175,7 @@ func (c *Connection) Login() {
 	aCi, err := aes.NewCipher(eKey)
 	if err != nil {
 		log.Println(err)
-		return
+		runtime.Goexit()
 	}
 
 	c.inStream = cipher.StreamReader{
@@ -192,7 +192,7 @@ func (c *Connection) Login() {
 	c.inStream.Read(cdPack)
 	if !bytes.Equal(cdPack, []byte{0xCD, 0x00}) {
 		log.Println(cdPack)
-		return
+		runtime.Goexit()
 	}
 
 }
@@ -1859,21 +1859,21 @@ func NewCFB8Encrypt(c cipher.Block, iv []byte) *CFB8 {
 }
 
 func (cf *CFB8) XORKeyStream(dst, src []byte) {
-	n := 16 //cf.blockSize
+	//n := cf.blockSize
 
-	for i := range src {
+	for i := 0; i < len(src); i++ {
 		val := src[i]
-		copy(cf.tmp, cf.iv[0:n])
+		copy(cf.tmp, cf.iv)
 		cf.c.Encrypt(cf.iv, cf.iv)
 		val = val ^ cf.iv[0]
 
-		for j := 0; j < n-1; j++ {
+		for j := 0; j < 15; j++ {
 			cf.iv[j] = cf.tmp[j+1]
 		}
 		if cf.de {
-			cf.iv[n-1] = src[i]
+			cf.iv[15] = src[i]
 		} else {
-			cf.iv[n-1] = val
+			cf.iv[15] = val
 		}
 
 		dst[i] = val
