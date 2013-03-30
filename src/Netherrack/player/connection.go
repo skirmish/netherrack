@@ -264,7 +264,25 @@ var packets map[byte]func(c *Connection) = map[byte]func(c *Connection){
 		c.ReadPlayerDigging()
 	},
 	0x0F: func(c *Connection) { //Player Block Placement
-		c.ReadPlayerBlockPlacement()
+		pack := c.ReadPlayerBlockPlacement()
+		x := int(pack.X)
+		y := int(pack.Y)
+		z := int(pack.Z)
+		switch pack.Direction {
+		case 0:
+			y--
+		case 1:
+			y++
+		case 2:
+			z--
+		case 3:
+			z++
+		case 4:
+			x--
+		case 5:
+			x++
+		}
+		c.player.World.SetBlock(x, y, z, 1, 0)
 	},
 	0x10: func(c *Connection) { //Held Item Change
 		slotID := c.ReadShort()
@@ -974,7 +992,7 @@ func (c *Connection) WriteBlockChange(x int32, y byte, z int32, bType int16, bMe
 	c.Write(out)
 }
 
-func (c *Connection) WriteMultiBlockChange(cx, cz int32, blocks []BlockChangeData) {
+func (c *Connection) WriteMultiBlockChange(cx, cz int32, blocks []uint32) {
 	out := make([]byte, 15+4*len(blocks))
 	out[0] = 0x34
 	WriteInt(out[1:5], cx)
@@ -982,9 +1000,9 @@ func (c *Connection) WriteMultiBlockChange(cx, cz int32, blocks []BlockChangeDat
 	WriteShort(out[9:11], int16(len(blocks)))
 	WriteInt(out[11:15], int32(len(blocks)*4))
 	for i := 0; i < len(blocks); i++ {
-		b := blocks[i]
-		var d uint32 = (uint32(b.Metadata) & 0xf) | (uint32(b.ID) << 4) | (uint32(b.Y) << 16) | (uint32(b.Z) << 24) | (uint32(b.X) << 28)
-		binary.BigEndian.PutUint32(out[15+i*4:], d)
+		//b := blocks[i]
+		//var d uint32 = (uint32(b.Metadata) & 0xf) | (uint32(b.ID) << 4) | (uint32(b.Y) << 16) | (uint32(b.Z) << 24) | (uint32(b.X) << 28)
+		binary.BigEndian.PutUint32(out[15+i*4:], blocks[i])
 	}
 	c.Write(out)
 }

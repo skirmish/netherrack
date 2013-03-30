@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"Netherrack/entity"
+	"Soulsand"
 	"bytes"
 	"compress/zlib"
 	"log"
@@ -16,6 +17,8 @@ func chunkControler(chunk *Chunk) {
 	generateChunk(chunk)
 	tOut := time.NewTimer(30 * time.Second)
 	defer tOut.Stop()
+	tick := time.NewTicker(time.Second / 20)
+	defer tick.Stop()
 	for {
 		select {
 		case cr := <-chunk.requests:
@@ -51,14 +54,11 @@ func chunkControler(chunk *Chunk) {
 		case cer := <-chunk.entityLeave:
 			delete(chunk.Entitys, cer.E.GetID())
 		case msg := <-chunk.messageChannel:
-
 			for _, p := range chunk.Players {
 				if p.GetID() != msg.ID {
 					p.RunSync(msg.Msg)
 				}
 			}
-		//case bR := <-chunk.blockRequest:
-		//	bR.Ret <- []byte{chunk.GetBlock(bR.X, bR.Y, bR.Z), chunk.GetMeta(bR.X, bR.Y, bR.Z)}
 		case f := <-chunk.eventChannel:
 			f(chunk)
 		case <-tOut.C:
@@ -72,6 +72,19 @@ func chunkControler(chunk *Chunk) {
 				len(chunk.requests) == 0 &&
 				len(chunk.watcherLeave) == 0 {
 				runtime.Goexit()
+			}
+		case <-tick.C:
+			if len(chunk.blockQueue) != 0 {
+				blockData := make([]uint32, len(chunk.blockQueue))
+				for i, bc := range chunk.blockQueue {
+					blockData[i] = (uint32(bc.Meta) & 0xf) | (uint32(bc.Block) << 4) | (uint32(bc.Y) << 16) | (uint32(bc.Z) << 24) | (uint32(bc.X) << 28)
+				}
+				for _, p := range chunk.Players {
+					p.RunSync(func(s Soulsand.SyncPlayer) {
+						s.GetConnection().WriteMultiBlockChange(chunk.X, chunk.Z, blockData)
+					})
+				}
+				chunk.blockQueue = chunk.blockQueue[0:0]
 			}
 		}
 		tOut.Reset(10 * time.Second)

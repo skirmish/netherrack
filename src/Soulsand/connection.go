@@ -41,7 +41,7 @@ type UnsafeConnection interface {
 	WriteBlockBreakAnimation(eID, x, y, z int32, stage byte)
 	WriteBlockAction(x int32, y int16, z int32, b1, b2 byte, bID int16)
 	WriteBlockChange(x int32, y byte, z int32, bType int16, bMeta byte)
-	//WriteMultiBlockChange(cx, cz int32, blocks []BlockChangeData)
+	WriteMultiBlockChange(cx, cz int32, blocks []uint32)
 	WriteChunkDataUnload(x, z int32)
 	WriteSetExperience(bar float32, level, exp int16)
 	WriteRemoveEntityEffect(eID int32, eff int8)

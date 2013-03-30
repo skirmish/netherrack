@@ -24,7 +24,7 @@ func main() {
 
 	server.Start(*ip, *port)
 
-	server.SetDefaultGamemode(Soulsand.GAMEMODE_ADVENTURE)
+	server.SetDefaultGamemode(Soulsand.GAMEMODE_CREATIVE)
 
 	server.SetMessageOfTheDay(Soulsand.ColourRed + "Netherrack " + Soulsand.ChatReset + "Server")
 	server.SetMaxPlayers(100)

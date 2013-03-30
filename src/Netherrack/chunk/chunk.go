@@ -23,6 +23,7 @@ type (
 		entityLeave    chan *chunkEntityRequest
 		messageChannel chan *chunkMessage
 		eventChannel   chan func(Soulsand.SyncChunk)
+		blockQueue     []blockChange
 	}
 	SubChunk struct {
 		Type       []byte
@@ -33,6 +34,10 @@ type (
 	}
 	ChunkPosition struct {
 		X, Z int32
+	}
+	blockChange struct {
+		X, Y, Z     int
+		Block, Meta byte
 	}
 	ChunkRequest struct {
 		X, Z int32
@@ -62,29 +67,8 @@ type (
 	}
 )
 
-func (world *World) chunkWatcher() {
-	for {
-		select {
-		case pos := <-world.chunkKillChannel:
-			delete(world.chunks, *pos)
-		case cr := <-world.chunkChannel:
-			cp := ChunkPosition{X: cr.X, Z: cr.Z}
-			world.getChunk(cp).requests <- cr
-		case msg := <-world.chunkJoinWatcherChannel:
-			world.getChunk(msg.Pos).watcherJoin <- msg
-		case msg := <-world.chunkLeaveWatcherChannel:
-			world.getChunk(msg.Pos).watcherLeave <- msg
-		case msg := <-world.chunkJoinChannel:
-			world.getChunk(msg.Pos).entityJoin <- msg
-		case msg := <-world.chunkLeaveChannel:
-			world.getChunk(msg.Pos).entityLeave <- msg
-		case msg := <-world.chunkMessageChannel:
-			world.getChunk(msg.Pos).messageChannel <- msg
-		case msg := <-world.chunkEventChannel:
-			world.getChunk(msg.Pos).eventChannel <- msg.F
-		}
-
-	}
+func (c *Chunk) AddChange(x, y, z int, block, meta byte) {
+	c.blockQueue = append(c.blockQueue, blockChange{x, y, z, block, meta})
 }
 
 func (c *Chunk) SetBlock(x, y, z int, blType byte) {
@@ -189,6 +173,7 @@ func CreateChunk(x, z int32) *Chunk {
 		entityLeave:    make(chan *chunkEntityRequest, 200),
 		messageChannel: make(chan *chunkMessage, 1000),
 		eventChannel:   make(chan func(Soulsand.SyncChunk), 500),
+		blockQueue:     make([]blockChange, 0, 3),
 	}
 	return chunk
 }
