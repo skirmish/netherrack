@@ -1859,17 +1859,14 @@ func NewCFB8Encrypt(c cipher.Block, iv []byte) *CFB8 {
 }
 
 func (cf *CFB8) XORKeyStream(dst, src []byte) {
-	//n := cf.blockSize
 
 	for i := 0; i < len(src); i++ {
 		val := src[i]
 		copy(cf.tmp, cf.iv)
 		cf.c.Encrypt(cf.iv, cf.iv)
 		val = val ^ cf.iv[0]
-
-		for j := 0; j < 15; j++ {
-			cf.iv[j] = cf.tmp[j+1]
-		}
+		
+		copy(cf.iv, cf.tmp[1:])
 		if cf.de {
 			cf.iv[15] = src[i]
 		} else {
