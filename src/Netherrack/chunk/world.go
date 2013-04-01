@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"Soulsand"
+	"Soulsand/effect"
 	"sync"
 )
 
@@ -73,12 +74,21 @@ func (world *World) RunSync(x, z int, f func(Soulsand.SyncChunk)) {
 	}
 }
 
+func (world *World) PlayEffect(x, y, z int, eff effect.Type, data int, relative bool) {
+	world.RunSync(x>>4, z>>4, func(c Soulsand.SyncChunk) {
+		chunk := c.(*Chunk)
+		for _, p := range chunk.Players {
+			p.PlayEffect(x, y, z, eff, data, relative)
+		}
+	})
+}
+
 func (world *World) SetBlock(x, y, z int, block, meta byte) {
 	cx := x >> 4
 	cz := z >> 4
 	world.RunSync(cx, cz, func(c Soulsand.SyncChunk) {
-		rx := x - cx * 16
-		rz := z - cz * 16
+		rx := x - cx*16
+		rz := z - cz*16
 		c.SetBlock(rx, y, rz, block)
 		c.SetMeta(rx, y, rz, meta)
 		c.(*Chunk).AddChange(rx, y, rz, block, meta)

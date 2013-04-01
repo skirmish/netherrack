@@ -67,6 +67,10 @@ type (
 	}
 )
 
+func (c *Chunk) GetPlayerMap() map[int32] Soulsand.Player {
+	return c.Players
+}
+
 func (c *Chunk) AddChange(x, y, z int, block, meta byte) {
 	c.blockQueue = append(c.blockQueue, blockChange{x, y, z, block, meta})
 }

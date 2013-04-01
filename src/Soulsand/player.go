@@ -1,6 +1,8 @@
 package Soulsand
 
-import ()
+import (
+	"Soulsand/effect"
+)
 
 //A currently online player
 type Player interface {
@@ -26,6 +28,8 @@ type Player interface {
 	GetGamemode() Gamemode
 	//Sets the player's gamemode
 	SetGamemode(mode Gamemode)
+	//Plays the the sound or particle effect at the location
+	PlayEffect(x, y, z int, eff effect.Type, data int, relative bool)
 }
 
 type SyncPlayer interface {

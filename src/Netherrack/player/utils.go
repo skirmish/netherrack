@@ -3,7 +3,14 @@ package player
 import (
 	"Netherrack/entity"
 	"Soulsand"
+	"Soulsand/effect"
 )
+
+func (player *Player) PlayEffect(x, y, z int, eff effect.Type, data int, relative bool) {
+	player.RunSync(func(Soulsand.SyncPlayer) {
+		player.connection.WriteSoundParticleEffect(int32(eff), int32(x), byte(y), int32(z), int32(data), !relative)
+	})
+}
 
 func (player *Player) SetGamemode(mode Soulsand.Gamemode) {
 	player.playerEventChannel <- func(Soulsand.SyncPlayer) {
@@ -55,14 +62,6 @@ func (player *Player) SetLevel(level int) {
 
 func (player *Player) UpdateExperience() {
 	player.connection.WriteSetExperience(player.experienceBar, player.level, 0)
-}
-
-func (player *Player) PlaySound(sound string, x, y, z int, vol float32, pitch byte) {
-	player.connection.WriteNameSoundEffect(sound, int32(x), int32(y), int32(z), vol, pitch)
-}
-
-func (player *Player) PlayEffect(eff, x, y, z int, data int32, rel bool) {
-	player.connection.WriteSoundParticleEffect(int32(eff), int32(x), byte(y), int32(z), data, !rel)
 }
 
 func (player *Player) UpdatePosition() {

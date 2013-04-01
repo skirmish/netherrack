@@ -9,6 +9,7 @@ import (
 	"Netherrack/system"
 	"Soulsand"
 	"Soulsand/command"
+	"Soulsand/effect"
 	sevent "Soulsand/event"
 	"bytes"
 	"compress/gzip"
@@ -261,7 +262,28 @@ var packets map[byte]func(c *Connection) = map[byte]func(c *Connection){
 		c.player.Position.Pitch = pack.Pitch
 	},
 	0x0E: func(c *Connection) { //Player Digging
-		c.ReadPlayerDigging()
+		pack := c.ReadPlayerDigging()
+		if pack.Status != 2 && !(pack.Status == 0 && c.player.gamemode == Soulsand.GAMEMODE_CREATIVE) {
+			return
+		}
+		x := int(pack.X)
+		y := int(pack.Y)
+		z := int(pack.Z)
+		
+		c.player.World.RunSync(x >> 4, z >> 4, func(ch Soulsand.SyncChunk) {
+			chunk := ch.(interface{GetPlayerMap() map[int32]Soulsand.Player})
+			rx := x - ((x >> 4) << 4)
+			rz := z - ((z >> 4) << 4)
+			block := ch.GetBlock(rx, y, rz)
+			meta := ch.GetMeta(rx, y, rz)
+			m := chunk.GetPlayerMap()
+			for _, p := range m {
+				if p.GetName() != c.player.GetName() {
+					p.PlayEffect(x, y, z, effect.BlockBreak, int(block) | (int(meta) << 12), true)
+				}
+			}
+		})
+		c.player.World.SetBlock(x, y, z, 0, 0)
 	},
 	0x0F: func(c *Connection) { //Player Block Placement
 		pack := c.ReadPlayerBlockPlacement()
@@ -1859,13 +1881,12 @@ func NewCFB8Encrypt(c cipher.Block, iv []byte) *CFB8 {
 }
 
 func (cf *CFB8) XORKeyStream(dst, src []byte) {
-
 	for i := 0; i < len(src); i++ {
 		val := src[i]
 		copy(cf.tmp, cf.iv)
 		cf.c.Encrypt(cf.iv, cf.iv)
 		val = val ^ cf.iv[0]
-		
+
 		copy(cf.iv, cf.tmp[1:])
 		if cf.de {
 			cf.iv[15] = src[i]
