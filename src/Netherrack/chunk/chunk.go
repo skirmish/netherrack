@@ -67,7 +67,7 @@ type (
 	}
 )
 
-func (c *Chunk) GetPlayerMap() map[int32] Soulsand.Player {
+func (c *Chunk) GetPlayerMap() map[int32]Soulsand.Player {
 	return c.Players
 }
 

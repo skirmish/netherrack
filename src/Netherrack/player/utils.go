@@ -4,6 +4,7 @@ import (
 	"Netherrack/entity"
 	"Soulsand"
 	"Soulsand/effect"
+	"Soulsand/gamemode"
 )
 
 func (player *Player) PlayEffect(x, y, z int, eff effect.Type, data int, relative bool) {
@@ -12,14 +13,14 @@ func (player *Player) PlayEffect(x, y, z int, eff effect.Type, data int, relativ
 	})
 }
 
-func (player *Player) SetGamemode(mode Soulsand.Gamemode) {
+func (player *Player) SetGamemode(mode gamemode.Type) {
 	player.playerEventChannel <- func(Soulsand.SyncPlayer) {
 		player.gamemode = mode
 	}
 }
 
-func (player *Player) GetGamemode() Soulsand.Gamemode {
-	res := make(chan Soulsand.Gamemode, 1)
+func (player *Player) GetGamemode() gamemode.Type {
+	res := make(chan gamemode.Type, 1)
 	player.playerEventChannel <- func(Soulsand.SyncPlayer) {
 		res <- player.gamemode
 	}

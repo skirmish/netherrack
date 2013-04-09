@@ -4,6 +4,7 @@ import (
 	_ "Netherrack"
 	"Soulsand"
 	"Soulsand/event"
+	"Soulsand/gamemode"
 	"flag"
 	"runtime"
 )
@@ -24,7 +25,7 @@ func main() {
 
 	server.Start(*ip, *port)
 
-	server.SetDefaultGamemode(Soulsand.GAMEMODE_CREATIVE)
+	server.SetDefaultGamemode(gamemode.Creative)
 
 	server.SetMessageOfTheDay(Soulsand.ColourRed + "Netherrack " + Soulsand.ChatReset + "Server")
 	server.SetMaxPlayers(100)

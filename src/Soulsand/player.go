@@ -2,6 +2,7 @@ package Soulsand
 
 import (
 	"Soulsand/effect"
+	"Soulsand/gamemode"
 )
 
 //A currently online player
@@ -25,9 +26,9 @@ type Player interface {
 	//Gets the player's locale
 	GetLocale() string
 	//Gets the player's gamemode
-	GetGamemode() Gamemode
+	GetGamemode() gamemode.Type
 	//Sets the player's gamemode
-	SetGamemode(mode Gamemode)
+	SetGamemode(mode gamemode.Type)
 	//Plays the the sound or particle effect at the location
 	PlayEffect(x, y, z int, eff effect.Type, data int, relative bool)
 }

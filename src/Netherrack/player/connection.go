@@ -11,6 +11,7 @@ import (
 	"Soulsand/command"
 	"Soulsand/effect"
 	sevent "Soulsand/event"
+	"Soulsand/gamemode"
 	"bytes"
 	"compress/gzip"
 	"crypto/aes"
@@ -263,15 +264,17 @@ var packets map[byte]func(c *Connection) = map[byte]func(c *Connection){
 	},
 	0x0E: func(c *Connection) { //Player Digging
 		pack := c.ReadPlayerDigging()
-		if pack.Status != 2 && !(pack.Status == 0 && c.player.gamemode == Soulsand.GAMEMODE_CREATIVE) {
+		if pack.Status != 2 && !(pack.Status == 0 && c.player.gamemode == gamemode.Creative) {
 			return
 		}
 		x := int(pack.X)
 		y := int(pack.Y)
 		z := int(pack.Z)
-		
-		c.player.World.RunSync(x >> 4, z >> 4, func(ch Soulsand.SyncChunk) {
-			chunk := ch.(interface{GetPlayerMap() map[int32]Soulsand.Player})
+
+		c.player.World.RunSync(x>>4, z>>4, func(ch Soulsand.SyncChunk) {
+			chunk := ch.(interface {
+				GetPlayerMap() map[int32]Soulsand.Player
+			})
 			rx := x - ((x >> 4) << 4)
 			rz := z - ((z >> 4) << 4)
 			block := ch.GetBlock(rx, y, rz)
@@ -279,7 +282,7 @@ var packets map[byte]func(c *Connection) = map[byte]func(c *Connection){
 			m := chunk.GetPlayerMap()
 			for _, p := range m {
 				if p.GetName() != c.player.GetName() {
-					p.PlayEffect(x, y, z, effect.BlockBreak, int(block) | (int(meta) << 12), true)
+					p.PlayEffect(x, y, z, effect.BlockBreak, int(block)|(int(meta)<<12), true)
 				}
 			}
 		})

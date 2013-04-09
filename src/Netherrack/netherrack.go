@@ -8,6 +8,7 @@ import (
 	"Netherrack/player"
 	"Netherrack/system"
 	"Soulsand"
+	"Soulsand/gamemode"
 	"Soulsand/locale"
 	"log"
 	"net/http"
@@ -40,7 +41,7 @@ type Server struct {
 	event chan func()
 
 	Config struct {
-		Gamemode Soulsand.Gamemode
+		Gamemode gamemode.Type
 	}
 }
 
@@ -75,15 +76,15 @@ func (server *Server) watcher() {
 	}
 }
 
-func (server *Server) GetDefaultGamemode() Soulsand.Gamemode {
-	res := make(chan Soulsand.Gamemode, 1)
+func (server *Server) GetDefaultGamemode() gamemode.Type {
+	res := make(chan gamemode.Type, 1)
 	server.event <- func() {
 		res <- server.Config.Gamemode
 	}
 	return <-res
 }
 
-func (server *Server) SetDefaultGamemode(mode Soulsand.Gamemode) {
+func (server *Server) SetDefaultGamemode(mode gamemode.Type) {
 	server.event <- func() {
 		server.Config.Gamemode = mode
 	}

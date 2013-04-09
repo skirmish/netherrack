@@ -1,6 +1,8 @@
 package Soulsand
 
-import ()
+import (
+	"Soulsand/gamemode"
+)
 
 //These flags will control how the server will run. Set with SetFlag
 const (
@@ -8,15 +10,6 @@ const (
 	OFFLINE_MODE uint64 = 1 << iota
 	//Changes every player's name to contain random numbers. Useful for testing with a single account.
 	RANDOM_NAMES
-)
-
-type Gamemode int
-
-//Gamemodes
-const (
-	GAMEMODE_SURVIVAL Gamemode = iota
-	GAMEMODE_CREATIVE
-	GAMEMODE_ADVENTURE
 )
 
 type Server interface {
@@ -40,9 +33,9 @@ type Server interface {
 	//Gets the number of entitys on the server
 	GetEntityCount() int
 	//Sets the default gamemode for the server
-	SetDefaultGamemode(mode Gamemode)
+	SetDefaultGamemode(mode gamemode.Type)
 	//Gets the default gamemode for the server
-	GetDefaultGamemode() Gamemode
+	GetDefaultGamemode() gamemode.Type
 }
 
 var server Server

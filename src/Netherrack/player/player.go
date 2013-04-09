@@ -8,6 +8,7 @@ import (
 	"Soulsand"
 	"Soulsand/command"
 	sevent "Soulsand/event"
+	"Soulsand/gamemode"
 	"Soulsand/locale"
 	"encoding/binary"
 	"fmt"
@@ -42,7 +43,7 @@ type Player struct {
 	experienceBar float32
 	level         int16
 
-	gamemode Soulsand.Gamemode
+	gamemode gamemode.Type
 
 	settings struct {
 		locale       string
@@ -155,12 +156,6 @@ func HandlePlayer(conn net.Conn) {
 	player.spawn()
 	defer player.despawn()
 
-	//DEBUG
-	player.connection.WriteCreateScoreboard("debug", "Debug Info", false)
-	player.connection.WriteDisplayScoreboard(1, "debug")
-	var stats runtime.MemStats
-	//DEBUG
-
 	go player.dataWatcher()
 	defer log.Println("Player disconnecting")
 
@@ -186,11 +181,6 @@ func HandlePlayer(conn net.Conn) {
 			if player.CurrentTick%100 == 0 {
 				player.currentTickID = int32(player.CurrentTick)
 				player.connection.WriteKeepAlive(player.currentTickID)
-			}
-			if player.CurrentTick%20 == 0 {
-				runtime.ReadMemStats(&stats)
-				player.connection.WriteUpdateScore(Soulsand.ColourCyan+"Memory(MB)", "debug", int32(stats.Alloc/1048576))
-				player.connection.WriteUpdateScore(Soulsand.ColourCyan+"Goroutines", "debug", int32(runtime.NumGoroutine()))
 			}
 			player.SendMoveUpdate()
 		case pId := <-player.currentPacketChannel:
