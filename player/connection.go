@@ -6,11 +6,11 @@ import (
 	"bitbucket.org/Thinkofdeath/netherrack/items"
 	"bitbucket.org/Thinkofdeath/netherrack/nbt"
 	"bitbucket.org/Thinkofdeath/netherrack/system"
-	"Soulsand"
-	"Soulsand/command"
-	"Soulsand/effect"
-	sevent "Soulsand/event"
-	"Soulsand/gamemode"
+	"bitbucket.org/Thinkofdeath/soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand/command"
+	"bitbucket.org/Thinkofdeath/soulsand/effect"
+	sevent "bitbucket.org/Thinkofdeath/soulsand/event"
+	"bitbucket.org/Thinkofdeath/soulsand/gamemode"
 	"bytes"
 	"compress/gzip"
 	"crypto/aes"
@@ -37,7 +37,7 @@ import (
 var PROTOVERSION byte
 
 //Compile time checks
-var _ Soulsand.UnsafeConnection = &Connection{}
+var _ soulsand.UnsafeConnection = &Connection{}
 
 type Connection struct {
 	conn   net.Conn
@@ -83,7 +83,7 @@ func (c *Connection) Login() {
 	if handshake.ProtoVersion != PROTOVERSION {
 		runtime.Goexit()
 	}
-	if Soulsand.GetServer().GetFlag(Soulsand.RANDOM_NAMES) {
+	if soulsand.GetServer().GetFlag(soulsand.RANDOM_NAMES) {
 		ext := fmt.Sprintf("%d", mrand.Int31n(9999))
 		if len(handshake.Username)+len(ext) > 16 {
 			handshake.Username = handshake.Username[:16-len(ext)] + ext
@@ -148,7 +148,7 @@ func (c *Connection) Login() {
 		buf = "-" + buf
 	}
 
-	if !Soulsand.GetServer().GetFlag(Soulsand.OFFLINE_MODE) {
+	if !soulsand.GetServer().GetFlag(soulsand.OFFLINE_MODE) {
 		hashStr := strings.TrimLeft(buf, "0")
 		resp, err := http.Get(fmt.Sprintf("http://session.minecraft.net/game/checkserver.jsp?user=%s&serverId=%s", handshake.Username, hashStr))
 		if err != nil {
@@ -270,9 +270,9 @@ var packets map[byte]func(c *Connection) = map[byte]func(c *Connection){
 		y := int(pack.Y)
 		z := int(pack.Z)
 
-		c.player.World.RunSync(x>>4, z>>4, func(ch Soulsand.SyncChunk) {
+		c.player.World.RunSync(x>>4, z>>4, func(ch soulsand.SyncChunk) {
 			chunk := ch.(interface {
-				GetPlayerMap() map[int32]Soulsand.Player
+				GetPlayerMap() map[int32]soulsand.Player
 			})
 			rx := x - ((x >> 4) << 4)
 			rz := z - ((z >> 4) << 4)
@@ -692,10 +692,10 @@ func (c *Connection) ReadCreativeInventoryAction() *CreativeInventoryActionData 
 
 type CreativeInventoryActionData struct {
 	Slot        int16
-	ClickedItem Soulsand.ItemStack
+	ClickedItem soulsand.ItemStack
 }
 
-func (c *Connection) WriteCreativeInventoryAction(slot int16, soulItem Soulsand.ItemStack) {
+func (c *Connection) WriteCreativeInventoryAction(slot int16, soulItem soulsand.ItemStack) {
 	out := make([]byte, 3)
 	out[0] = 0x6B
 	WriteShort(out[1:3], slot)
@@ -764,7 +764,7 @@ func (c *Connection) WriteUpdateWindowProperty(wID byte, prop, val int16) {
 	c.Write(out)
 }
 
-func (c *Connection) WriteSetWindowItems(wID byte, slots []Soulsand.ItemStack) {
+func (c *Connection) WriteSetWindowItems(wID byte, slots []soulsand.ItemStack) {
 	out := make([]byte, 4)
 	out[0] = 0x68
 	out[1] = wID
@@ -800,7 +800,7 @@ func (c *Connection) WriteSetWindowItems(wID byte, slots []Soulsand.ItemStack) {
 	}
 }
 
-func (c *Connection) WriteSetSlot(wID byte, slot int16, soulData Soulsand.ItemStack) {
+func (c *Connection) WriteSetSlot(wID byte, slot int16, soulData soulsand.ItemStack) {
 	var out []byte
 	data := soulData.(*items.ItemStack)
 	if data.ID == -1 {
@@ -871,7 +871,7 @@ type ClickWindowData struct {
 	MButton     byte
 	ActionNum   int16
 	Shift       bool
-	ClickedItem Soulsand.ItemStack
+	ClickedItem soulsand.ItemStack
 }
 
 func (c *Connection) WriteCloseWindow(wID byte) {
@@ -1399,7 +1399,7 @@ type PlayerBlockPlacementData struct {
 	Y         byte
 	Z         int32
 	Direction byte
-	HeldItem  Soulsand.ItemStack
+	HeldItem  soulsand.ItemStack
 	CursorX   byte
 	CursorY   byte
 	CursorZ   byte
@@ -1529,7 +1529,7 @@ type UseEntityData struct {
 	Button bool
 }
 
-func (c *Connection) WriteEntityEquipment(eID int32, slot int16, soulSlotData Soulsand.ItemStack) {
+func (c *Connection) WriteEntityEquipment(eID int32, slot int16, soulSlotData soulsand.ItemStack) {
 	var out []byte
 	slotData := soulSlotData.(*items.ItemStack)
 	if slotData.ID != -1 {

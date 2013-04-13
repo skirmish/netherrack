@@ -2,12 +2,12 @@ package items
 
 import (
 	"bitbucket.org/Thinkofdeath/netherrack/nbt"
-	"Soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand"
 	"sync"
 )
 
 //Compile time checks
-var _ Soulsand.ItemStack = &ItemStack{}
+var _ soulsand.ItemStack = &ItemStack{}
 
 type ItemStack struct {
 	ID       int16

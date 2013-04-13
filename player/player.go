@@ -5,11 +5,11 @@ import (
 	"bitbucket.org/Thinkofdeath/netherrack/event"
 	"bitbucket.org/Thinkofdeath/netherrack/internal"
 	"bitbucket.org/Thinkofdeath/netherrack/system"
-	"Soulsand"
-	"Soulsand/command"
-	sevent "Soulsand/event"
-	"Soulsand/gamemode"
-	"Soulsand/locale"
+	"bitbucket.org/Thinkofdeath/soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand/command"
+	sevent "bitbucket.org/Thinkofdeath/soulsand/event"
+	"bitbucket.org/Thinkofdeath/soulsand/gamemode"
+	"bitbucket.org/Thinkofdeath/soulsand/locale"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -29,7 +29,7 @@ type Player struct {
 	currentPacketChannel chan byte
 	readPacketChannel    chan bool
 	ChunkChannel         chan [][]byte
-	playerEventChannel   chan func(Soulsand.SyncPlayer)
+	playerEventChannel   chan func(soulsand.SyncPlayer)
 
 	currentTickID int32
 
@@ -55,10 +55,10 @@ type Player struct {
 }
 
 func init() {
-	command.Add("say $s[]", func(p Soulsand.CommandSender, msg string) {
-		system.Broadcast(fmt.Sprintf("["+Soulsand.ColourPurple+"Server"+Soulsand.ChatReset+"]:"+Soulsand.ColourPink+" %s", msg))
+	command.Add("say $s[]", func(p soulsand.CommandSender, msg string) {
+		system.Broadcast(fmt.Sprintf("["+soulsand.ColourPurple+"Server"+soulsand.ChatReset+"]:"+soulsand.ColourPink+" %s", msg))
 	})
-	command.Add("gc", func(caller Soulsand.CommandSender) {
+	command.Add("gc", func(caller soulsand.CommandSender) {
 		runtime.GC()
 		caller.SendMessageSync("GC Run")
 	})
@@ -66,8 +66,8 @@ func init() {
 
 //Checks to make sure it matches the API
 var (
-	_ Soulsand.Player     = &Player{}
-	_ Soulsand.SyncPlayer = &Player{}
+	_ soulsand.Player     = &Player{}
+	_ soulsand.SyncPlayer = &Player{}
 )
 
 func HandlePlayer(conn net.Conn) {
@@ -78,7 +78,7 @@ func HandlePlayer(conn net.Conn) {
 	player.errorChannel = make(chan bool, 1)
 	player.currentPacketChannel = make(chan byte)
 	player.readPacketChannel = make(chan bool, 2)
-	player.playerEventChannel = make(chan func(Soulsand.SyncPlayer), 1000)
+	player.playerEventChannel = make(chan func(soulsand.SyncPlayer), 1000)
 	player.ChunkChannel = make(chan [][]byte, 500)
 	defer func() {
 		player.readPacketChannel <- true
@@ -88,7 +88,7 @@ func HandlePlayer(conn net.Conn) {
 	player.connection.player = player
 	player.connection.Login()
 
-	if Soulsand.GetServer().GetPlayer(player.name) != nil {
+	if soulsand.GetServer().GetPlayer(player.name) != nil {
 		player.connection.WriteDisconnect(locale.Get(player.GetLocaleSync(), "disconnect.reason.loggedin"))
 		runtime.Goexit()
 	}
@@ -100,8 +100,8 @@ func HandlePlayer(conn net.Conn) {
 
 	player.Entity.Init(player)
 	defer player.Entity.Finalise()
-	player.World = Soulsand.GetServer().GetWorld("main").(internal.World)
-	player.gamemode = Soulsand.GetServer().GetDefaultGamemode()
+	player.World = soulsand.GetServer().GetWorld("main").(internal.World)
+	player.gamemode = soulsand.GetServer().GetDefaultGamemode()
 
 	player.Position.X = 0
 	player.Position.Y = 100

@@ -2,15 +2,15 @@ package player
 
 import (
 	"bitbucket.org/Thinkofdeath/netherrack/entity"
-	"Soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand"
 )
 
-func (p *Player) CreateSpawn() func(Soulsand.SyncPlayer) {
+func (p *Player) CreateSpawn() func(soulsand.SyncPlayer) {
 	id := p.GetID()
 	name := p.GetName()
 	x, y, z := p.Position.X, p.Position.Y, p.Position.Z
 	yaw, pitch := p.Position.Yaw, p.Position.Pitch
-	return func(p Soulsand.SyncPlayer) {
+	return func(p soulsand.SyncPlayer) {
 		player := p.(*Player)
 		player.connection.WriteSpawnNamedEntity(
 			id,
@@ -31,9 +31,9 @@ func (p *Player) CreateSpawn() func(Soulsand.SyncPlayer) {
 	}
 }
 
-func (p *Player) CreateDespawn() func(Soulsand.SyncPlayer) {
+func (p *Player) CreateDespawn() func(soulsand.SyncPlayer) {
 	id := p.GetID()
-	return func(p Soulsand.SyncPlayer) {
+	return func(p soulsand.SyncPlayer) {
 		player := p.(*Player)
 		player.SendEntityDestroy([]int32{id})
 	}

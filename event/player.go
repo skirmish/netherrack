@@ -1,20 +1,20 @@
 package event
 
 import (
-	"Soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand"
 )
 
-var _ Soulsand.EventPlayerMessage = &Message{}
-var _ Soulsand.EventPlayerJoin = &Join{}
+var _ soulsand.EventPlayerMessage = &Message{}
+var _ soulsand.EventPlayerJoin = &Join{}
 
 type Message struct {
 	Event
 
-	player  Soulsand.SyncPlayer
+	player  soulsand.SyncPlayer
 	message string
 }
 
-func NewMessage(player Soulsand.SyncPlayer, message string) *Message {
+func NewMessage(player soulsand.SyncPlayer, message string) *Message {
 	return &Message{
 		Event:   Event{},
 		player:  player,
@@ -30,18 +30,18 @@ func (m *Message) GetMessage() string {
 	return m.message
 }
 
-func (m *Message) GetPlayer() Soulsand.SyncPlayer {
+func (m *Message) GetPlayer() soulsand.SyncPlayer {
 	return m.player
 }
 
 type Join struct {
 	Event
 
-	player Soulsand.SyncPlayer
+	player soulsand.SyncPlayer
 	Reason string
 }
 
-func NewJoin(player Soulsand.SyncPlayer, reason string) *Join {
+func NewJoin(player soulsand.SyncPlayer, reason string) *Join {
 	return &Join{
 		Event:  Event{},
 		player: player,
@@ -49,7 +49,7 @@ func NewJoin(player Soulsand.SyncPlayer, reason string) *Join {
 	}
 }
 
-func (j *Join) GetPlayer() Soulsand.SyncPlayer {
+func (j *Join) GetPlayer() soulsand.SyncPlayer {
 	return j.player
 }
 
@@ -61,16 +61,16 @@ func (j *Join) Disconnect(reason string) {
 type Leave struct {
 	Event
 
-	player Soulsand.SyncPlayer
+	player soulsand.SyncPlayer
 }
 
-func NewLeave(player Soulsand.SyncPlayer) *Leave {
+func NewLeave(player soulsand.SyncPlayer) *Leave {
 	return &Leave{
 		Event:  Event{},
 		player: player,
 	}
 }
 
-func (l *Leave) GetPlayer() Soulsand.SyncPlayer {
+func (l *Leave) GetPlayer() soulsand.SyncPlayer {
 	return l.player
 }

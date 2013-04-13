@@ -1,15 +1,15 @@
 package internal
 
 import (
-	"Soulsand"
-	"Soulsand/event"
+	"bitbucket.org/Thinkofdeath/soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand/event"
 )
 
 type Event interface {
-	Soulsand.Event
+	soulsand.Event
 
 	Wait()
 	IsCanceled() bool
 	Add()
-	Set(eventType event.Type, source Soulsand.EventSource)
+	Set(eventType event.Type, source soulsand.EventSource)
 }

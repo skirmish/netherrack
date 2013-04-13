@@ -2,7 +2,7 @@ package chunk
 
 import (
 	"bitbucket.org/Thinkofdeath/netherrack/entity"
-	"Soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand"
 	"bytes"
 	"compress/zlib"
 	"log"
@@ -80,7 +80,7 @@ func chunkControler(chunk *Chunk) {
 					blockData[i] = (uint32(bc.Meta) & 0xf) | (uint32(bc.Block) << 4) | (uint32(bc.Y) << 16) | (uint32(bc.Z) << 24) | (uint32(bc.X) << 28)
 				}
 				for _, p := range chunk.Players {
-					p.RunSync(func(s Soulsand.SyncPlayer) {
+					p.RunSync(func(s soulsand.SyncPlayer) {
 						s.GetConnection().WriteMultiBlockChange(chunk.X, chunk.Z, blockData)
 					})
 				}

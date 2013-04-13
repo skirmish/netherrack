@@ -3,12 +3,12 @@ package entity
 import (
 	"bitbucket.org/Thinkofdeath/netherrack/internal"
 	"bitbucket.org/Thinkofdeath/netherrack/system"
-	"Soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand"
 )
 
 //Compile time checks
-var _ Soulsand.Entity = &Entity{}
-var _ Soulsand.SyncEntity = &Entity{}
+var _ soulsand.Entity = &Entity{}
+var _ soulsand.SyncEntity = &Entity{}
 
 type Entity struct {
 	EID         int32
@@ -29,19 +29,19 @@ type Entity struct {
 		X, Y, Z float64
 	}
 
-	EventChannel chan func(Soulsand.SyncEntity)
+	EventChannel chan func(soulsand.SyncEntity)
 	Spawnable
 
 	isActive bool
 }
 
 type Spawnable interface {
-	CreateSpawn() func(Soulsand.SyncPlayer)
-	CreateDespawn() func(Soulsand.SyncPlayer)
+	CreateSpawn() func(soulsand.SyncPlayer)
+	CreateDespawn() func(soulsand.SyncPlayer)
 }
 
 func (e *Entity) Init(s Spawnable) {
-	e.EventChannel = make(chan func(Soulsand.SyncEntity), 500)
+	e.EventChannel = make(chan func(soulsand.SyncEntity), 500)
 	e.Spawnable = s
 	e.isActive = true
 	e.EID = system.GetFreeEntityID(e)
@@ -97,8 +97,8 @@ func (e *Entity) SendMoveUpdate() (movedChunk bool) {
 	return
 }
 
-func entityTrySpawn(cx, cz int32, f func(Soulsand.SyncPlayer)) func(Soulsand.SyncPlayer) {
-	return func(p Soulsand.SyncPlayer) {
+func entityTrySpawn(cx, cz int32, f func(soulsand.SyncPlayer)) func(soulsand.SyncPlayer) {
+	return func(p soulsand.SyncPlayer) {
 		player := p.(interface {
 			AsEntity() Entity
 			GetViewDistanceSync() int
@@ -106,13 +106,13 @@ func entityTrySpawn(cx, cz int32, f func(Soulsand.SyncPlayer)) func(Soulsand.Syn
 		entity := player.AsEntity()
 		vd := int32(player.GetViewDistanceSync())
 		if cx < entity.Chunk.X-vd || cx >= entity.Chunk.X+vd+1 || cz < entity.Chunk.Z-vd || cz >= entity.Chunk.Z+vd+1 {
-			f(p.(Soulsand.SyncPlayer))
+			f(p.(soulsand.SyncPlayer))
 		}
 	}
 }
 
-func entityTryDespawn(cx, cz int32, f func(Soulsand.SyncPlayer)) func(Soulsand.SyncPlayer) {
-	return func(p Soulsand.SyncPlayer) {
+func entityTryDespawn(cx, cz int32, f func(soulsand.SyncPlayer)) func(soulsand.SyncPlayer) {
+	return func(p soulsand.SyncPlayer) {
 		player := p.(interface {
 			AsEntity() Entity
 			GetViewDistanceSync() int
@@ -120,13 +120,13 @@ func entityTryDespawn(cx, cz int32, f func(Soulsand.SyncPlayer)) func(Soulsand.S
 		entity := player.AsEntity()
 		vd := int32(player.GetViewDistanceSync())
 		if cx < entity.Chunk.X-vd || cx >= entity.Chunk.X+vd+1 || cz < entity.Chunk.Z-vd || cz >= entity.Chunk.Z+vd+1 {
-			f(p.(Soulsand.SyncPlayer))
+			f(p.(soulsand.SyncPlayer))
 		}
 	}
 }
 
-func entityTeleport(id int32, x, y, z float64, yaw, pitch float32) func(Soulsand.SyncPlayer) {
-	return func(p Soulsand.SyncPlayer) {
+func entityTeleport(id int32, x, y, z float64, yaw, pitch float32) func(soulsand.SyncPlayer) {
+	return func(p soulsand.SyncPlayer) {
 		player := p.(interface {
 			SendEntityTeleport(eID, x, y, z int32, yaw, pitch int8)
 		})
@@ -140,8 +140,8 @@ func entityTeleport(id int32, x, y, z float64, yaw, pitch float32) func(Soulsand
 	}
 }
 
-func entityRelativeLookMove(id int32, dx, dy, dz, yaw, pitch int8) func(Soulsand.SyncPlayer) {
-	return func(p Soulsand.SyncPlayer) {
+func entityRelativeLookMove(id int32, dx, dy, dz, yaw, pitch int8) func(soulsand.SyncPlayer) {
+	return func(p soulsand.SyncPlayer) {
 		player := p.(interface {
 			SendEntityLookMove(eID int32, dX, dY, dZ int8, yaw, pitch int8)
 			SendEntityHeadLook(eID int32, hYaw int8)

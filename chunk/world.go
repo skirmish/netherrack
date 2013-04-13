@@ -1,13 +1,13 @@
 package chunk
 
 import (
-	"Soulsand"
-	"Soulsand/effect"
+	"bitbucket.org/Thinkofdeath/soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand/effect"
 	"sync"
 )
 
 //Compile time checks
-var _ Soulsand.World = &World{}
+var _ soulsand.World = &World{}
 
 func init() {
 	go worldWatcher()
@@ -67,7 +67,7 @@ func (world *World) chunkWatcher() {
 	}
 }
 
-func (world *World) RunSync(x, z int, f func(Soulsand.SyncChunk)) {
+func (world *World) RunSync(x, z int, f func(soulsand.SyncChunk)) {
 	world.chunkEventChannel <- chunkEvent{
 		Pos: ChunkPosition{int32(x), int32(z)},
 		F:   f,
@@ -75,7 +75,7 @@ func (world *World) RunSync(x, z int, f func(Soulsand.SyncChunk)) {
 }
 
 func (world *World) PlayEffect(x, y, z int, eff effect.Type, data int, relative bool) {
-	world.RunSync(x>>4, z>>4, func(c Soulsand.SyncChunk) {
+	world.RunSync(x>>4, z>>4, func(c soulsand.SyncChunk) {
 		chunk := c.(*Chunk)
 		for _, p := range chunk.Players {
 			p.PlayEffect(x, y, z, eff, data, relative)
@@ -86,7 +86,7 @@ func (world *World) PlayEffect(x, y, z int, eff effect.Type, data int, relative 
 func (world *World) SetBlock(x, y, z int, block, meta byte) {
 	cx := x >> 4
 	cz := z >> 4
-	world.RunSync(cx, cz, func(c Soulsand.SyncChunk) {
+	world.RunSync(cx, cz, func(c soulsand.SyncChunk) {
 		rx := x - cx*16
 		rz := z - cz*16
 		c.SetBlock(rx, y, rz, block)
@@ -99,7 +99,7 @@ func (world *World) GetBlock(x, y, z int) []byte {
 	cx := x >> 4
 	cz := z >> 4
 	ret := make(chan []byte, 1)
-	world.RunSync(cx, cz, func(c Soulsand.SyncChunk) {
+	world.RunSync(cx, cz, func(c soulsand.SyncChunk) {
 		ret <- []byte{c.GetBlock(x-cx*16, y, z-cz*16),
 			c.GetMeta(x-cx*16, y, z-cz*16)}
 	})
@@ -122,7 +122,7 @@ func (world *World) GetBlocks(x, y, z, w, h, d int) *Blocks {
 				cx := tx >> 4
 				cz := tz >> 4
 				wait.Add(1)
-				world.RunSync(cx, cz, func(c Soulsand.SyncChunk) {
+				world.RunSync(cx, cz, func(c soulsand.SyncChunk) {
 					out.setBlock(bx, by, bz, c.GetBlock(tx-cx*16, ty, tz-cz*16))
 					out.setMeta(bx, by, bz, c.GetMeta(tx-cx*16, ty, tz-cz*16))
 					wait.Done()
@@ -141,7 +141,7 @@ func (world *World) GetChunk(x, z int32, ret chan [][]byte) {
 	}
 }
 
-func (world *World) JoinChunkAsWatcher(x, z int32, pl Soulsand.Player) {
+func (world *World) JoinChunkAsWatcher(x, z int32, pl soulsand.Player) {
 	world.chunkJoinWatcherChannel <- &chunkWatcherRequest{
 		Pos: ChunkPosition{
 			X: x, Z: z,
@@ -150,7 +150,7 @@ func (world *World) JoinChunkAsWatcher(x, z int32, pl Soulsand.Player) {
 	}
 }
 
-func (world *World) LeaveChunkAsWatcher(x, z int32, pl Soulsand.Player) {
+func (world *World) LeaveChunkAsWatcher(x, z int32, pl soulsand.Player) {
 	world.chunkLeaveWatcherChannel <- &chunkWatcherRequest{
 		Pos: ChunkPosition{
 			X: x, Z: z,
@@ -159,7 +159,7 @@ func (world *World) LeaveChunkAsWatcher(x, z int32, pl Soulsand.Player) {
 	}
 }
 
-func (world *World) JoinChunk(x, z int32, e Soulsand.Entity) {
+func (world *World) JoinChunk(x, z int32, e soulsand.Entity) {
 	world.chunkJoinChannel <- &chunkEntityRequest{
 		Pos: ChunkPosition{
 			X: x, Z: z,
@@ -168,7 +168,7 @@ func (world *World) JoinChunk(x, z int32, e Soulsand.Entity) {
 	}
 }
 
-func (world *World) LeaveChunk(x, z int32, e Soulsand.Entity) {
+func (world *World) LeaveChunk(x, z int32, e soulsand.Entity) {
 	world.chunkLeaveChannel <- &chunkEntityRequest{
 		Pos: ChunkPosition{
 			X: x, Z: z,
@@ -177,7 +177,7 @@ func (world *World) LeaveChunk(x, z int32, e Soulsand.Entity) {
 	}
 }
 
-func (world *World) SendChunkMessage(x, z, id int32, msg func(Soulsand.SyncPlayer)) {
+func (world *World) SendChunkMessage(x, z, id int32, msg func(soulsand.SyncPlayer)) {
 	world.chunkMessageChannel <- &chunkMessage{
 		ChunkPosition{x, z},
 		msg,

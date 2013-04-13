@@ -2,8 +2,8 @@ package system
 
 import (
 	"bitbucket.org/Thinkofdeath/netherrack/event"
-	"Soulsand"
-	"Soulsand/locale"
+	"bitbucket.org/Thinkofdeath/soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand/locale"
 	"fmt"
 	"log"
 )
@@ -23,9 +23,9 @@ func watcher() {
 }
 
 var (
-	entitysById   map[int32]Soulsand.Entity  = make(map[int32]Soulsand.Entity)
-	playersByName map[string]Soulsand.Player = make(map[string]Soulsand.Player)
-	currentEID    int32                      = 0
+	entitysById         = make(map[int32]soulsand.Entity)
+	playersByName       = make(map[string]soulsand.Player)
+	currentEID    int32 = 0
 )
 
 func GetEntityCount() int {
@@ -45,7 +45,7 @@ func Broadcast(message string) {
 	}
 }
 
-func AddPlayer(p Soulsand.Player) {
+func AddPlayer(p soulsand.Player) {
 	channel <- func() {
 		playersByName[p.GetName()] = p
 		for _, player := range playersByName {
@@ -55,7 +55,7 @@ func AddPlayer(p Soulsand.Player) {
 	}
 }
 
-func RemovePlayer(p Soulsand.Player) {
+func RemovePlayer(p soulsand.Player) {
 	channel <- func() {
 		delete(playersByName, p.GetName())
 		for _, player := range playersByName {
@@ -65,15 +65,15 @@ func RemovePlayer(p Soulsand.Player) {
 	}
 }
 
-func GetPlayer(name string) Soulsand.Player {
-	res := make(chan Soulsand.Player)
+func GetPlayer(name string) soulsand.Player {
+	res := make(chan soulsand.Player)
 	channel <- func() {
 		res <- playersByName[name]
 	}
 	return <-res
 }
 
-func GetFreeEntityID(e Soulsand.Entity) int32 {
+func GetFreeEntityID(e soulsand.Entity) int32 {
 	res := make(chan int32, 1)
 	channel <- func() {
 		for {
@@ -90,7 +90,7 @@ func GetFreeEntityID(e Soulsand.Entity) int32 {
 	return <-res
 }
 
-func FreeEntityID(e Soulsand.Entity) {
+func FreeEntityID(e soulsand.Entity) {
 	channel <- func() {
 		delete(entitysById, e.GetID())
 	}

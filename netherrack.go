@@ -6,9 +6,9 @@ import (
 	"bitbucket.org/Thinkofdeath/netherrack/network"
 	"bitbucket.org/Thinkofdeath/netherrack/player"
 	"bitbucket.org/Thinkofdeath/netherrack/system"
-	"Soulsand"
-	"Soulsand/gamemode"
-	"Soulsand/locale"
+	"bitbucket.org/Thinkofdeath/soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand/gamemode"
+	"bitbucket.org/Thinkofdeath/soulsand/locale"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -17,14 +17,14 @@ import (
 )
 
 //Compile time checks
-var _ Soulsand.Server = &Server{}
+var _ soulsand.Server = &Server{}
 
 func init() {
 	log.SetFlags(log.Lshortfile | log.Ltime)
 	locale.Load("data/lang")
 	server := &Server{}
 	server.init()
-	Soulsand.SetServer(server, provider{})
+	soulsand.SetServer(server, provider{})
 }
 
 type Server struct {
@@ -93,11 +93,11 @@ func (server *Server) GetEntityCount() int {
 	return system.GetEntityCount()
 }
 
-func (server *Server) GetWorld(name string) Soulsand.World {
+func (server *Server) GetWorld(name string) soulsand.World {
 	return chunk.GetWorld(name)
 }
 
-func (server *Server) GetPlayer(name string) Soulsand.Player {
+func (server *Server) GetPlayer(name string) soulsand.Player {
 	return system.GetPlayer(name)
 }
 

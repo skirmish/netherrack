@@ -1,21 +1,21 @@
 package internal
 
 import (
-	"Soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand"
 )
 
 type World interface {
-	Soulsand.World
+	soulsand.World
 	//Adds the entity to the chunk
-	JoinChunk(x, z int32, e Soulsand.Entity)
+	JoinChunk(x, z int32, e soulsand.Entity)
 	//Removes the entity from the chunk
-	LeaveChunk(x, z int32, e Soulsand.Entity)
+	LeaveChunk(x, z int32, e soulsand.Entity)
 	//Adds the player to the chunk so that it will recieve events from this chunk
-	JoinChunkAsWatcher(x, z int32, pl Soulsand.Player)
+	JoinChunkAsWatcher(x, z int32, pl soulsand.Player)
 	//Removes the player so that will stop recieving events from this chunk
-	LeaveChunkAsWatcher(x, z int32, pl Soulsand.Player)
+	LeaveChunkAsWatcher(x, z int32, pl soulsand.Player)
 	//Sends a message to the chunk
-	SendChunkMessage(x, z, id int32, msg func(Soulsand.SyncPlayer))
+	SendChunkMessage(x, z, id int32, msg func(soulsand.SyncPlayer))
 	//Send a chunk packet to the channel
 	GetChunk(x, z int32, ret chan [][]byte)
 }

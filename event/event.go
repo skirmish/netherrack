@@ -2,31 +2,31 @@ package event
 
 import (
 	"bitbucket.org/Thinkofdeath/netherrack/internal"
-	"Soulsand"
-	soulevent "Soulsand/event"
+	"bitbucket.org/Thinkofdeath/soulsand"
+	soulevent "bitbucket.org/Thinkofdeath/soulsand/event"
 	"sync"
 )
 
 //Compile time checks
-var _ Soulsand.EventSource = &Source{}
+var _ soulsand.EventSource = &Source{}
 var _ internal.Event = &Event{}
 
 type Source struct {
-	handlers     map[soulevent.Type]map[int]chan Soulsand.Event
+	handlers     map[soulevent.Type]map[int]chan soulsand.Event
 	handlersLock sync.Mutex
 	handlePos    int
 }
 
 func (es *Source) Init() {
-	es.handlers = make(map[soulevent.Type]map[int]chan Soulsand.Event)
+	es.handlers = make(map[soulevent.Type]map[int]chan soulsand.Event)
 }
 
-func (es *Source) Register(eventType soulevent.Type, callback chan Soulsand.Event) int {
+func (es *Source) Register(eventType soulevent.Type, callback chan soulsand.Event) int {
 	es.handlersLock.Lock()
 	defer es.handlersLock.Unlock()
 	m, ok := es.handlers[eventType]
 	if !ok {
-		m = make(map[int]chan Soulsand.Event)
+		m = make(map[int]chan soulsand.Event)
 		es.handlers[eventType] = m
 	}
 	m[es.handlePos] = callback
@@ -85,7 +85,7 @@ func (e *Event) IsCanceled() bool {
 	return e.canceled
 }
 
-func (e *Event) Set(eventType soulevent.Type, source Soulsand.EventSource) {
+func (e *Event) Set(eventType soulevent.Type, source soulsand.EventSource) {
 	e.source = source.(*Source)
 	e.eventType = eventType
 }

@@ -2,32 +2,32 @@ package player
 
 import (
 	"bitbucket.org/Thinkofdeath/netherrack/entity"
-	"Soulsand"
-	"Soulsand/effect"
-	"Soulsand/gamemode"
+	"bitbucket.org/Thinkofdeath/soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand/effect"
+	"bitbucket.org/Thinkofdeath/soulsand/gamemode"
 )
 
 func (player *Player) PlayEffect(x, y, z int, eff effect.Type, data int, relative bool) {
-	player.RunSync(func(Soulsand.SyncPlayer) {
+	player.RunSync(func(soulsand.SyncPlayer) {
 		player.connection.WriteSoundParticleEffect(int32(eff), int32(x), byte(y), int32(z), int32(data), !relative)
 	})
 }
 
 func (player *Player) SetGamemode(mode gamemode.Type) {
-	player.playerEventChannel <- func(Soulsand.SyncPlayer) {
+	player.playerEventChannel <- func(soulsand.SyncPlayer) {
 		player.gamemode = mode
 	}
 }
 
 func (player *Player) GetGamemode() gamemode.Type {
 	res := make(chan gamemode.Type, 1)
-	player.playerEventChannel <- func(Soulsand.SyncPlayer) {
+	player.playerEventChannel <- func(soulsand.SyncPlayer) {
 		res <- player.gamemode
 	}
 	return <-res
 }
 
-func (player *Player) GetConnection() Soulsand.UnsafeConnection {
+func (player *Player) GetConnection() soulsand.UnsafeConnection {
 	return &player.connection
 }
 
@@ -35,27 +35,27 @@ func (player *Player) AsEntity() entity.Entity {
 	return player.Entity
 }
 
-func (player *Player) RunSync(f func(Soulsand.SyncPlayer)) {
+func (player *Player) RunSync(f func(soulsand.SyncPlayer)) {
 	player.playerEventChannel <- f
 }
 
 func (player *Player) GetLocale() string {
 	res := make(chan string, 1)
-	player.playerEventChannel <- func(Soulsand.SyncPlayer) {
+	player.playerEventChannel <- func(soulsand.SyncPlayer) {
 		res <- player.settings.locale
 	}
 	return <-res
 }
 
 func (player *Player) SetExperienceBar(position float32) {
-	player.playerEventChannel <- func(Soulsand.SyncPlayer) {
+	player.playerEventChannel <- func(soulsand.SyncPlayer) {
 		player.experienceBar = position
 		player.UpdateExperience()
 	}
 }
 
 func (player *Player) SetLevel(level int) {
-	player.playerEventChannel <- func(Soulsand.SyncPlayer) {
+	player.playerEventChannel <- func(soulsand.SyncPlayer) {
 		player.level = int16(level)
 		player.UpdateExperience()
 	}
@@ -71,14 +71,14 @@ func (player *Player) UpdatePosition() {
 
 func (player *Player) GetDisplayName() string {
 	res := make(chan string, 1)
-	player.playerEventChannel <- func(Soulsand.SyncPlayer) {
+	player.playerEventChannel <- func(soulsand.SyncPlayer) {
 		res <- player.displayName
 	}
 	return <-res
 }
 
 func (player *Player) SetDisplayName(name string) {
-	player.playerEventChannel <- func(Soulsand.SyncPlayer) {
+	player.playerEventChannel <- func(soulsand.SyncPlayer) {
 		player.displayName = name
 	}
 }
@@ -88,7 +88,7 @@ func (player *Player) GetName() string {
 }
 
 func (player *Player) SendMessage(message string) {
-	player.playerEventChannel <- func(Soulsand.SyncPlayer) {
+	player.playerEventChannel <- func(soulsand.SyncPlayer) {
 		player.SendMessageSync(message)
 	}
 }

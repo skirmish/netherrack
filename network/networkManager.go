@@ -2,7 +2,7 @@ package network
 
 import (
 	"bitbucket.org/Thinkofdeath/netherrack/player"
-	"Soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -40,7 +40,7 @@ func handleInitialConnection(conn net.Conn) {
 	}
 	if firstByte[0] == 0xFE { //listPing
 		conn.Read(make([]byte, 1))
-		listData := Soulsand.GetServer().GetListPingData()
+		listData := soulsand.GetServer().GetListPingData()
 		motd := []rune(listData[0])
 		versionNo := []rune(listData[1])
 		version := []rune(listData[2])

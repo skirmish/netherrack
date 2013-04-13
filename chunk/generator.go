@@ -1,7 +1,7 @@
 package chunk
 
 import (
-	"Soulsand/blocks"
+	"bitbucket.org/Thinkofdeath/soulsand/blocks"
 )
 
 func generateChunk(chunk *Chunk) {

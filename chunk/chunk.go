@@ -1,11 +1,11 @@
 package chunk
 
 import (
-	"Soulsand"
+	"bitbucket.org/Thinkofdeath/soulsand"
 )
 
 var (
-	_ Soulsand.SyncChunk = &Chunk{}
+	_ soulsand.SyncChunk = &Chunk{}
 )
 
 type (
@@ -14,15 +14,15 @@ type (
 		X, Z           int32
 		SubChunks      []*SubChunk
 		Biome          []byte
-		Players        map[int32]Soulsand.Player
-		Entitys        map[int32]Soulsand.Entity
+		Players        map[int32]soulsand.Player
+		Entitys        map[int32]soulsand.Entity
 		requests       chan *ChunkRequest
 		watcherJoin    chan *chunkWatcherRequest
 		watcherLeave   chan *chunkWatcherRequest
 		entityJoin     chan *chunkEntityRequest
 		entityLeave    chan *chunkEntityRequest
 		messageChannel chan *chunkMessage
-		eventChannel   chan func(Soulsand.SyncChunk)
+		eventChannel   chan func(soulsand.SyncChunk)
 		blockQueue     []blockChange
 	}
 	SubChunk struct {
@@ -45,15 +45,15 @@ type (
 	}
 	chunkEntityRequest struct {
 		Pos ChunkPosition
-		E   Soulsand.Entity
+		E   soulsand.Entity
 	}
 	chunkWatcherRequest struct {
 		Pos ChunkPosition
-		P   Soulsand.Player
+		P   soulsand.Player
 	}
 	chunkMessage struct {
 		Pos ChunkPosition
-		Msg func(Soulsand.SyncPlayer)
+		Msg func(soulsand.SyncPlayer)
 		ID  int32
 	}
 	chunkBlocksRequest struct {
@@ -63,11 +63,11 @@ type (
 	}
 	chunkEvent struct {
 		Pos ChunkPosition
-		F   func(Soulsand.SyncChunk)
+		F   func(soulsand.SyncChunk)
 	}
 )
 
-func (c *Chunk) GetPlayerMap() map[int32]Soulsand.Player {
+func (c *Chunk) GetPlayerMap() map[int32]soulsand.Player {
 	return c.Players
 }
 
@@ -168,15 +168,15 @@ func CreateChunk(x, z int32) *Chunk {
 		Z:              z,
 		SubChunks:      make([]*SubChunk, 16),
 		Biome:          make([]byte, 256),
-		Players:        make(map[int32]Soulsand.Player),
-		Entitys:        make(map[int32]Soulsand.Entity),
+		Players:        make(map[int32]soulsand.Player),
+		Entitys:        make(map[int32]soulsand.Entity),
 		requests:       make(chan *ChunkRequest, 500),
 		watcherJoin:    make(chan *chunkWatcherRequest, 200),
 		watcherLeave:   make(chan *chunkWatcherRequest, 200),
 		entityJoin:     make(chan *chunkEntityRequest, 200),
 		entityLeave:    make(chan *chunkEntityRequest, 200),
 		messageChannel: make(chan *chunkMessage, 1000),
-		eventChannel:   make(chan func(Soulsand.SyncChunk), 500),
+		eventChannel:   make(chan func(soulsand.SyncChunk), 500),
 		blockQueue:     make([]blockChange, 0, 3),
 	}
 	return chunk
