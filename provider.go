@@ -1,4 +1,4 @@
-package Netherrack
+package netherrack
 
 import ()
 
