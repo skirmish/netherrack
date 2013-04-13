@@ -1,7 +1,7 @@
 package network
 
 import (
-	"Netherrack/player"
+	"bitbucket.org/Thinkofdeath/netherrack/player"
 	"Soulsand"
 	"encoding/binary"
 	"fmt"

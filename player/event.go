@@ -1,7 +1,7 @@
 package player
 
 import (
-	"Netherrack/entity"
+	"bitbucket.org/Thinkofdeath/netherrack/entity"
 	"Soulsand"
 )
 

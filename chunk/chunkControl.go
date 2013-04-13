@@ -1,7 +1,7 @@
 package chunk
 
 import (
-	"Netherrack/entity"
+	"bitbucket.org/Thinkofdeath/netherrack/entity"
 	"Soulsand"
 	"bytes"
 	"compress/zlib"

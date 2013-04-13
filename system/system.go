@@ -1,7 +1,7 @@
 package system
 
 import (
-	"Netherrack/event"
+	"bitbucket.org/Thinkofdeath/netherrack/event"
 	"Soulsand"
 	"Soulsand/locale"
 	"fmt"

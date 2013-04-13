@@ -1,12 +1,11 @@
-package Netherrack
+package netherrack
 
 import (
-	"Netherrack/chunk"
-	_ "Netherrack/debug"
-	"Netherrack/event"
-	"Netherrack/network"
-	"Netherrack/player"
-	"Netherrack/system"
+	"bitbucket.org/Thinkofdeath/netherrack/chunk"
+	"bitbucket.org/Thinkofdeath/netherrack/event"
+	"bitbucket.org/Thinkofdeath/netherrack/network"
+	"bitbucket.org/Thinkofdeath/netherrack/player"
+	"bitbucket.org/Thinkofdeath/netherrack/system"
 	"Soulsand"
 	"Soulsand/gamemode"
 	"Soulsand/locale"

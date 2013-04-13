@@ -1,8 +1,8 @@
 package entity
 
 import (
-	"Netherrack/internal"
-	"Netherrack/system"
+	"bitbucket.org/Thinkofdeath/netherrack/internal"
+	"bitbucket.org/Thinkofdeath/netherrack/system"
 	"Soulsand"
 )
 

@@ -1,7 +1,7 @@
 package event
 
 import (
-	"Netherrack/internal"
+	"bitbucket.org/Thinkofdeath/netherrack/internal"
 	"Soulsand"
 	soulevent "Soulsand/event"
 	"sync"

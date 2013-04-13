@@ -1,10 +1,10 @@
 package player
 
 import (
-	"Netherrack/entity"
-	"Netherrack/event"
-	"Netherrack/internal"
-	"Netherrack/system"
+	"bitbucket.org/Thinkofdeath/netherrack/entity"
+	"bitbucket.org/Thinkofdeath/netherrack/event"
+	"bitbucket.org/Thinkofdeath/netherrack/internal"
+	"bitbucket.org/Thinkofdeath/netherrack/system"
 	"Soulsand"
 	"Soulsand/command"
 	sevent "Soulsand/event"

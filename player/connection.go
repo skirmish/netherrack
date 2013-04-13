@@ -1,12 +1,11 @@
 package player
 
 import (
-	//	"Netherrack/chunk"
-	"Netherrack/entity"
-	"Netherrack/event"
-	"Netherrack/items"
-	"Netherrack/nbt"
-	"Netherrack/system"
+	"bitbucket.org/Thinkofdeath/netherrack/entity"
+	"bitbucket.org/Thinkofdeath/netherrack/event"
+	"bitbucket.org/Thinkofdeath/netherrack/items"
+	"bitbucket.org/Thinkofdeath/netherrack/nbt"
+	"bitbucket.org/Thinkofdeath/netherrack/system"
 	"Soulsand"
 	"Soulsand/command"
 	"Soulsand/effect"

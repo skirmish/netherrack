@@ -1,7 +1,7 @@
 package debug
 
 import (
-	"Netherrack/system"
+	"bitbucket.org/Thinkofdeath/netherrack/system"
 	"Soulsand"
 	"fmt"
 	"math"

@@ -1,7 +1,7 @@
 package items
 
 import (
-	"Netherrack/nbt"
+	"bitbucket.org/Thinkofdeath/netherrack/nbt"
 	"Soulsand"
 	"sync"
 )
