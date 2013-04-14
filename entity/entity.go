@@ -16,20 +16,20 @@ type Entity struct {
 
 	World internal.World
 	Chunk struct {
-	X,  Z   int32
-	LX,  LZ int32
-}
+		X, Z   int32
+		LX, LZ int32
+	}
 
 	Position struct {
-	X,  Y,  Z             float64
-	Yaw,  Pitch           float32
-	LastX,  LastY,  LastZ float64
-}
+		X, Y, Z             float64
+		Yaw, Pitch          float32
+		LastX, LastY, LastZ float64
+	}
 	Velocity struct {
-	X,  Y,  Z float64
-}
+		X, Y, Z float64
+	}
 
-	EventChannel chan func (soulsand.SyncEntity)
+	EventChannel chan func(soulsand.SyncEntity)
 	EntityDead   chan struct{}
 	Spawnable
 
@@ -37,12 +37,12 @@ type Entity struct {
 }
 
 type Spawnable interface {
-	CreateSpawn() func (soulsand.SyncEntity)
-	CreateDespawn() func (soulsand.SyncEntity)
+	CreateSpawn() func(soulsand.SyncEntity)
+	CreateDespawn() func(soulsand.SyncEntity)
 }
 
 func (e *Entity) Init(s Spawnable) {
-	e.EventChannel = make(chan func (soulsand.SyncEntity), 500)
+	e.EventChannel = make(chan func(soulsand.SyncEntity), 500)
 	e.EntityDead = make(chan struct{}, 1)
 	e.Spawnable = s
 	e.isActive = true
@@ -70,9 +70,9 @@ func (e *Entity) SendMoveUpdate() (movedChunk bool) {
 	e.Position.Y += e.Velocity.Y
 	e.Position.Z += e.Velocity.Z
 
-	dx := (e.Position.X - e.Position.LastX)*32
-	dy := (e.Position.Y - e.Position.LastY)*32
-	dz := (e.Position.Z - e.Position.LastZ)*32
+	dx := (e.Position.X - e.Position.LastX) * 32
+	dy := (e.Position.Y - e.Position.LastY) * 32
+	dz := (e.Position.Z - e.Position.LastZ) * 32
 
 	e.Position.LastX = e.Position.X
 	e.Position.LastY = e.Position.Y
@@ -84,8 +84,8 @@ func (e *Entity) SendMoveUpdate() (movedChunk bool) {
 		e.World.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.GetID(), entityRelativeLookMove(e.GetID(), int8(dx), int8(dy), int8(dz), int8(int((e.Position.Yaw/180.0)*128)), int8((e.Position.Pitch/180.0)*128)))
 	}
 
-	e.Chunk.X = int32(e.Position.X)>>4
-	e.Chunk.Z = int32(e.Position.Z)>>4
+	e.Chunk.X = int32(e.Position.X) >> 4
+	e.Chunk.Z = int32(e.Position.Z) >> 4
 
 	if e.Chunk.X != e.Chunk.LX || e.Chunk.Z != e.Chunk.LZ {
 		e.World.LeaveChunk(e.Chunk.LX, e.Chunk.LZ, e)
@@ -99,7 +99,7 @@ func (e *Entity) SendMoveUpdate() (movedChunk bool) {
 	return
 }
 
-func entityTrySpawn(cx, cz int32, f func (soulsand.SyncEntity)) func (soulsand.SyncEntity) {
+func entityTrySpawn(cx, cz int32, f func(soulsand.SyncEntity)) func(soulsand.SyncEntity) {
 	return func(p soulsand.SyncEntity) {
 		player := p.(interface {
 			AsEntity() Entity
@@ -107,13 +107,13 @@ func entityTrySpawn(cx, cz int32, f func (soulsand.SyncEntity)) func (soulsand.S
 		})
 		entity := player.AsEntity()
 		vd := int32(player.GetViewDistanceSync())
-		if cx < entity.Chunk.X - vd || cx >= entity.Chunk.X + vd + 1 || cz < entity.Chunk.Z - vd || cz >= entity.Chunk.Z + vd + 1 {
+		if cx < entity.Chunk.X-vd || cx >= entity.Chunk.X+vd+1 || cz < entity.Chunk.Z-vd || cz >= entity.Chunk.Z+vd+1 {
 			f(p)
 		}
 	}
 }
 
-func entityTryDespawn(cx, cz int32, f func (soulsand.SyncEntity)) func (soulsand.SyncEntity) {
+func entityTryDespawn(cx, cz int32, f func(soulsand.SyncEntity)) func(soulsand.SyncEntity) {
 	return func(p soulsand.SyncEntity) {
 		player := p.(interface {
 			AsEntity() Entity
@@ -121,13 +121,13 @@ func entityTryDespawn(cx, cz int32, f func (soulsand.SyncEntity)) func (soulsand
 		})
 		entity := player.AsEntity()
 		vd := int32(player.GetViewDistanceSync())
-		if cx < entity.Chunk.X - vd || cx >= entity.Chunk.X + vd + 1 || cz < entity.Chunk.Z - vd || cz >= entity.Chunk.Z + vd + 1 {
+		if cx < entity.Chunk.X-vd || cx >= entity.Chunk.X+vd+1 || cz < entity.Chunk.Z-vd || cz >= entity.Chunk.Z+vd+1 {
 			f(p)
 		}
 	}
 }
 
-func entityTeleport(id int32, x, y, z float64, yaw, pitch float32) func (soulsand.SyncEntity) {
+func entityTeleport(id int32, x, y, z float64, yaw, pitch float32) func(soulsand.SyncEntity) {
 	return func(p soulsand.SyncEntity) {
 		player := p.(interface {
 			SendEntityTeleport(eID, x, y, z int32, yaw, pitch int8)
@@ -142,7 +142,7 @@ func entityTeleport(id int32, x, y, z float64, yaw, pitch float32) func (soulsan
 	}
 }
 
-func entityRelativeLookMove(id int32, dx, dy, dz, yaw, pitch int8) func (soulsand.SyncEntity) {
+func entityRelativeLookMove(id int32, dx, dy, dz, yaw, pitch int8) func(soulsand.SyncEntity) {
 	return func(p soulsand.SyncEntity) {
 		player := p.(interface {
 			SendEntityLookMove(eID int32, dX, dY, dZ int8, yaw, pitch int8)
@@ -160,22 +160,22 @@ type MetadataItem struct {
 }
 
 func (*Entity) CheckCube(x1, y1, z1, w1, h1, d1, x2, y2, z2, w2, h2, d2 float64) bool {
-	if x1 > x2 + w2 {
+	if x1 > x2+w2 {
 		return false
 	}
-	if x2 > x1 + w1 {
+	if x2 > x1+w1 {
 		return false
 	}
-	if y1 > y2 + h2 {
+	if y1 > y2+h2 {
 		return false
 	}
-	if y2 > y1 + h1 {
+	if y2 > y1+h1 {
 		return false
 	}
-	if z1 > z2 + d2 {
+	if z1 > z2+d2 {
 		return false
 	}
-	if z2 > z1 + d1 {
+	if z2 > z1+d1 {
 		return false
 	}
 	return true

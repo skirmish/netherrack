@@ -51,11 +51,11 @@ func (player *Player) UpdateExperience() {
 }
 
 func (player *Player) UpdatePosition() {
-	player.connection.WritePlayerPositionLook(player.Position.X, player.Position.Y, player.Position.Z, player.Position.Y + 1.6, player.Position.Yaw, player.Position.Pitch, false)
+	player.connection.WritePlayerPositionLook(player.Position.X, player.Position.Y, player.Position.Z, player.Position.Y+1.6, player.Position.Yaw, player.Position.Pitch, false)
 }
 
 func (player *Player) GetDisplayName() (string, error) {
-	val, err := player.CallSync(func(e soulsand.SyncEntity, ret chan interface {}) {
+	val, err := player.CallSync(func(e soulsand.SyncEntity, ret chan interface{}) {
 		ret <- player.displayName
 	})
 	return val.(string), err

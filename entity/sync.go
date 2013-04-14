@@ -13,7 +13,7 @@ func (e *Entity) SetPositionSync(x, y, z float64) {
 	e.Position.X, e.Position.Y, e.Position.Z = x, y, z
 }
 
-func (e *Entity) RunSync(f func (soulsand.SyncEntity)) error {
+func (e *Entity) RunSync(f func(soulsand.SyncEntity)) error {
 	select {
 	case e.EventChannel <- f:
 	case <-e.EntityDead:
@@ -23,7 +23,7 @@ func (e *Entity) RunSync(f func (soulsand.SyncEntity)) error {
 	return nil
 }
 
-func (e *Entity) CallSync(f func (soulsand.SyncEntity, chan interface{})) (interface{}, error) {
+func (e *Entity) CallSync(f func(soulsand.SyncEntity, chan interface{})) (interface{}, error) {
 	ret := make(chan interface{}, 1)
 	err := e.RunSync(func(soulsand.SyncEntity) {
 		f(e, ret)

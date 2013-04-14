@@ -12,7 +12,7 @@ func init() {
 	go watcher()
 }
 
-var channel chan func () = make(chan func (), 1000)
+var channel chan func() = make(chan func(), 1000)
 var EventSource event.Source
 
 func watcher() {

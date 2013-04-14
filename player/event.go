@@ -5,7 +5,7 @@ import (
 	"bitbucket.org/Thinkofdeath/soulsand"
 )
 
-func (p *Player) CreateSpawn() func (soulsand.SyncEntity) {
+func (p *Player) CreateSpawn() func(soulsand.SyncEntity) {
 	id := p.GetID()
 	name := p.GetName()
 	x, y, z := p.Position.X, p.Position.Y, p.Position.Z
@@ -31,7 +31,7 @@ func (p *Player) CreateSpawn() func (soulsand.SyncEntity) {
 	}
 }
 
-func (p *Player) CreateDespawn() func (soulsand.SyncEntity) {
+func (p *Player) CreateDespawn() func(soulsand.SyncEntity) {
 	id := p.GetID()
 	return func(p soulsand.SyncEntity) {
 		player := p.(*Player)
