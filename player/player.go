@@ -124,17 +124,6 @@ func HandlePlayer(conn net.Conn) {
 				player.World.LeaveChunkAsWatcher(x, z, player)
 			}
 		}
-		timer := time.After(10 * time.Second)
-	emptyChannels:
-		for {
-			select {
-			case <-player.ChunkChannel:
-			case f := <-player.EventChannel:
-				f(player)
-			case <-timer:
-				break emptyChannels
-			}
-		}
 		log.Println("Player disconnected")
 	}()
 
@@ -145,7 +134,7 @@ func HandlePlayer(conn net.Conn) {
 	vd := int32(player.settings.viewDistance)
 	for x := -vd; x < vd+1; x++ {
 		for z := -vd; z < vd+1; z++ {
-			player.World.GetChunk(int32(x), int32(z), player.ChunkChannel)
+			player.World.GetChunk(int32(x), int32(z), player.ChunkChannel, player.EntityDead)
 			player.World.JoinChunkAsWatcher(int32(x), int32(z), player)
 		}
 	}
@@ -208,7 +197,7 @@ func (p *Player) SendMoveUpdate() {
 		for x := p.Chunk.X - vd; x < p.Chunk.X+vd+1; x++ {
 			for z := p.Chunk.Z - vd; z < p.Chunk.Z+vd+1; z++ {
 				if x < lx-vd || x >= lx+vd+1 || z < lz-vd || z >= lz+vd+1 {
-					p.World.GetChunk(x, z, p.ChunkChannel)
+					p.World.GetChunk(x, z, p.ChunkChannel, p.EntityDead)
 					p.World.JoinChunkAsWatcher(x, z, p)
 				}
 			}
@@ -225,7 +214,7 @@ func (p *Player) chunkReload(old int) {
 	}
 	for x := p.Chunk.X - int32(p.settings.viewDistance); x < p.Chunk.X+int32(p.settings.viewDistance)+1; x++ {
 		for z := p.Chunk.X - int32(p.settings.viewDistance); z < p.Chunk.Z+int32(p.settings.viewDistance)+1; z++ {
-			p.World.GetChunk(x, z, p.ChunkChannel)
+			p.World.GetChunk(x, z, p.ChunkChannel, p.EntityDead)
 			p.World.JoinChunkAsWatcher(x, z, p)
 		}
 	}

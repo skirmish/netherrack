@@ -8,64 +8,63 @@ var (
 	_ soulsand.SyncChunk = &Chunk{}
 )
 
-type (
-	Chunk struct {
-		World          *World
-		X, Z           int32
-		SubChunks      []*SubChunk
-		Biome          []byte
-		Players        map[int32]soulsand.Player
-		Entitys        map[int32]soulsand.Entity
-		requests       chan *ChunkRequest
-		watcherJoin    chan *chunkWatcherRequest
-		watcherLeave   chan *chunkWatcherRequest
-		entityJoin     chan *chunkEntityRequest
-		entityLeave    chan *chunkEntityRequest
-		messageChannel chan *chunkMessage
-		eventChannel   chan func(soulsand.SyncChunk)
-		blockQueue     []blockChange
-	}
-	SubChunk struct {
-		Type       []byte
-		MetaData   []byte
-		BlockLight []byte
-		SkyLight   []byte
-		Blocks     uint
-	}
-	ChunkPosition struct {
-		X, Z int32
-	}
-	blockChange struct {
-		X, Y, Z     int
-		Block, Meta byte
-	}
-	ChunkRequest struct {
-		X, Z int32
-		Ret  chan [][]byte
-	}
-	chunkEntityRequest struct {
-		Pos ChunkPosition
-		E   soulsand.Entity
-	}
-	chunkWatcherRequest struct {
-		Pos ChunkPosition
-		P   soulsand.Player
-	}
-	chunkMessage struct {
-		Pos ChunkPosition
-		Msg func(soulsand.SyncEntity)
-		ID  int32
-	}
-	chunkBlocksRequest struct {
-		Pos     ChunkPosition
-		X, Y, Z int
-		Ret     chan []byte
-	}
-	chunkEvent struct {
-		Pos ChunkPosition
-		F   func(soulsand.SyncChunk)
-	}
-)
+type Chunk struct {
+	World          *World
+	X, Z           int32
+	SubChunks      []*SubChunk
+	Biome          []byte
+	Players        map[int32]soulsand.Player
+	Entitys        map[int32]soulsand.Entity
+	requests       chan *ChunkRequest
+	watcherJoin    chan *chunkWatcherRequest
+	watcherLeave   chan *chunkWatcherRequest
+	entityJoin     chan *chunkEntityRequest
+	entityLeave    chan *chunkEntityRequest
+	messageChannel chan *chunkMessage
+	eventChannel   chan func(soulsand.SyncChunk)
+	blockQueue     []blockChange
+}
+type SubChunk struct {
+	Type       []byte
+	MetaData   []byte
+	BlockLight []byte
+	SkyLight   []byte
+	Blocks     uint
+}
+type ChunkPosition struct {
+	X, Z int32
+}
+type blockChange struct {
+	X, Y, Z     int
+	Block, Meta byte
+}
+type ChunkRequest struct {
+	X, Z int32
+	Stop chan struct{}
+	Ret  chan [][]byte
+}
+type chunkEntityRequest struct {
+	Pos ChunkPosition
+	E   soulsand.Entity
+}
+type chunkWatcherRequest struct {
+	Pos ChunkPosition
+	P   soulsand.Player
+}
+type chunkMessage struct {
+	Pos ChunkPosition
+	Msg func(soulsand.SyncEntity)
+	ID  int32
+}
+type chunkBlocksRequest struct {
+	Pos     ChunkPosition
+	X, Y, Z int
+	Ret     chan []byte
+}
+type chunkEvent struct {
+	Pos ChunkPosition
+	F   func(soulsand.SyncChunk)
+}
 
 func (c *Chunk) GetPlayerMap() map[int32]soulsand.Player {
 	return c.Players
@@ -196,9 +195,3 @@ type chunkMessageEvent interface {
 	Run(interface{})
 	GetEID() int32
 }
-
-/*type entityType interface {
-	GetEID() int32
-	SpawnFor(chan interface{})
-	DespawnFor(chan interface{})
-}*/

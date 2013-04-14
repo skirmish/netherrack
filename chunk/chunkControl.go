@@ -23,12 +23,20 @@ func chunkControler(chunk *Chunk) {
 		select {
 		case cr := <-chunk.requests:
 			out := chunkToCompressedBytes(chunk)
-			cr.Ret <- out
+			select {
+			case cr.Ret <- out:
+			case <-cr.Stop:
+				cr.Stop <- struct{}{}
+			}
 		reqs:
 			for {
 				select {
 				case cr = <-chunk.requests:
-					cr.Ret <- out
+					select {
+					case cr.Ret <- out:
+					case <-cr.Stop:
+						cr.Stop <- struct{}{}
+					}
 				default:
 					break reqs
 				}

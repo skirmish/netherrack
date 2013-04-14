@@ -134,10 +134,11 @@ func (world *World) GetBlocks(x, y, z, w, h, d int) *Blocks {
 	return out
 }
 
-func (world *World) GetChunk(x, z int32, ret chan [][]byte) {
+func (world *World) GetChunk(x, z int32, ret chan [][]byte, stop chan struct{}) {
 	world.chunkChannel <- &ChunkRequest{
 		X: x, Z: z,
-		Ret: ret,
+		Stop: stop,
+		Ret:  ret,
 	}
 }
 
