@@ -15,9 +15,9 @@ func chunkControler(chunk *Chunk) {
 		chunk.World.chunkKillChannel <- &ChunkPosition{chunk.X, chunk.Z}
 	}()
 	generateChunk(chunk)
-	tOut := time.NewTimer(30 * time.Second)
+	tOut := time.NewTimer(30*time.Second)
 	defer tOut.Stop()
-	tick := time.NewTicker(time.Second / 20)
+	tick := time.NewTicker(time.Second/20)
 	defer tick.Stop()
 	for {
 		select {
@@ -77,17 +77,18 @@ func chunkControler(chunk *Chunk) {
 			if len(chunk.blockQueue) != 0 {
 				blockData := make([]uint32, len(chunk.blockQueue))
 				for i, bc := range chunk.blockQueue {
-					blockData[i] = (uint32(bc.Meta) & 0xf) | (uint32(bc.Block) << 4) | (uint32(bc.Y) << 16) | (uint32(bc.Z) << 24) | (uint32(bc.X) << 28)
+					blockData[i] = (uint32(bc.Meta) & 0xf) | (uint32(bc.Block)<<4) | (uint32(bc.Y)<<16) | (uint32(bc.Z)<<24) | (uint32(bc.X)<<28)
 				}
 				for _, p := range chunk.Players {
-					p.RunSync(func(s soulsand.SyncPlayer) {
-						s.GetConnection().WriteMultiBlockChange(chunk.X, chunk.Z, blockData)
+					p.RunSync(func(s soulsand.SyncEntity) {
+						sPlayer := s.(soulsand.SyncPlayer)
+						sPlayer.GetConnection().WriteMultiBlockChange(chunk.X, chunk.Z, blockData)
 					})
 				}
 				chunk.blockQueue = chunk.blockQueue[0:0]
 			}
 		}
-		tOut.Reset(10 * time.Second)
+		tOut.Reset(10*time.Second)
 	}
 }
 
@@ -98,31 +99,31 @@ func chunkToCompressedBytes(chunk *Chunk) [][]byte {
 			numSubs++
 		}
 	}
-	uncompData := make([]byte, (16*16*16+16*16*8*4)*numSubs+256)
+	uncompData := make([]byte, (16*16*16 + 16*16*8*4)*numSubs + 256)
 	var mask uint16 = 0
-	pSize := 16 * 16 * 16 * numSubs
+	pSize := 16*16*16*numSubs
 	rI := 0
 	for i := 0; i < 16; i++ {
 		if chunk.SubChunks[i] != nil {
-			copy(uncompData[16*16*16*rI:16*16*16*(rI+1)], chunk.SubChunks[i].Type)
-			copy(uncompData[pSize+16*16*8*rI:pSize+16*16*8*(rI+1)], chunk.SubChunks[i].MetaData)
-			copy(uncompData[pSize+(pSize/2)+16*16*8*rI:pSize+(pSize/2)+16*16*8*(rI+1)], chunk.SubChunks[i].BlockLight)
-			copy(uncompData[pSize*2+16*16*8*rI:pSize*2+16*16*8*(rI+1)], chunk.SubChunks[i].SkyLight)
-			mask |= 1 << uint(i)
+			copy(uncompData[16*16*16*rI:16*16*16*(rI + 1)], chunk.SubChunks[i].Type)
+			copy(uncompData[pSize + 16*16*8*rI:pSize + 16*16*8*(rI + 1)], chunk.SubChunks[i].MetaData)
+			copy(uncompData[pSize + (pSize/2) + 16*16*8*rI:pSize + (pSize/2) + 16*16*8*(rI + 1)], chunk.SubChunks[i].BlockLight)
+			copy(uncompData[pSize*2 + 16*16*8*rI:pSize*2 + 16*16*8*(rI + 1)], chunk.SubChunks[i].SkyLight)
+			mask |= 1<<uint(i)
 			rI++
 		}
 	}
-	copy(uncompData[(16*16*16+16*16*8*4)*rI:], chunk.Biome)
+	copy(uncompData[(16*16*16 + 16*16*8*4)*rI:], chunk.Biome)
 	var b bytes.Buffer
 	w, err := zlib.NewWriterLevel(&b, zlib.BestSpeed)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
-	w.Write(uncompData[:(16*16*16+16*16*8*4)*rI+256])
+	w.Write(uncompData[:(16*16*16 + 16*16*8*4)*rI + 256])
 	w.Close()
 	data := b.Bytes()
-	out := make([]byte, 1+4+4+1+2+2+4)
+	out := make([]byte, 1 + 4 + 4 + 1 + 2 + 2 + 4)
 	out[0] = 0x33
 	writeInt(out[1:5], chunk.X)
 	writeInt(out[5:9], chunk.Z)

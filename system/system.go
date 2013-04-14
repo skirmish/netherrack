@@ -12,7 +12,7 @@ func init() {
 	go watcher()
 }
 
-var channel chan func() = make(chan func(), 1000)
+var channel chan func () = make(chan func (), 1000)
 var EventSource event.Source
 
 func watcher() {
@@ -48,18 +48,31 @@ func Broadcast(message string) {
 func AddPlayer(p soulsand.Player) {
 	channel <- func() {
 		playersByName[p.GetName()] = p
+		displayName, err := p.GetDisplayName()
+		if err != nil {
+			return
+		}
 		for _, player := range playersByName {
-			message := fmt.Sprintf(locale.Get(player.GetLocale(), "message.player.connect"), p.GetDisplayName())
+			playerLocale, err := player.GetLocale()
+			if err != nil {
+				continue
+			}
+			message := fmt.Sprintf(locale.Get(playerLocale, "message.player.connect"), displayName)
 			player.SendMessage(message)
 		}
 	}
 }
 
 func RemovePlayer(p soulsand.Player) {
+	displayName := (p.(soulsand.SyncPlayer)).GetDisplayNameSync()
 	channel <- func() {
 		delete(playersByName, p.GetName())
 		for _, player := range playersByName {
-			message := fmt.Sprintf(locale.Get(player.GetLocale(), "message.player.disconnect"), p.GetDisplayName())
+			playerLocale, err := player.GetLocale()
+			if err != nil {
+				continue
+			}
+			message := fmt.Sprintf(locale.Get(playerLocale, "message.player.disconnect"), displayName)
 			player.SendMessage(message)
 		}
 	}

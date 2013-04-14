@@ -67,7 +67,7 @@ func (world *World) chunkWatcher() {
 	}
 }
 
-func (world *World) RunSync(x, z int, f func(soulsand.SyncChunk)) {
+func (world *World) RunSync(x, z int, f func (soulsand.SyncChunk)) {
 	world.chunkEventChannel <- chunkEvent{
 		Pos: ChunkPosition{int32(x), int32(z)},
 		F:   f,
@@ -76,33 +76,33 @@ func (world *World) RunSync(x, z int, f func(soulsand.SyncChunk)) {
 
 func (world *World) PlayEffect(x, y, z int, eff effect.Type, data int, relative bool) {
 	world.RunSync(x>>4, z>>4, func(c soulsand.SyncChunk) {
-		chunk := c.(*Chunk)
-		for _, p := range chunk.Players {
-			p.PlayEffect(x, y, z, eff, data, relative)
-		}
-	})
+			chunk := c.(*Chunk)
+			for _, p := range chunk.Players {
+				p.PlayEffect(x, y, z, eff, data, relative)
+			}
+		})
 }
 
 func (world *World) SetBlock(x, y, z int, block, meta byte) {
-	cx := x >> 4
-	cz := z >> 4
+	cx := x>>4
+	cz := z>>4
 	world.RunSync(cx, cz, func(c soulsand.SyncChunk) {
-		rx := x - cx*16
-		rz := z - cz*16
-		c.SetBlock(rx, y, rz, block)
-		c.SetMeta(rx, y, rz, meta)
-		c.(*Chunk).AddChange(rx, y, rz, block, meta)
-	})
+			rx := x - cx*16
+			rz := z - cz*16
+			c.SetBlock(rx, y, rz, block)
+			c.SetMeta(rx, y, rz, meta)
+			c.(*Chunk).AddChange(rx, y, rz, block, meta)
+		})
 }
 
 func (world *World) GetBlock(x, y, z int) []byte {
-	cx := x >> 4
-	cz := z >> 4
+	cx := x>>4
+	cz := z>>4
 	ret := make(chan []byte, 1)
 	world.RunSync(cx, cz, func(c soulsand.SyncChunk) {
-		ret <- []byte{c.GetBlock(x-cx*16, y, z-cz*16),
-			c.GetMeta(x-cx*16, y, z-cz*16)}
-	})
+			ret <- []byte{c.GetBlock(x - cx*16, y, z - cz*16),
+				c.GetMeta(x - cx*16, y, z - cz*16)}
+		})
 	return <-ret
 }
 
@@ -119,14 +119,14 @@ func (world *World) GetBlocks(x, y, z, w, h, d int) *Blocks {
 				tx := x + bx
 				ty := y + by
 				tz := z + bz
-				cx := tx >> 4
-				cz := tz >> 4
+				cx := tx>>4
+				cz := tz>>4
 				wait.Add(1)
 				world.RunSync(cx, cz, func(c soulsand.SyncChunk) {
-					out.setBlock(bx, by, bz, c.GetBlock(tx-cx*16, ty, tz-cz*16))
-					out.setMeta(bx, by, bz, c.GetMeta(tx-cx*16, ty, tz-cz*16))
-					wait.Done()
-				})
+						out.setBlock(bx, by, bz, c.GetBlock(tx - cx*16, ty, tz - cz*16))
+						out.setMeta(bx, by, bz, c.GetMeta(tx - cx*16, ty, tz - cz*16))
+						wait.Done()
+					})
 			}
 		}
 	}
@@ -177,7 +177,7 @@ func (world *World) LeaveChunk(x, z int32, e soulsand.Entity) {
 	}
 }
 
-func (world *World) SendChunkMessage(x, z, id int32, msg func(soulsand.SyncPlayer)) {
+func (world *World) SendChunkMessage(x, z, id int32, msg func (soulsand.SyncEntity)) {
 	world.chunkMessageChannel <- &chunkMessage{
 		ChunkPosition{x, z},
 		msg,
@@ -197,7 +197,7 @@ func (world *World) getChunk(cp ChunkPosition) *Chunk {
 }
 
 var (
-	worldEvent = make(chan func(), 200)
+	worldEvent = make(chan func (), 200)
 	worlds     = make(map[string]*World)
 )
 

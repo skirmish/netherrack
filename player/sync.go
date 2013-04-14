@@ -1,6 +1,13 @@
 package player
 
-import ()
+import (
+	"bitbucket.org/Thinkofdeath/netherrack/entity"
+	"bitbucket.org/Thinkofdeath/soulsand"
+)
+
+func (player *Player) GetName() string {
+	return player.name
+}
 
 func (player *Player) GetViewDistanceSync() int {
 	return player.settings.viewDistance
@@ -20,4 +27,36 @@ func (player *Player) GetDisplayNameSync() string {
 
 func (player *Player) SetDisplayNameSync(name string) {
 	player.displayName = name
+}
+
+func (player *Player) GetConnection() soulsand.UnsafeConnection {
+	return &player.connection
+}
+
+func (player *Player) AsEntity() entity.Entity {
+	return player.Entity
+}
+
+func (player *Player) SendEntityAttach(eID int32, vID int32) {
+	player.connection.WriteAttachEntity(eID, vID)
+}
+
+func (player *Player) SendSpawnMob(eID int32, t int8, x, y, z int32, yaw, pitch, hYaw int8, velX, velY, velZ int16, metadata map[byte]entity.MetadataItem) {
+	player.connection.WriteSpawnMob(eID, t, x, y, z, yaw, pitch, hYaw, velX, velY, velZ, metadata)
+}
+
+func (player *Player) SendEntityTeleport(eID, x, y, z int32, yaw, pitch int8) {
+	player.connection.WriteEntityTeleport(eID, x, y, z, yaw, pitch)
+}
+
+func (player *Player) SendEntityLookMove(eID int32, dX, dY, dZ int8, yaw, pitch int8) {
+	player.connection.WriteEntityLookRelativeMove(eID, dX, dY, dZ, yaw, pitch)
+}
+
+func (player *Player) SendEntityHeadLook(eID int32, hYaw int8) {
+	player.connection.WriteEntityHeadLook(eID, hYaw)
+}
+
+func (player *Player) SendEntityDestroy(ids []int32) {
+	player.connection.WriteDestroyEntity(ids)
 }
