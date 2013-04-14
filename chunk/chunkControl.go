@@ -20,6 +20,7 @@ func chunkControler(chunk *Chunk) {
 	tick := time.NewTicker(time.Second / 20)
 	defer tick.Stop()
 	for {
+		reset := true
 		select {
 		case cr := <-chunk.requests:
 			out := chunkToCompressedBytes(chunk)
@@ -82,7 +83,9 @@ func chunkControler(chunk *Chunk) {
 				runtime.Goexit()
 			}
 		case <-tick.C:
+			reset = false
 			if len(chunk.blockQueue) != 0 {
+				reset = true
 				blockData := make([]uint32, len(chunk.blockQueue))
 				for i, bc := range chunk.blockQueue {
 					blockData[i] = (uint32(bc.Meta) & 0xf) | (uint32(bc.Block) << 4) | (uint32(bc.Y) << 16) | (uint32(bc.Z) << 24) | (uint32(bc.X) << 28)
@@ -96,7 +99,9 @@ func chunkControler(chunk *Chunk) {
 				chunk.blockQueue = chunk.blockQueue[0:0]
 			}
 		}
-		tOut.Reset(10 * time.Second)
+		if reset {
+			tOut.Reset(10 * time.Second)
+		}
 	}
 }
 

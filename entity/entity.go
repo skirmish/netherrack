@@ -50,6 +50,7 @@ func (e *Entity) Init(s Spawnable) {
 }
 
 func (e *Entity) Finalise() {
+	e.EntityDead <- struct{}{}
 	e.kill()
 }
 

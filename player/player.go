@@ -81,12 +81,6 @@ func HandlePlayer(conn net.Conn) {
 	player.currentPacketChannel = make(chan byte)
 	player.readPacketChannel = make(chan struct{}, 2)
 	player.ChunkChannel = make(chan [][]byte, 500)
-	defer func() {
-		player.readPacketChannel <- struct{}{}
-		player.EntityDead <- struct{}{}
-		player.connection.player = nil
-		println("Done cleanup")
-	}()
 
 	player.connection.conn = conn
 	player.connection.player = player
@@ -104,6 +98,11 @@ func HandlePlayer(conn net.Conn) {
 
 	player.Entity.Init(player)
 	defer player.Entity.Finalise()
+	defer func() {
+		player.readPacketChannel <- struct{}{}
+		player.connection.player = nil
+		println("Done cleanup")
+	}()
 	player.World = soulsand.GetServer().GetWorld("main").(internal.World)
 	player.gamemode = soulsand.GetServer().GetDefaultGamemode()
 
