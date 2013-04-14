@@ -4,73 +4,74 @@ import (
 	"bitbucket.org/Thinkofdeath/soulsand"
 )
 
-var _ soulsand.EventPlayerMessage = &EventPlayerMessage{}
-var _ soulsand.EventPlayerJoin = &EventPlayerJoin{}
+var _ soulsand.EventPlayerMessage = &PlayerMessage{}
+var _ soulsand.EventPlayerJoin = &PlayerJoin{}
+var _ soulsand.EventPlayerLeave = &PlayerLeave{}
 
-type EventPlayerMessage struct {
+type PlayerMessage struct {
 	Event
 
 	player  soulsand.SyncPlayer
 	message string
 }
 
-func NewMessage(player soulsand.SyncPlayer, message string) *EventPlayerMessage {
-	return &EventPlayerMessage{
+func NewMessage(player soulsand.SyncPlayer, message string) *PlayerMessage {
+	return &PlayerMessage{
 		Event:   Event{},
 		player:  player,
 		message: message,
 	}
 }
 
-func (m *EventPlayerMessage) SetMessage(msg string) {
+func (m *PlayerMessage) SetMessage(msg string) {
 	m.message = msg
 }
 
-func (m *EventPlayerMessage) GetMessage() string {
+func (m *PlayerMessage) GetMessage() string {
 	return m.message
 }
 
-func (m *EventPlayerMessage) GetPlayer() soulsand.SyncPlayer {
+func (m *PlayerMessage) GetPlayer() soulsand.SyncPlayer {
 	return m.player
 }
 
-type EventPlayerJoin struct {
+type PlayerJoin struct {
 	Event
 
 	player soulsand.SyncPlayer
 	Reason string
 }
 
-func NewJoin(player soulsand.SyncPlayer, reason string) *EventPlayerJoin {
-	return &EventPlayerJoin{
+func NewJoin(player soulsand.SyncPlayer, reason string) *PlayerJoin {
+	return &PlayerJoin{
 		Event:  Event{},
 		player: player,
 		Reason: reason,
 	}
 }
 
-func (j *EventPlayerJoin) GetPlayer() soulsand.SyncPlayer {
+func (j *PlayerJoin) GetPlayer() soulsand.SyncPlayer {
 	return j.player
 }
 
-func (j *EventPlayerJoin) Disconnect(reason string) {
+func (j *PlayerJoin) Disconnect(reason string) {
 	j.Reason = reason
 	j.Cancel()
 }
 
-type EventPlayerLeave struct {
+type PlayerLeave struct {
 	Event
 
 	player soulsand.SyncPlayer
 }
 
-func NewLeave(player soulsand.SyncPlayer) *EventPlayerLeave {
-	return &EventPlayerLeave{
+func NewLeave(player soulsand.SyncPlayer) *PlayerLeave {
+	return &PlayerLeave{
 		Event:  Event{},
 		player: player,
 	}
 }
 
-func (l *EventPlayerLeave) GetPlayer() soulsand.SyncPlayer {
+func (l *PlayerLeave) GetPlayer() soulsand.SyncPlayer {
 	return l.player
 }
