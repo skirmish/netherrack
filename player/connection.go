@@ -9,7 +9,6 @@ import (
 	"bitbucket.org/Thinkofdeath/soulsand"
 	"bitbucket.org/Thinkofdeath/soulsand/command"
 	"bitbucket.org/Thinkofdeath/soulsand/effect"
-	sevent "bitbucket.org/Thinkofdeath/soulsand/event"
 	"bitbucket.org/Thinkofdeath/soulsand/gamemode"
 	"bytes"
 	"compress/gzip"
@@ -225,8 +224,8 @@ var packets map[byte]func(c *Connection) = map[byte]func(c *Connection){
 		if msg[0] == '/' {
 			command.Exec(msg[1:], c.player)
 		} else {
-			ev := event.NewMessage(c.player, msg)
-			if !c.player.Fire(sevent.PLAYER_MESSAGE, ev) {
+			eventType, ev := event.NewMessage(c.player, msg)
+			if !c.player.Fire(eventType, ev) {
 				system.Broadcast(ev.GetMessage())
 			}
 		}

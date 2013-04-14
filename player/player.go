@@ -7,7 +7,6 @@ import (
 	"bitbucket.org/Thinkofdeath/netherrack/system"
 	"bitbucket.org/Thinkofdeath/soulsand"
 	"bitbucket.org/Thinkofdeath/soulsand/command"
-	sevent "bitbucket.org/Thinkofdeath/soulsand/event"
 	"bitbucket.org/Thinkofdeath/soulsand/gamemode"
 	"bitbucket.org/Thinkofdeath/soulsand/locale"
 	"encoding/binary"
@@ -91,8 +90,8 @@ func HandlePlayer(conn net.Conn) {
 		player.connection.WriteDisconnect(locale.Get(player.GetLocaleSync(), "disconnect.reason.loggedin"))
 		runtime.Goexit()
 	}
-	ev := event.NewJoin(player, locale.Get(player.GetLocaleSync(), "disconnect.reason.unknown"))
-	if system.EventSource.Fire(sevent.PLAYER_JOIN, ev) {
+	eventType, ev := event.NewJoin(player, locale.Get(player.GetLocaleSync(), "disconnect.reason.unknown"))
+	if system.EventSource.Fire(eventType, ev) {
 		player.connection.WriteDisconnect(ev.Reason)
 		runtime.Goexit()
 	}
@@ -129,7 +128,7 @@ func HandlePlayer(conn net.Conn) {
 
 	system.AddPlayer(player)
 	defer system.RemovePlayer(player)
-	defer player.Fire(sevent.PLAYER_LEAVE, event.NewLeave(player))
+	defer player.Fire(event.NewLeave(player))
 
 	vd := int32(player.settings.viewDistance)
 	for x := -vd; x < vd+1; x++ {

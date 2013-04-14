@@ -3,56 +3,67 @@ package event
 import (
 	"bitbucket.org/Thinkofdeath/netherrack/internal"
 	"bitbucket.org/Thinkofdeath/soulsand"
-	soulevent "bitbucket.org/Thinkofdeath/soulsand/event"
+	"reflect"
 	"sync"
 )
 
 //Compile time checks
 var _ soulsand.EventSource = &Source{}
 var _ internal.Event = &Event{}
+var _ soulsand.Event = &Event{}
 
 type Source struct {
-	handlers     map[soulevent.Type]map[int]chan soulsand.Event
-	handlersLock sync.Mutex
-	handlePos    int
+	handlers       map[string]map[int]reflect.Value
+	handlersIntMap map[int]string
+	handlersLock   sync.Mutex
+	handlePos      int
 }
 
 func (es *Source) Init() {
-	es.handlers = make(map[soulevent.Type]map[int]chan soulsand.Event)
+	es.handlers = make(map[string]map[int]reflect.Value)
+	es.handlersIntMap = make(map[int]string)
 }
 
-func (es *Source) Register(eventType soulevent.Type, callback chan soulsand.Event) int {
+func (es *Source) Register(callback interface{}) int {
+	fun := reflect.ValueOf(callback)
+	t := fun.Type()
+	if t.NumIn() != 1 {
+		panic("Event: Must have one argument")
+	}
+	eventType := t.In(0).Name()
+	println(eventType)
 	es.handlersLock.Lock()
 	defer es.handlersLock.Unlock()
 	m, ok := es.handlers[eventType]
 	if !ok {
-		m = make(map[int]chan soulsand.Event)
+		m = make(map[int]reflect.Value)
 		es.handlers[eventType] = m
 	}
-	m[es.handlePos] = callback
+	m[es.handlePos] = fun
 	es.handlePos++
 	return es.handlePos - 1
 }
 
-func (es *Source) Unregister(eventType soulevent.Type, id int) {
+func (es *Source) Unregister(id int) {
 	es.handlersLock.Lock()
 	defer es.handlersLock.Unlock()
-	m, ok := es.handlers[eventType]
+	eventType, ok := es.handlersIntMap[id]
 	if !ok {
 		return
 	}
+	m, ok := es.handlers[eventType]
 	delete(m, id)
+	delete(es.handlersIntMap, id)
 }
 
-func (es *Source) Fire(eventType soulevent.Type, event internal.Event) bool {
+func (es *Source) Fire(eventType string, event internal.Event) bool {
 	es.handlersLock.Lock()
 	defer es.handlersLock.Unlock()
 	event.Set(eventType, es)
 	if m, ok := es.handlers[eventType]; ok {
+		eValue := []reflect.Value{reflect.ValueOf(event)}
 		for _, cb := range m {
-			event.Add()
-			cb <- event
-			event.Wait()
+			cb.Call(eValue)
 		}
 	}
 	return event.IsCanceled()
@@ -60,21 +71,8 @@ func (es *Source) Fire(eventType soulevent.Type, event internal.Event) bool {
 
 type Event struct {
 	canceled  bool
-	waitGroup sync.WaitGroup
 	source    *Source
-	eventType soulevent.Type
-}
-
-func (e *Event) Wait() {
-	e.waitGroup.Wait()
-}
-
-func (e *Event) Add() {
-	e.waitGroup.Add(1)
-}
-
-func (e *Event) Done() {
-	e.waitGroup.Done()
+	eventType string
 }
 
 func (e *Event) Cancel() {
@@ -85,7 +83,7 @@ func (e *Event) IsCanceled() bool {
 	return e.canceled
 }
 
-func (e *Event) Set(eventType soulevent.Type, source soulsand.EventSource) {
+func (e *Event) Set(eventType string, source soulsand.EventSource) {
 	e.source = source.(*Source)
 	e.eventType = eventType
 }
@@ -96,4 +94,5 @@ func (e *Event) Remove(id int) {
 		return
 	}
 	delete(m, id)
+	delete(e.source.handlersIntMap, id)
 }
