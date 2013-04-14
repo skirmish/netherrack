@@ -22,14 +22,20 @@ func (player *Player) GetGamemode() (gamemode.Type, error) {
 	val, err := player.CallSync(func(e soulsand.SyncEntity, ret chan interface{}) {
 		ret <- player.gamemode
 	})
-	return val.(gamemode.Type), err
+	if err == nil {
+		return val.(gamemode.Type), err
+	}
+	return 0, err
 }
 
 func (player *Player) GetLocale() (string, error) {
 	val, err := player.CallSync(func(e soulsand.SyncEntity, ret chan interface{}) {
 		ret <- player.settings.locale
 	})
-	return val.(string), err
+	if err == nil {
+		return val.(string), err
+	}
+	return "", err
 }
 
 func (player *Player) SetExperienceBar(position float32) error {
@@ -58,7 +64,10 @@ func (player *Player) GetDisplayName() (string, error) {
 	val, err := player.CallSync(func(e soulsand.SyncEntity, ret chan interface{}) {
 		ret <- player.displayName
 	})
-	return val.(string), err
+	if err == nil {
+		return val.(string), err
+	}
+	return "", err
 }
 
 func (player *Player) SetDisplayName(name string) error {

@@ -28,5 +28,14 @@ func (e *Entity) CallSync(f func(soulsand.SyncEntity, chan interface{})) (interf
 	err := e.RunSync(func(soulsand.SyncEntity) {
 		f(e, ret)
 	})
-	return <-ret, err
+	if err == nil {
+		select {
+		case val := <-ret:
+			return val, err
+		case <-e.EntityDead:
+			e.EntityDead <- struct{}{}
+			return nil, errors.New("Entity removed")
+		}
+	}
+	return nil, err
 }

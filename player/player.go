@@ -68,9 +68,13 @@ var (
 	_ soulsand.SyncPlayer = &Player{}
 )
 
-func HandlePlayer(conn net.Conn) {
+func finalPlayer(player *Player) {
+	println(player.name)
+}
 
+func HandlePlayer(conn net.Conn) {
 	player := &Player{}
+	runtime.SetFinalizer(player, finalPlayer)
 	player.Source.Init()
 	player.settings.viewDistance = 10
 	player.errorChannel = make(chan struct{}, 1)
@@ -80,6 +84,8 @@ func HandlePlayer(conn net.Conn) {
 	defer func() {
 		player.readPacketChannel <- struct{}{}
 		player.EntityDead <- struct{}{}
+		player.connection.player = nil
+		println("Done cleanup")
 	}()
 
 	player.connection.conn = conn

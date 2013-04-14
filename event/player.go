@@ -16,7 +16,7 @@ type PlayerMessage struct {
 }
 
 func NewMessage(player soulsand.SyncPlayer, message string) (string, *PlayerMessage) {
-	return "EventPlayerMessage",&PlayerMessage{
+	return "EventPlayerMessage", &PlayerMessage{
 		Event:   Event{},
 		player:  player,
 		message: message,
