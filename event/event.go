@@ -31,7 +31,6 @@ func (es *Source) Register(callback interface{}) int {
 		panic("Event: Must have one argument")
 	}
 	eventType := t.In(0).Name()
-	println(eventType)
 	es.handlersLock.Lock()
 	defer es.handlersLock.Unlock()
 	m, ok := es.handlers[eventType]
