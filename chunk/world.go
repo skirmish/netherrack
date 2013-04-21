@@ -1,8 +1,8 @@
 package chunk
 
 import (
-	"bitbucket.org/Thinkofdeath/soulsand"
-	"bitbucket.org/Thinkofdeath/soulsand/effect"
+	"github.com/thinkofdeath/soulsand"
+	"github.com/thinkofdeath/soulsand/effect"
 	"sync"
 )
 

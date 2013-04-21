@@ -1,9 +1,9 @@
 package system
 
 import (
-	"bitbucket.org/Thinkofdeath/netherrack/event"
-	"bitbucket.org/Thinkofdeath/soulsand"
-	"bitbucket.org/Thinkofdeath/soulsand/locale"
+	"github.com/thinkofdeath/netherrack/event"
+	"github.com/thinkofdeath/soulsand"
+	"github.com/thinkofdeath/soulsand/locale"
 	"fmt"
 	"log"
 )

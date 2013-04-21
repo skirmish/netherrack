@@ -1,9 +1,9 @@
 package entity
 
 import (
-	"bitbucket.org/Thinkofdeath/netherrack/internal"
-	"bitbucket.org/Thinkofdeath/netherrack/system"
-	"bitbucket.org/Thinkofdeath/soulsand"
+	"github.com/thinkofdeath/netherrack/internal"
+	"github.com/thinkofdeath/netherrack/system"
+	"github.com/thinkofdeath/soulsand"
 )
 
 //Compile time checks

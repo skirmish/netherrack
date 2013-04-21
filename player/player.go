@@ -1,14 +1,14 @@
 package player
 
 import (
-	"bitbucket.org/Thinkofdeath/netherrack/entity"
-	"bitbucket.org/Thinkofdeath/netherrack/event"
-	"bitbucket.org/Thinkofdeath/netherrack/internal"
-	"bitbucket.org/Thinkofdeath/netherrack/system"
-	"bitbucket.org/Thinkofdeath/soulsand"
-	"bitbucket.org/Thinkofdeath/soulsand/command"
-	"bitbucket.org/Thinkofdeath/soulsand/gamemode"
-	"bitbucket.org/Thinkofdeath/soulsand/locale"
+	"github.com/thinkofdeath/netherrack/entity"
+	"github.com/thinkofdeath/netherrack/event"
+	"github.com/thinkofdeath/netherrack/internal"
+	"github.com/thinkofdeath/netherrack/system"
+	"github.com/thinkofdeath/soulsand"
+	"github.com/thinkofdeath/soulsand/command"
+	"github.com/thinkofdeath/soulsand/gamemode"
+	"github.com/thinkofdeath/soulsand/locale"
 	"encoding/binary"
 	"fmt"
 	"log"

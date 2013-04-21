@@ -1,8 +1,8 @@
 package player
 
 import (
-	"bitbucket.org/Thinkofdeath/netherrack/entity"
-	"bitbucket.org/Thinkofdeath/soulsand"
+	"github.com/thinkofdeath/netherrack/entity"
+	"github.com/thinkofdeath/soulsand"
 )
 
 func (player *Player) GetName() string {

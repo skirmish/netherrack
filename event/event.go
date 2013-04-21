@@ -1,8 +1,8 @@
 package event
 
 import (
-	"bitbucket.org/Thinkofdeath/netherrack/internal"
-	"bitbucket.org/Thinkofdeath/soulsand"
+	"github.com/thinkofdeath/netherrack/internal"
+	"github.com/thinkofdeath/soulsand"
 	"reflect"
 	"sync"
 )

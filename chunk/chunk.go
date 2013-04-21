@@ -1,6 +1,6 @@
 package chunk
 
-import "bitbucket.org/Thinkofdeath/soulsand"
+import "github.com/thinkofdeath/soulsand"
 
 var (
 	_ soulsand.SyncChunk = &Chunk{}

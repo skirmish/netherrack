@@ -1,7 +1,7 @@
 package event
 
 import (
-	"bitbucket.org/Thinkofdeath/soulsand"
+	"github.com/thinkofdeath/soulsand"
 )
 
 var _ soulsand.EventPlayerMessage = &PlayerMessage{}

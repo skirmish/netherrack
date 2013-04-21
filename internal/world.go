@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"bitbucket.org/Thinkofdeath/soulsand"
+	"github.com/thinkofdeath/soulsand"
 )
 
 type World interface {

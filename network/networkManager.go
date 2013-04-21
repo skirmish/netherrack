@@ -1,8 +1,8 @@
 package network
 
 import (
-	"bitbucket.org/Thinkofdeath/netherrack/player"
-	"bitbucket.org/Thinkofdeath/soulsand"
+	"github.com/thinkofdeath/netherrack/player"
+	"github.com/thinkofdeath/soulsand"
 	"encoding/binary"
 	"fmt"
 	"log"
