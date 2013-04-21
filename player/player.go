@@ -69,7 +69,7 @@ var (
 )
 
 func finalPlayer(player *Player) {
-	println(player.name)
+	log.Println("Player gone")
 }
 
 func HandlePlayer(conn net.Conn) {

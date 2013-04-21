@@ -67,7 +67,6 @@ func init() {
 	}
 	key.Precompute()
 
-	//cert, err = asn1.Marshal(key.PublicKey)
 	cert, err = x509.MarshalPKIXPublicKey(&key.PublicKey)
 	if err != nil {
 		log.Println(err)
