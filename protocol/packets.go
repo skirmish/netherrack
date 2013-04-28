@@ -179,7 +179,7 @@ func (c *Conn) ReadPlayerLook() (yaw, pitch float32, onGround bool) {
 
 //Player Position and Look (0x0D)
 
-func (c *Conn) WritePlayerPositionLook(x, y, stance, z float64, yaw, pitch float32, onGround bool) {
+func (c *Conn) WritePlayerPositionLook(x, y, z, stance float64, yaw, pitch float32, onGround bool) {
 	out := NewByteWriter(1 + 8 + 8 + 8 + 8 + 4 + 4 + 1)
 	out.WriteUByte(0x0D)
 	out.WriteDouble(x)
@@ -539,17 +539,28 @@ func (c *Conn) WriteSetExperience(experienceBar float32, level, totalExperience 
 
 //Chunk Data (0x33)
 
+func (c *Conn) WriteChunkDataUnload(x, z int32) {
+	out := NewByteWriter(1 + 4 + 4 + 1 + 2 + 2 + 4)
+	out.WriteUByte(0x33)
+	out.WriteInt(x)
+	out.WriteInt(x)
+	out.WriteBool(true)
+	c.Write(out.Bytes())
+}
+
 //Multi Block Change (0x34)
 
-func (c *Conn) WriteMultiBlockChange(chunkX, chunkZ int32, recordCount int16, data []byte) {
-	out := NewByteWriter(1 + 4 + 4 + 2 + 4)
+func (c *Conn) WriteMultiBlockChange(chunkX, chunkZ int32, data []uint32) {
+	out := NewByteWriter(1 + 4 + 4 + 2 + 4 + len(data)*4)
 	out.WriteUByte(0x34)
 	out.WriteInt(chunkX)
 	out.WriteInt(chunkZ)
-	out.WriteShort(int16(len(data) / 2))
-	out.WriteInt(int32(len(data)))
+	out.WriteShort(int16(len(data)))
+	out.WriteInt(int32(len(data) * 4))
+	for _, d := range data {
+		out.WriteInt(int32(d))
+	}
 	c.Write(out.Bytes())
-	c.Write(data)
 }
 
 //Block Change (0x35)
@@ -1191,4 +1202,8 @@ func (c *Conn) WriteDisconnect(reason string) {
 	out.WriteUByte(0xFF)
 	out.WriteString(reasonRunes)
 	c.Write(out.Bytes())
+}
+
+func (c *Conn) ReadDisconnect() string {
+	return c.readString()
 }

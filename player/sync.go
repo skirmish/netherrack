@@ -2,6 +2,7 @@ package player
 
 import (
 	"github.com/thinkofdeath/netherrack/entity"
+	"github.com/thinkofdeath/netherrack/entity/metadata"
 	"github.com/thinkofdeath/soulsand"
 )
 
@@ -30,7 +31,7 @@ func (player *Player) SetDisplayNameSync(name string) {
 }
 
 func (player *Player) GetConnection() soulsand.UnsafeConnection {
-	return &player.connection
+	return player.connection
 }
 
 func (player *Player) AsEntity() entity.Entity {
@@ -41,8 +42,8 @@ func (player *Player) SendEntityAttach(eID int32, vID int32) {
 	player.connection.WriteAttachEntity(eID, vID)
 }
 
-func (player *Player) SendSpawnMob(eID int32, t int8, x, y, z int32, yaw, pitch, hYaw int8, velX, velY, velZ int16, metadata map[byte]entity.MetadataItem) {
-	player.connection.WriteSpawnMob(eID, t, x, y, z, yaw, pitch, hYaw, velX, velY, velZ, metadata)
+func (player *Player) SendSpawnMob(eID int32, t int8, x, y, z int32, yaw, pitch, hYaw int8, velX, velY, velZ int16, data metadata.Type) {
+	player.connection.WriteSpawnMob(eID, t, x, y, z, yaw, pitch, hYaw, velX, velY, velZ, data)
 }
 
 func (player *Player) SendEntityTeleport(eID, x, y, z int32, yaw, pitch int8) {
@@ -50,7 +51,7 @@ func (player *Player) SendEntityTeleport(eID, x, y, z int32, yaw, pitch int8) {
 }
 
 func (player *Player) SendEntityLookMove(eID int32, dX, dY, dZ int8, yaw, pitch int8) {
-	player.connection.WriteEntityLookRelativeMove(eID, dX, dY, dZ, yaw, pitch)
+	player.connection.WriteEntityLookAndRelativeMove(eID, dX, dY, dZ, yaw, pitch)
 }
 
 func (player *Player) SendEntityHeadLook(eID int32, hYaw int8) {

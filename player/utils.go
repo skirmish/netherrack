@@ -8,7 +8,7 @@ import (
 
 func (player *Player) PlayEffect(x, y, z int, eff effect.Type, data int, relative bool) error {
 	return player.RunSync(func(soulsand.SyncEntity) {
-		player.connection.WriteSoundParticleEffect(int32(eff), int32(x), byte(y), int32(z), int32(data), !relative)
+		player.connection.WriteSoundOrParticleEffect(int32(eff), int32(x), byte(y), int32(z), int32(data), !relative)
 	})
 }
 

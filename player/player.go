@@ -1,16 +1,18 @@
 package player
 
 import (
+	"encoding/binary"
+	"fmt"
 	"github.com/thinkofdeath/netherrack/entity"
 	"github.com/thinkofdeath/netherrack/event"
 	"github.com/thinkofdeath/netherrack/internal"
+	"github.com/thinkofdeath/netherrack/protocol"
 	"github.com/thinkofdeath/netherrack/system"
 	"github.com/thinkofdeath/soulsand"
 	"github.com/thinkofdeath/soulsand/command"
 	"github.com/thinkofdeath/soulsand/gamemode"
 	"github.com/thinkofdeath/soulsand/locale"
-	"encoding/binary"
-	"fmt"
+	"github.com/thinkofdeath/soulsand/server"
 	"log"
 	"net"
 	"runtime"
@@ -21,7 +23,7 @@ type Player struct {
 	entity.Entity
 	event.Source
 
-	connection Connection
+	connection *protocol.Conn
 	name       string
 
 	errorChannel         chan struct{}
@@ -73,6 +75,7 @@ func finalPlayer(player *Player) {
 }
 
 func HandlePlayer(conn net.Conn) {
+
 	player := &Player{}
 	runtime.SetFinalizer(player, finalPlayer)
 	player.Source.Init()
@@ -82,11 +85,9 @@ func HandlePlayer(conn net.Conn) {
 	player.readPacketChannel = make(chan struct{}, 2)
 	player.ChunkChannel = make(chan [][]byte, 500)
 
-	player.connection.conn = conn
-	player.connection.player = player
-	player.connection.Login()
+	player.connection, player.name = protocol.NewConnection(conn)
 
-	if soulsand.GetServer().GetPlayer(player.name) != nil {
+	if server.GetPlayer(player.name) != nil {
 		player.connection.WriteDisconnect(locale.Get(player.GetLocaleSync(), "disconnect.reason.loggedin"))
 		runtime.Goexit()
 	}
@@ -100,11 +101,10 @@ func HandlePlayer(conn net.Conn) {
 	defer player.Entity.Finalise()
 	defer func() {
 		player.readPacketChannel <- struct{}{}
-		player.connection.player = nil
 		println("Done cleanup")
 	}()
-	player.World = soulsand.GetServer().GetWorld("main").(internal.World)
-	player.gamemode = soulsand.GetServer().GetDefaultGamemode()
+	player.World = server.GetWorld("main").(internal.World)
+	player.gamemode = server.GetDefaultGamemode()
 
 	player.Position.X = 0
 	player.Position.Y = 100
@@ -159,8 +159,8 @@ func HandlePlayer(conn net.Conn) {
 			cz := int32(binary.BigEndian.Uint32(chunkData[0][5:9]))
 			vd := int32(player.settings.viewDistance)
 			if !(cx < player.Chunk.X-vd || cx >= player.Chunk.X+vd+1 || cz < player.Chunk.Z-vd || cz >= player.Chunk.Z+vd+1) {
-				player.connection.outStream.Write(chunkData[0])
-				player.connection.outStream.Write(chunkData[1])
+				player.connection.Write(chunkData[0])
+				player.connection.Write(chunkData[1])
 			}
 		case f := <-player.EventChannel:
 			f(player)
@@ -173,7 +173,7 @@ func HandlePlayer(conn net.Conn) {
 			player.SendMoveUpdate()
 		case pId := <-player.currentPacketChannel:
 			if pFunc, ok := packets[pId]; ok {
-				pFunc(&player.connection)
+				pFunc(player.connection, player)
 			} else {
 				log.Printf("Unknown packet 0x%X\n", pId)
 				runtime.Goexit()

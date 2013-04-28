@@ -13,6 +13,12 @@ func (c *Conn) readBool() bool {
 	return c.readUByte() == 1
 }
 
+func (c *Conn) ReadUByte() byte {
+	data := make([]byte, 1)
+	c.Read(data)
+	return data[0]
+}
+
 func (c *Conn) readUByte() byte {
 	data := make([]byte, 1)
 	c.Read(data)

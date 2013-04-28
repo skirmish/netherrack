@@ -4,7 +4,7 @@ import (
 	"github.com/thinkofdeath/netherrack/chunk"
 	"github.com/thinkofdeath/netherrack/event"
 	"github.com/thinkofdeath/netherrack/network"
-	"github.com/thinkofdeath/netherrack/player"
+	"github.com/thinkofdeath/netherrack/protocol"
 	"github.com/thinkofdeath/netherrack/system"
 	"github.com/thinkofdeath/soulsand"
 	"github.com/thinkofdeath/soulsand/gamemode"
@@ -57,7 +57,7 @@ func (server *Server) Start(ip string, port int) {
 	log.Println("Starting Netherrack server")
 
 	server.ProtoVersion = 60
-	player.PROTOVERSION = byte(server.ProtoVersion)
+	protocol.PROTOVERSION = byte(server.ProtoVersion)
 	server.ListPing.Version = "1.5.1"
 
 	server.event = make(chan func(), 1000)
