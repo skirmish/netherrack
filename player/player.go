@@ -6,6 +6,7 @@ import (
 	"github.com/thinkofdeath/netherrack/entity"
 	"github.com/thinkofdeath/netherrack/event"
 	"github.com/thinkofdeath/netherrack/internal"
+	"github.com/thinkofdeath/netherrack/inventory"
 	"github.com/thinkofdeath/netherrack/protocol"
 	"github.com/thinkofdeath/netherrack/system"
 	"github.com/thinkofdeath/soulsand"
@@ -33,9 +34,8 @@ type Player struct {
 
 	currentTickID int32
 
-	Inventory struct {
-		CurrentSlot int
-	}
+	CurrentSlot int
+	inventory   *inventory.PlayerInventory
 
 	displayName       string
 	IgnoreMoveUpdates bool

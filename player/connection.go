@@ -112,7 +112,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 	},
 	0x10: func(c *protocol.Conn, player *Player) { //Held Item Change
 		slotID := c.ReadHeldItemChange()
-		player.Inventory.CurrentSlot = int(slotID)
+		player.CurrentSlot = int(slotID)
 	},
 	0x12: func(c *protocol.Conn, player *Player) { //Animation
 		c.ReadAnimation()
