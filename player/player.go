@@ -147,9 +147,12 @@ func HandlePlayer(conn net.Conn) {
 	go player.dataWatcher()
 	defer log.Println("Player disconnecting")
 
+	player.loop()
+}
+
+func (player *Player) loop() {
 	timer := time.NewTicker(time.Second / 20)
 	defer timer.Stop()
-
 	for {
 		select {
 		case chunkData := <-player.ChunkChannel:
