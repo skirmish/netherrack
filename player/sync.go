@@ -4,6 +4,7 @@ import (
 	"github.com/thinkofdeath/netherrack/entity"
 	"github.com/thinkofdeath/netherrack/entity/metadata"
 	"github.com/thinkofdeath/soulsand"
+	"github.com/thinkofdeath/soulsand/gamemode"
 )
 
 func (player *Player) GetName() string {
@@ -28,6 +29,15 @@ func (player *Player) GetDisplayNameSync() string {
 
 func (player *Player) SetDisplayNameSync(name string) {
 	player.displayName = name
+}
+
+func (player *Player) SetGamemodeSync(mode gamemode.Type) {
+	player.gamemode = mode
+	player.connection.WriteChangeGameState(3, int8(mode))
+}
+
+func (player *Player) GetGamemodeSync() gamemode.Type {
+	return player.gamemode
 }
 
 func (player *Player) GetConnection() soulsand.UnsafeConnection {

@@ -14,7 +14,7 @@ func (player *Player) PlayEffect(x, y, z int, eff effect.Type, data int, relativ
 
 func (player *Player) SetGamemode(mode gamemode.Type) error {
 	return player.RunSync(func(soulsand.SyncEntity) {
-		player.gamemode = mode
+		player.SetGamemodeSync(mode)
 	})
 }
 
