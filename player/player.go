@@ -101,7 +101,6 @@ func HandlePlayer(conn net.Conn) {
 	defer player.Entity.Finalise()
 	defer func() {
 		player.readPacketChannel <- struct{}{}
-		println("Done cleanup")
 	}()
 	player.World = server.GetWorld("main").(internal.World)
 	player.gamemode = server.GetDefaultGamemode()
