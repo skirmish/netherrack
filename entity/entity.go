@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/thinkofdeath/netherrack/entity/metadata"
 	"github.com/thinkofdeath/netherrack/internal"
 	"github.com/thinkofdeath/netherrack/system"
 	"github.com/thinkofdeath/soulsand"
@@ -33,6 +34,8 @@ type Entity struct {
 	EntityDead   chan struct{}
 	Spawnable
 
+	metadata metadata.Type
+
 	isActive bool
 }
 
@@ -47,6 +50,9 @@ func (e *Entity) Init(s Spawnable) {
 	e.Spawnable = s
 	e.isActive = true
 	e.EID = system.GetFreeEntityID(e)
+	e.metadata = metadata.Type{
+		0: int8(0),
+	}
 }
 
 func (e *Entity) Finalise() {

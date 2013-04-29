@@ -1,8 +1,8 @@
 package entity
 
 import (
-	"github.com/thinkofdeath/soulsand"
 	"errors"
+	"github.com/thinkofdeath/soulsand"
 )
 
 func (e *Entity) GetPositionSync() (float64, float64, float64) {
@@ -38,4 +38,8 @@ func (e *Entity) CallSync(f func(soulsand.SyncEntity, chan interface{})) (interf
 		}
 	}
 	return nil, err
+}
+
+func (e *Entity) GetEntityMetadata() soulsand.EntityMetadata {
+	return e.metadata
 }
