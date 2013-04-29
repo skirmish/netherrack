@@ -154,12 +154,6 @@ func entityRelativeLookMove(id int32, dx, dy, dz, yaw, pitch int8) func(soulsand
 	}
 }
 
-type MetadataItem struct {
-	Index byte
-	Type  byte
-	Value interface{}
-}
-
 func (*Entity) CheckCube(x1, y1, z1, w1, h1, d1, x2, y2, z2, w2, h2, d2 float64) bool {
 	if x1 > x2+w2 {
 		return false
