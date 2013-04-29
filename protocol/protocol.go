@@ -25,6 +25,7 @@ import (
 )
 
 var PROTOVERSION byte
+var _ soulsand.UnsafeConnection = &Conn{}
 
 type Conn struct {
 	conn net.Conn
