@@ -281,7 +281,7 @@ func (c *Conn) ReadEntityAction() (eId int32, actionID int8) {
 
 //Spawn Named Entity (0x14)
 
-func (c *Conn) WriteSpawnNamedEntity(eID int32, playerName string, x, y, z int32, yaw, pitch int8, currentItem int16, meta metadata.Type) {
+func (c *Conn) WriteSpawnNamedEntity(eID int32, playerName string, x, y, z int32, yaw, pitch int8, currentItem int16, meta soulsand.EntityMetadata) {
 	playerNameRunes := []rune(playerName)
 	out := NewByteWriter(1 + 4 + 2 + len(playerNameRunes)*2 + 4 + 4 + 4 + 1 + 1 + 2)
 	out.WriteUByte(0x14)
@@ -294,7 +294,7 @@ func (c *Conn) WriteSpawnNamedEntity(eID int32, playerName string, x, y, z int32
 	out.WriteByte(pitch)
 	out.WriteShort(currentItem)
 	c.Write(out.Bytes())
-	meta.WriteTo(c)
+	(meta.(metadata.Type)).WriteTo(c)
 }
 
 //Collect Item (0x16)
@@ -335,7 +335,7 @@ func (c *Conn) WriteSpawnObjectVehicle(eId int32, t int8, x, y, z int32, pitch, 
 
 //Spawn Mob (0x18)
 
-func (c *Conn) WriteSpawnMob(eId int32, t int8, x, y, z int32, pitch, headPitch, yaw int8, velocityX, velocityY, velocityZ int16, meta metadata.Type) {
+func (c *Conn) WriteSpawnMob(eId int32, t int8, x, y, z int32, pitch, headPitch, yaw int8, velocityX, velocityY, velocityZ int16, meta soulsand.EntityMetadata) {
 	out := NewByteWriter(1 + 4 + 1 + 4 + 4 + 4 + 1 + 1 + 1 + 2 + 2 + 2)
 	out.WriteUByte(0x18)
 	out.WriteInt(eId)
@@ -350,7 +350,7 @@ func (c *Conn) WriteSpawnMob(eId int32, t int8, x, y, z int32, pitch, headPitch,
 	out.WriteShort(velocityY)
 	out.WriteShort(velocityZ)
 	c.Write(out.Bytes())
-	meta.WriteTo(c)
+	(meta.(metadata.Type)).WriteTo(c)
 }
 
 //Spawn Painting (0x19)
@@ -496,12 +496,12 @@ func (c *Conn) WriteAttachEntity(eId, vId int32) {
 
 //Entity Metadata (0x28)
 
-func (c *Conn) WriteEntityMetadata(eId int32, meta metadata.Type) {
+func (c *Conn) WriteEntityMetadata(eId int32, meta soulsand.EntityMetadata) {
 	out := NewByteWriter(1 + 4)
 	out.WriteUByte(0x28)
 	out.WriteInt(eId)
 	c.Write(out.Bytes())
-	meta.WriteTo(c)
+	(meta.(metadata.Type)).WriteTo(c)
 }
 
 //Entity Effect (0x29)

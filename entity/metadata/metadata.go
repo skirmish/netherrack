@@ -3,11 +3,22 @@ package metadata
 import (
 	"encoding/binary"
 	"github.com/thinkofdeath/netherrack/items"
+	"github.com/thinkofdeath/soulsand"
 	"io"
 	"math"
 )
 
+var _ soulsand.EntityMetadata = Type{}
+
 type Type map[int]interface{}
+
+func (t Type) Set(index int, data interface{}) {
+	t[index] = data
+}
+
+func (t Type) Get(index int) interface{} {
+	return t[index]
+}
 
 func (t Type) WriteTo(w io.Writer) {
 	for index, value := range t {
