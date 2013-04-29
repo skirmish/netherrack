@@ -543,7 +543,7 @@ func (c *Conn) WriteChunkDataUnload(x, z int32) {
 	out := NewByteWriter(1 + 4 + 4 + 1 + 2 + 2 + 4)
 	out.WriteUByte(0x33)
 	out.WriteInt(x)
-	out.WriteInt(x)
+	out.WriteInt(z)
 	out.WriteBool(true)
 	c.Write(out.Bytes())
 }
