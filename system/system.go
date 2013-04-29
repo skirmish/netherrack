@@ -1,10 +1,10 @@
 package system
 
 import (
+	"fmt"
 	"github.com/thinkofdeath/netherrack/event"
 	"github.com/thinkofdeath/soulsand"
 	"github.com/thinkofdeath/soulsand/locale"
-	"fmt"
 	"log"
 )
 
@@ -65,8 +65,9 @@ func AddPlayer(p soulsand.Player) {
 
 func RemovePlayer(p soulsand.Player) {
 	displayName := (p.(soulsand.SyncPlayer)).GetDisplayNameSync()
+	name := p.GetName()
 	channel <- func() {
-		delete(playersByName, p.GetName())
+		delete(playersByName, name)
 		for _, player := range playersByName {
 			playerLocale, err := player.GetLocale()
 			if err != nil {
@@ -104,7 +105,8 @@ func GetFreeEntityID(e soulsand.Entity) int32 {
 }
 
 func FreeEntityID(e soulsand.Entity) {
+	id := e.GetID()
 	channel <- func() {
-		delete(entitysById, e.GetID())
+		delete(entitysById, id)
 	}
 }

@@ -96,7 +96,6 @@ func HandlePlayer(conn net.Conn) {
 		player.connection.WriteDisconnect(ev.Reason)
 		runtime.Goexit()
 	}
-
 	player.Entity.Init(player)
 	defer player.Entity.Finalise()
 	defer func() {

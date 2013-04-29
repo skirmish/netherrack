@@ -64,6 +64,7 @@ func (e *Entity) kill() {
 	if !e.isActive {
 		return
 	}
+	e.Spawnable = nil
 	e.isActive = false
 	system.FreeEntityID(e)
 }
