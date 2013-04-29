@@ -20,6 +20,14 @@ func (t Type) Get(index int) interface{} {
 	return t[index]
 }
 
+func (t Type) Clone() Type {
+	c := Type{}
+	for k, v := range t {
+		c[k] = v
+	}
+	return c
+}
+
 func (t Type) WriteTo(w io.Writer) {
 	for index, value := range t {
 		var key byte = byte(index) & 0x1F
