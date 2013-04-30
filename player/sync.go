@@ -3,6 +3,7 @@ package player
 import (
 	"github.com/thinkofdeath/netherrack/entity"
 	"github.com/thinkofdeath/netherrack/entity/metadata"
+	"github.com/thinkofdeath/netherrack/internal"
 	"github.com/thinkofdeath/soulsand"
 	"github.com/thinkofdeath/soulsand/gamemode"
 )
@@ -46,6 +47,17 @@ func (player *Player) GetConnection() soulsand.UnsafeConnection {
 
 func (player *Player) AsEntity() entity.Entity {
 	return player.Entity
+}
+
+func (player *Player) OpenInventorySync(inv soulsand.Inventory) {
+	netherInv := inv.(internal.Inventory)
+	title := inv.GetName()
+	useTitle := true
+	if len(title) == 0 {
+		title = ""
+		useTitle = false
+	}
+	player.connection.WriteOpenWindow(5, netherInv.GetWindowType(), title, int8(netherInv.GetSize()-27-9), useTitle)
 }
 
 func (player *Player) SendEntityAttach(eID int32, vID int32) {

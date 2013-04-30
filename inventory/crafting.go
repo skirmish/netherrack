@@ -10,12 +10,11 @@ type CraftingInventory struct {
 	Type
 }
 
-func CreateCraftingInventory(name string) *CraftingInventory {
+func CreateCraftingInventory() *CraftingInventory {
 	return &CraftingInventory{
 		Type: Type{
 			items: make([]soulsand.ItemStack, 46),
 			Id:    1,
-			Name:  name,
 		},
 	}
 }

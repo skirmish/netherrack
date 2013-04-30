@@ -91,11 +91,6 @@ func HandlePlayer(conn net.Conn) {
 		player.connection.WriteDisconnect(locale.Get(player.GetLocaleSync(), "disconnect.reason.loggedin"))
 		runtime.Goexit()
 	}
-	eventType, ev := event.NewJoin(player, locale.Get(player.GetLocaleSync(), "disconnect.reason.unknown"))
-	if system.EventSource.Fire(eventType, ev) {
-		player.connection.WriteDisconnect(ev.Reason)
-		runtime.Goexit()
-	}
 	player.Entity.Init(player)
 	defer player.Entity.Finalise()
 	defer func() {
@@ -114,6 +109,13 @@ func HandlePlayer(conn net.Conn) {
 	player.displayName = player.name
 
 	player.connection.WriteLoginRequest(player.EID, "flat", int8(player.gamemode), 0, 3, 32)
+
+	eventType, ev := event.NewJoin(player, locale.Get(player.GetLocaleSync(), "disconnect.reason.unknown"))
+	if system.EventSource.Fire(eventType, ev) {
+		player.connection.WriteDisconnect(ev.Reason)
+		runtime.Goexit()
+	}
+
 	player.connection.WriteSpawnPosition(0, 100, 0)
 	player.connection.WritePlayerPositionLook(player.Position.X, player.Position.Y, player.Position.Z, player.Position.Y+1.6, player.Position.Yaw, player.Position.Pitch, false)
 

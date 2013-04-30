@@ -12,6 +12,10 @@ type Type struct {
 	Name  string
 }
 
+func (inv *Type) GetWindowType() int8 {
+	return inv.Id
+}
+
 func (inv *Type) GetSlot(slot int) soulsand.ItemStack {
 	return inv.items[slot]
 }

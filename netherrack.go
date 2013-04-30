@@ -24,7 +24,7 @@ func init() {
 	locale.Load("data/lang")
 	server := &Server{}
 	server.init()
-	soulsand.SetServer(server, provider{})
+	soulsand.SetServer(server, &provider{})
 }
 
 type Server struct {
