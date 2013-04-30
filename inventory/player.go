@@ -4,6 +4,8 @@ import (
 	"github.com/thinkofdeath/soulsand"
 )
 
+var _ soulsand.PlayerInventory = &PlayerInventory{}
+
 type PlayerInventory struct {
 	Type
 }
@@ -65,15 +67,15 @@ func (pi *PlayerInventory) SetArmourFeet(item soulsand.ItemStack) {
 	pi.SetSlot(8, item)
 }
 
-func (pi *PlayerInventory) GetInventorySlot(slot int) soulsand.ItemStack {
+func (pi *PlayerInventory) GetPlayerInventorySlot(slot int) soulsand.ItemStack {
 	return pi.GetSlot(9 + slot)
 }
 
-func (pi *PlayerInventory) SetInventorySlot(slot int, item soulsand.ItemStack) {
+func (pi *PlayerInventory) SetPlayerInventorySlot(slot int, item soulsand.ItemStack) {
 	pi.SetSlot(9+slot, item)
 }
 
-func (pu *PlayerInventory) GetInventorySize() int {
+func (pi *PlayerInventory) GetPlayerInventorySize() int {
 	return 27
 }
 

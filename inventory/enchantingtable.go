@@ -26,15 +26,15 @@ func (eti *EnchantingTableInventory) SetItem(item soulsand.ItemStack) {
 	eti.SetSlot(0, item)
 }
 
-func (eti *EnchantingTableInventory) GetInventorySlot(slot int) soulsand.ItemStack {
+func (eti *EnchantingTableInventory) GetPlayerInventorySlot(slot int) soulsand.ItemStack {
 	return eti.GetSlot(1 + slot)
 }
 
-func (eti *EnchantingTableInventory) SetInventorySlot(slot int, item soulsand.ItemStack) {
+func (eti *EnchantingTableInventory) SetPlayerInventorySlot(slot int, item soulsand.ItemStack) {
 	eti.SetSlot(1+slot, item)
 }
 
-func (pu *EnchantingTableInventory) GetInventorySize() int {
+func (eti *EnchantingTableInventory) GetPlayerInventorySize() int {
 	return 27
 }
 

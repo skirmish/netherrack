@@ -4,6 +4,8 @@ import (
 	"github.com/thinkofdeath/soulsand"
 )
 
+var _ soulsand.ChestInventory = &ChestInventory{}
+
 type ChestInventory struct {
 	Type
 	chestSlots int

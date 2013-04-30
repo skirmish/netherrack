@@ -4,6 +4,8 @@ import (
 	"github.com/thinkofdeath/soulsand"
 )
 
+var _ soulsand.Inventory = &Type{}
+
 type Type struct {
 	items []soulsand.ItemStack
 	Id    int8

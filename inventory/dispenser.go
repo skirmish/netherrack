@@ -4,6 +4,8 @@ import (
 	"github.com/thinkofdeath/soulsand"
 )
 
+var _ soulsand.DispenserInventory = &DispenserInventory{}
+
 type DispenserInventory struct {
 	Type
 }

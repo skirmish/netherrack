@@ -4,6 +4,8 @@ import (
 	"github.com/thinkofdeath/soulsand"
 )
 
+var _ soulsand.FurnanceInventory = &FurnaceInventory{}
+
 type FurnaceInventory struct {
 	Type
 }
@@ -42,15 +44,15 @@ func (fi *FurnaceInventory) SetInput(item soulsand.ItemStack) {
 	fi.SetSlot(2, item)
 }
 
-func (fi *FurnaceInventory) GetInventorySlot(slot int) soulsand.ItemStack {
+func (fi *FurnaceInventory) GetPlayerInventorySlot(slot int) soulsand.ItemStack {
 	return fi.GetSlot(3 + slot)
 }
 
-func (fi *FurnaceInventory) SetInventorySlot(slot int, item soulsand.ItemStack) {
+func (fi *FurnaceInventory) SetPlayerInventorySlot(slot int, item soulsand.ItemStack) {
 	fi.SetSlot(3+slot, item)
 }
 
-func (pu *FurnaceInventory) GetInventorySize() int {
+func (fi *FurnaceInventory) GetPlayerInventorySize() int {
 	return 27
 }
 

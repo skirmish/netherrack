@@ -4,6 +4,8 @@ import (
 	"github.com/thinkofdeath/soulsand"
 )
 
+var _ soulsand.CraftingInventory = &CraftingInventory{}
+
 type CraftingInventory struct {
 	Type
 }
@@ -34,15 +36,15 @@ func (ci *CraftingInventory) SetCraftingInput(x, y int, item soulsand.ItemStack)
 	ci.SetSlot(1+x+y*3, item)
 }
 
-func (ci *CraftingInventory) GetInventorySlot(slot int) soulsand.ItemStack {
+func (ci *CraftingInventory) GetPlayerInventorySlot(slot int) soulsand.ItemStack {
 	return ci.GetSlot(10 + slot)
 }
 
-func (ci *CraftingInventory) SetInventorySlot(slot int, item soulsand.ItemStack) {
+func (ci *CraftingInventory) SetPlayerInventorySlot(slot int, item soulsand.ItemStack) {
 	ci.SetSlot(10+slot, item)
 }
 
-func (pu *CraftingInventory) GetInventorySize() int {
+func (ci *CraftingInventory) GetPlayerInventorySize() int {
 	return 27
 }
 
