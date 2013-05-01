@@ -9,7 +9,17 @@ import (
 //Compile time checks
 var _ soulsand.ItemStack = &ItemStack{}
 
+func CreateItemStack(id, data int16, count byte) *ItemStack {
+	return &ItemStack{
+		ID:       id,
+		Damage:   data,
+		Count:    count,
+		metadata: make(map[string]interface{}),
+	}
+}
+
 type ItemStack struct {
+	lock     sync.RWMutex
 	ID       int16
 	Count    byte
 	Damage   int16
@@ -19,18 +29,44 @@ type ItemStack struct {
 }
 
 func (i *ItemStack) GetID() int16 {
+	i.lock.RLock()
+	defer i.lock.RUnlock()
 	return i.ID
 }
 
+func (i *ItemStack) SetID(id int16) {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	i.ID = id
+}
+
 func (i *ItemStack) GetData() int16 {
+	i.lock.RLock()
+	defer i.lock.RUnlock()
 	return i.Damage
 }
 
+func (i *ItemStack) SetData(data int16) {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	i.Damage = data
+}
+
 func (i *ItemStack) GetCount() byte {
+	i.lock.RLock()
+	defer i.lock.RUnlock()
 	return i.Count
 }
 
+func (i *ItemStack) SetCount(count byte) {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	i.Count = count
+}
+
 func (i *ItemStack) SetDisplayName(name string) {
+	i.lock.Lock()
+	defer i.lock.Unlock()
 	if i.Tag == nil {
 		i.Tag = nbt.NewCompound()
 		i.Tag.Name = "tag"
@@ -45,6 +81,8 @@ func (i *ItemStack) SetDisplayName(name string) {
 }
 
 func (i *ItemStack) ClearLore() {
+	i.lock.Lock()
+	defer i.lock.Unlock()
 	if i.Tag == nil {
 		return
 	}
@@ -56,6 +94,8 @@ func (i *ItemStack) ClearLore() {
 }
 
 func (i *ItemStack) AddLore(line string) {
+	i.lock.Lock()
+	defer i.lock.Unlock()
 	if i.Tag == nil {
 		i.Tag = nbt.NewCompound()
 		i.Tag.Name = "tag"

@@ -2,6 +2,7 @@ package netherrack
 
 import (
 	"github.com/thinkofdeath/netherrack/inventory"
+	"github.com/thinkofdeath/netherrack/items"
 	"github.com/thinkofdeath/soulsand"
 )
 
@@ -21,4 +22,8 @@ func (p *provider) CreateDispenserInventory(name string) soulsand.DispenserInven
 }
 func (p *provider) CreateEnchantingTableInventory(name string) soulsand.EnchantingTableInventory {
 	return inventory.CreateEnchantingTableInventory(name)
+}
+
+func (p *provider) CreateItemStack(id, data int16, count byte) soulsand.ItemStack {
+	return items.CreateItemStack(id, data, count)
 }
