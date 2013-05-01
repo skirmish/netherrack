@@ -137,10 +137,8 @@ func entityTryDespawn(cx, cz int32, f func(soulsand.SyncEntity)) func(soulsand.S
 
 func entityTeleport(id int32, x, y, z float64, yaw, pitch float32) func(soulsand.SyncEntity) {
 	return func(p soulsand.SyncEntity) {
-		player := p.(interface {
-			SendEntityTeleport(eID, x, y, z int32, yaw, pitch int8)
-		})
-		player.SendEntityTeleport(
+		player := p.(soulsand.SyncPlayer)
+		player.GetConnection().WriteEntityTeleport(
 			id,
 			int32(x*32),
 			int32(y*32),
@@ -152,12 +150,9 @@ func entityTeleport(id int32, x, y, z float64, yaw, pitch float32) func(soulsand
 
 func entityRelativeLookMove(id int32, dx, dy, dz, yaw, pitch int8) func(soulsand.SyncEntity) {
 	return func(p soulsand.SyncEntity) {
-		player := p.(interface {
-			SendEntityLookMove(eID int32, dX, dY, dZ int8, yaw, pitch int8)
-			SendEntityHeadLook(eID int32, hYaw int8)
-		})
-		player.SendEntityLookMove(id, dx, dy, dz, yaw, pitch)
-		player.SendEntityHeadLook(id, yaw)
+		player := p.(soulsand.SyncPlayer)
+		player.GetConnection().WriteEntityLookAndRelativeMove(id, dx, dy, dz, yaw, pitch)
+		player.GetConnection().WriteEntityHeadLook(id, yaw)
 	}
 }
 
