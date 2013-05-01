@@ -121,7 +121,10 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		c.ReadEntityAction()
 	},
 	0x65: func(c *protocol.Conn, player *Player) { //Close Window
-		c.ReadCloseWindow()
+		id := c.ReadCloseWindow()
+		if id == 5 && player.openInventory != nil {
+			player.openInventory.RemoveWatcher(player)
+		}
 	},
 	0x66: func(c *protocol.Conn, player *Player) { //Click Window
 		c.ReadClickWindow()

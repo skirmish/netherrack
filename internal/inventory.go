@@ -7,4 +7,6 @@ import (
 type Inventory interface {
 	soulsand.Inventory
 	GetWindowType() int8
+	AddWatcher(p soulsand.Player)
+	RemoveWatcher(p soulsand.Player)
 }

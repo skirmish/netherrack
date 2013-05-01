@@ -34,8 +34,9 @@ type Player struct {
 
 	currentTickID int32
 
-	CurrentSlot int
-	inventory   *inventory.PlayerInventory
+	CurrentSlot   int
+	inventory     *inventory.PlayerInventory
+	openInventory internal.Inventory
 
 	displayName       string
 	IgnoreMoveUpdates bool
@@ -107,6 +108,9 @@ func HandlePlayer(conn net.Conn) {
 	player.Chunk.LZ = 0
 	player.Chunk.Z = 0
 	player.displayName = player.name
+	player.inventory = inventory.CreatePlayerInventory()
+	player.inventory.AddWatcher(player)
+	defer player.inventory.RemoveWatcher(player)
 
 	player.connection.WriteLoginRequest(player.EID, "flat", int8(player.gamemode), 0, 3, 32)
 

@@ -19,6 +19,20 @@ func CreatePlayerInventory() *PlayerInventory {
 	}
 }
 
+func (pi *PlayerInventory) SetSlot(slot int, item soulsand.ItemStack) {
+	pi.lock.Lock()
+	defer pi.lock.Unlock()
+	pi.items[slot] = item
+	pi.watcherLock.RLock()
+	defer pi.watcherLock.RUnlock()
+	for _, p := range pi.watchers {
+		p.RunSync(func(se soulsand.SyncEntity) {
+			sp := se.(soulsand.SyncPlayer)
+			sp.GetConnection().WriteSetSlot(0, int16(slot), item)
+		})
+	}
+}
+
 func (pi *PlayerInventory) GetCraftingOutput() soulsand.ItemStack {
 	return pi.GetSlot(0)
 }

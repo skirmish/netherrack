@@ -56,5 +56,12 @@ func (player *Player) OpenInventorySync(inv soulsand.Inventory) {
 		title = ""
 		useTitle = false
 	}
+	if player.openInventory != nil {
+		//Close already open inventory
+		player.openInventory.RemoveWatcher(player)
+		player.connection.WriteCloseWindow(5)
+	}
+	netherInv.AddWatcher(player)
+	player.openInventory = netherInv
 	player.connection.WriteOpenWindow(5, netherInv.GetWindowType(), title, int8(netherInv.GetSize()-27-9), useTitle)
 }
