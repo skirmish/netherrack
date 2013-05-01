@@ -743,7 +743,7 @@ var nilItem = &items.ItemStack{ID: -1}
 func (c *Conn) WriteSetSlot(windowId int8, slot int16, itemstack soulsand.ItemStack) {
 	var out *byteWriter
 	var slotData *items.ItemStack
-	if slotData != nil {
+	if itemstack != nil {
 		slotData = itemstack.(*items.ItemStack)
 	} else {
 		slotData = nilItem
@@ -789,7 +789,7 @@ func (c *Conn) WriteSetWindowItems(windowId int8, itemstacks []soulsand.ItemStac
 	c.Write(out.Bytes())
 	for _, itemstack := range itemstacks {
 		var slotData *items.ItemStack
-		if slotData != nil {
+		if itemstack != nil {
 			slotData = itemstack.(*items.ItemStack)
 		} else {
 			slotData = nilItem
