@@ -11,9 +11,10 @@ type EnchantingTableInventory struct {
 func CreateEnchantingTableInventory(name string) *EnchantingTableInventory {
 	return &EnchantingTableInventory{
 		Type: Type{
-			items: make([]soulsand.ItemStack, 39),
-			Id:    4,
-			Name:  name,
+			items:    make([]soulsand.ItemStack, 39),
+			Id:       4,
+			Name:     name,
+			watchers: make(map[string]soulsand.Player),
 		},
 	}
 }

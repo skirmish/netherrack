@@ -13,9 +13,10 @@ type DispenserInventory struct {
 func CreateDispenserInventory(name string) *DispenserInventory {
 	return &DispenserInventory{
 		Type: Type{
-			items: make([]soulsand.ItemStack, 45),
-			Id:    3,
-			Name:  name,
+			items:    make([]soulsand.ItemStack, 45),
+			Id:       3,
+			Name:     name,
+			watchers: make(map[string]soulsand.Player),
 		},
 	}
 }

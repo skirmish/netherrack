@@ -13,9 +13,10 @@ type FurnaceInventory struct {
 func CreateFurnaceInventory(name string) *FurnaceInventory {
 	return &FurnaceInventory{
 		Type: Type{
-			items: make([]soulsand.ItemStack, 39),
-			Id:    2,
-			Name:  name,
+			items:    make([]soulsand.ItemStack, 39),
+			Id:       2,
+			Name:     name,
+			watchers: make(map[string]soulsand.Player),
 		},
 	}
 }

@@ -14,9 +14,10 @@ type ChestInventory struct {
 func CreateChestInventory(name string, size int) *ChestInventory {
 	return &ChestInventory{
 		Type: Type{
-			items: make([]soulsand.ItemStack, size+27+9),
-			Id:    0,
-			Name:  name,
+			items:    make([]soulsand.ItemStack, size+27+9),
+			Id:       0,
+			Name:     name,
+			watchers: make(map[string]soulsand.Player),
 		},
 		chestSlots: size,
 	}

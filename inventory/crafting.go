@@ -13,8 +13,9 @@ type CraftingInventory struct {
 func CreateCraftingInventory() *CraftingInventory {
 	return &CraftingInventory{
 		Type: Type{
-			items: make([]soulsand.ItemStack, 46),
-			Id:    1,
+			items:    make([]soulsand.ItemStack, 46),
+			Id:       1,
+			watchers: make(map[string]soulsand.Player),
 		},
 	}
 }
