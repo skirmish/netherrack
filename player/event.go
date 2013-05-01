@@ -30,6 +30,6 @@ func (p *Player) CreateDespawn() func(soulsand.SyncEntity) {
 	id := p.GetID()
 	return func(p soulsand.SyncEntity) {
 		player := p.(*Player)
-		player.SendEntityDestroy([]int32{id})
+		player.connection.WriteDestroyEntity([]int32{id})
 	}
 }
