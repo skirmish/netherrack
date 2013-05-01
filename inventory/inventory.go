@@ -54,6 +54,12 @@ func (inv *Type) AddWatcher(p soulsand.Player) {
 	inv.watcherLock.Lock()
 	defer inv.watcherLock.Unlock()
 	inv.watchers[p.GetName()] = p
+	inv.lock.RLock()
+	defer inv.lock.RUnlock()
+	p.RunSync(func(se soulsand.SyncEntity) {
+		sp := se.(soulsand.SyncPlayer)
+		sp.GetConnection().WriteSetWindowItems(5, inv.items)
+	})
 }
 
 func (inv *Type) RemoveWatcher(p soulsand.Player) {

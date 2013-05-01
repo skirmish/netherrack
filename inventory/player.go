@@ -34,6 +34,18 @@ func (pi *PlayerInventory) SetSlot(slot int, item soulsand.ItemStack) {
 	}
 }
 
+func (pi *PlayerInventory) AddWatcher(p soulsand.Player) {
+	pi.watcherLock.Lock()
+	defer pi.watcherLock.Unlock()
+	pi.watchers[p.GetName()] = p
+	pi.lock.RLock()
+	defer pi.lock.RUnlock()
+	p.RunSync(func(se soulsand.SyncEntity) {
+		sp := se.(soulsand.SyncPlayer)
+		sp.GetConnection().WriteSetWindowItems(0, pi.items)
+	})
+}
+
 func (pi *PlayerInventory) GetCraftingOutput() soulsand.ItemStack {
 	return pi.GetSlot(0)
 }

@@ -77,6 +77,8 @@ func (c *Conn) WriteTimeUpdate(age, time int64) {
 func (c *Conn) WriteEntityEquipment(eId int32, slot int16, itemstack soulsand.ItemStack) {
 	var out *byteWriter
 	slotData := itemstack.(*items.ItemStack)
+	slotData.Lock.RLock()
+	defer slotData.Lock.RUnlock()
 	if slotData.ID == -1 {
 		out = NewByteWriter(1 + 4 + 2 + 2)
 	} else {
@@ -746,6 +748,8 @@ func (c *Conn) WriteSetSlot(windowId int8, slot int16, itemstack soulsand.ItemSt
 	} else {
 		slotData = nilItem
 	}
+	slotData.Lock.RLock()
+	defer slotData.Lock.RUnlock()
 	if slotData.ID == -1 {
 		out = NewByteWriter(1 + 1 + 2 + 2)
 	} else {
@@ -790,6 +794,8 @@ func (c *Conn) WriteSetWindowItems(windowId int8, itemstacks []soulsand.ItemStac
 		} else {
 			slotData = nilItem
 		}
+		slotData.Lock.RLock()
+		defer slotData.Lock.RUnlock()
 		if slotData.ID == -1 {
 			out = NewByteWriter(2)
 		} else {
@@ -851,6 +857,8 @@ func (c *Conn) ReadConfirmTransaction() (windowId int8, actionNumber int16, acce
 func (c *Conn) WriteCreativeInventoryAction(slot int16, itemstack soulsand.ItemStack) {
 	var out *byteWriter
 	slotData := itemstack.(*items.ItemStack)
+	slotData.Lock.RLock()
+	defer slotData.Lock.RUnlock()
 	if slotData.ID == -1 {
 		out = NewByteWriter(1 + 2 + 2)
 	} else {
