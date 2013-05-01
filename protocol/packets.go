@@ -734,11 +734,18 @@ func (c *Conn) ReadClickWindow() (windowId int8, slot int16, button int8, action
 	return
 }
 
+var nilItem = &items.ItemStack{ID: -1}
+
 //Set Slot (0x67)
 
 func (c *Conn) WriteSetSlot(windowId int8, slot int16, itemstack soulsand.ItemStack) {
 	var out *byteWriter
-	slotData := itemstack.(*items.ItemStack)
+	var slotData *items.ItemStack
+	if slotData != nil {
+		slotData = itemstack.(*items.ItemStack)
+	} else {
+		slotData = nilItem
+	}
 	if slotData.ID == -1 {
 		out = NewByteWriter(1 + 1 + 2 + 2)
 	} else {
@@ -777,7 +784,12 @@ func (c *Conn) WriteSetWindowItems(windowId int8, itemstacks []soulsand.ItemStac
 	out.WriteShort(int16(len(itemstacks)))
 	c.Write(out.Bytes())
 	for _, itemstack := range itemstacks {
-		slotData := itemstack.(*items.ItemStack)
+		var slotData *items.ItemStack
+		if slotData != nil {
+			slotData = itemstack.(*items.ItemStack)
+		} else {
+			slotData = nilItem
+		}
 		if slotData.ID == -1 {
 			out = NewByteWriter(2)
 		} else {
