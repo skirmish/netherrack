@@ -792,6 +792,7 @@ func (c *Conn) WriteSetWindowItems(windowId int8, itemstacks []soulsand.ItemStac
 			gz.Close()
 			data = buf.Bytes()
 		}
+		out.WriteShort(slotData.ID)
 		if slotData.ID != -1 {
 			out.WriteUByte(slotData.Count)
 			out.WriteShort(slotData.Damage)
