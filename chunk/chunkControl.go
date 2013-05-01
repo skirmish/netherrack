@@ -1,10 +1,10 @@
 package chunk
 
 import (
-	"github.com/thinkofdeath/netherrack/entity"
-	"github.com/thinkofdeath/soulsand"
 	"bytes"
 	"compress/zlib"
+	"github.com/thinkofdeath/netherrack/entity"
+	"github.com/thinkofdeath/soulsand"
 	"log"
 	"runtime"
 	"time"

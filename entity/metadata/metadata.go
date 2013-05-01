@@ -65,8 +65,8 @@ func (t Type) WriteTo(w io.Writer) {
 			w.Write(data)
 		case items.ItemStack:
 			key |= (5 << 5) & 0xE0
-			panic("Not supported")
-			w.Write([]byte{key})
+			panic("Not supported yet")
+			//w.Write([]byte{key})
 		case []int32:
 			key |= (6 << 5) & 0xE0
 			data := make([]byte, 1+4+4+4)

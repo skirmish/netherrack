@@ -1,10 +1,10 @@
 package network
 
 import (
-	"github.com/thinkofdeath/netherrack/player"
-	"github.com/thinkofdeath/soulsand"
 	"encoding/binary"
 	"fmt"
+	"github.com/thinkofdeath/netherrack/player"
+	"github.com/thinkofdeath/soulsand"
 	"log"
 	"net"
 	"time"

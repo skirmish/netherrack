@@ -77,7 +77,10 @@ func (i *ItemStack) SetDisplayName(name string) {
 		i.Tag.Tags["display"] = display
 	}
 	display := i.Tag.Tags["display"].(*nbt.Compound)
-	display.Tags["Name"] = nbt.String{"Name", name}
+	display.Tags["Name"] = nbt.String{
+		Name:  "Name",
+		Value: name,
+	}
 }
 
 func (i *ItemStack) ClearLore() {

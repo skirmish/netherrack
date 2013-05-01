@@ -120,10 +120,8 @@ func (c *Chunk) GetMeta(x, y, z int) byte {
 	i := ((y & 15) << 8) | (z << 4) | x
 	if i&1 == 0 {
 		return c.SubChunks[sec].MetaData[i>>1] & 0xF
-	} else {
-		return c.SubChunks[sec].MetaData[i>>1] >> 4
 	}
-	return 0
+	return c.SubChunks[sec].MetaData[i>>1] >> 4
 }
 
 func (c *Chunk) SetBlockLight(x, y, z int, data byte) {
