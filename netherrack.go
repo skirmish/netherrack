@@ -56,9 +56,9 @@ func (server *Server) Start(ip string, port int) {
 	}()
 	log.Println("Starting Netherrack server")
 
-	server.ProtoVersion = 60
+	server.ProtoVersion = 61
 	protocol.PROTOVERSION = byte(server.ProtoVersion)
-	server.ListPing.Version = "1.5.1"
+	server.ListPing.Version = "1.5.2"
 
 	server.event = make(chan func(), 1000)
 
