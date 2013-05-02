@@ -56,7 +56,7 @@ type Player struct {
 }
 
 func init() {
-	command.Add("say $s[]", func(p soulsand.CommandSender, msg string) {
+	command.Add("say [string]", func(p soulsand.CommandSender, msg string) {
 		system.Broadcast(fmt.Sprintf("["+soulsand.ColourPurple+"Server"+soulsand.ChatReset+"]:"+soulsand.ColourPink+" %s", msg))
 	})
 	command.Add("gc", func(caller soulsand.CommandSender) {
