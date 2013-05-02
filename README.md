@@ -1,4 +1,4 @@
-Metherrack
+Netherrack
 ==========
 
 A Go minecraft server
