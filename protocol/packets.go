@@ -89,9 +89,11 @@ func (c *Conn) WriteEntityEquipment(eId int32, slot int16, itemstack soulsand.It
 	if slotData.Tag != nil {
 		var buf bytes.Buffer
 		gz, _ := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
-		slotData.Tag.WriteTo(gz, false)
-		gz.Close()
+		defer gz.Close()
+		slotData.Tag.WriteTo(gz, "tag")
+		gz.Flush()
 		data = buf.Bytes()
+		dataLength = int16(len(data))
 	}
 	out.WriteUByte(0x05)
 	out.WriteInt(eId)
@@ -760,9 +762,11 @@ func (c *Conn) WriteSetSlot(windowId int8, slot int16, itemstack soulsand.ItemSt
 	if slotData.Tag != nil {
 		var buf bytes.Buffer
 		gz, _ := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
-		slotData.Tag.WriteTo(gz, false)
-		gz.Close()
+		defer gz.Close()
+		slotData.Tag.WriteTo(gz, "tag")
+		gz.Flush()
 		data = buf.Bytes()
+		dataLength = int16(buf.Len())
 	}
 	out.WriteUByte(0x67)
 	out.WriteByte(windowId)
@@ -774,7 +778,7 @@ func (c *Conn) WriteSetSlot(windowId int8, slot int16, itemstack soulsand.ItemSt
 		out.WriteShort(dataLength)
 	}
 	c.Write(out.Bytes())
-	if slotData.Tag != nil && slotData.ID != -1 {
+	if dataLength != -1 {
 		c.Write(data)
 	}
 }
@@ -806,9 +810,11 @@ func (c *Conn) WriteSetWindowItems(windowId int8, itemstacks []soulsand.ItemStac
 		if slotData.Tag != nil {
 			var buf bytes.Buffer
 			gz, _ := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
-			slotData.Tag.WriteTo(gz, false)
-			gz.Close()
+			defer gz.Close()
+			slotData.Tag.WriteTo(gz, "tag")
+			gz.Flush()
 			data = buf.Bytes()
+			dataLength = int16(buf.Len())
 		}
 		out.WriteShort(slotData.ID)
 		if slotData.ID != -1 {
@@ -817,7 +823,7 @@ func (c *Conn) WriteSetWindowItems(windowId int8, itemstacks []soulsand.ItemStac
 			out.WriteShort(dataLength)
 		}
 		c.Write(out.Bytes())
-		if slotData.Tag != nil && slotData.ID != -1 {
+		if dataLength != -1 {
 			c.Write(data)
 		}
 	}
@@ -869,9 +875,11 @@ func (c *Conn) WriteCreativeInventoryAction(slot int16, itemstack soulsand.ItemS
 	if slotData.Tag != nil {
 		var buf bytes.Buffer
 		gz, _ := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
-		slotData.Tag.WriteTo(gz, false)
-		gz.Close()
+		defer gz.Close()
+		slotData.Tag.WriteTo(gz, "tag")
+		gz.Flush()
 		data = buf.Bytes()
+		dataLength = int16(len(data))
 	}
 	out.WriteUByte(0x6B)
 	out.WriteShort(slot)
@@ -945,10 +953,10 @@ func (c *Conn) WriteItemData(itemType, itemID int16, text []byte) {
 
 //Update Tile Entity (0x84)
 
-func (c *Conn) WriteUpdateTileEntity(x int32, y int16, z int32, action int8, data *nbt.Compound) {
+func (c *Conn) WriteUpdateTileEntity(x int32, y int16, z int32, action int8, data nbt.Type) {
 	var buf bytes.Buffer
 	if data != nil {
-		data.WriteTo(&buf, false)
+		data.WriteTo(&buf, "")
 	}
 	bytes := buf.Bytes()
 	out := NewByteWriter(1 + 4 + 2 + 4 + 1 + 2 + len(bytes))

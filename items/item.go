@@ -23,7 +23,7 @@ type ItemStack struct {
 	ID       int16
 	Count    byte
 	Damage   int16
-	Tag      *nbt.Compound
+	Tag      nbt.Type
 	metaLock sync.RWMutex
 	metadata map[string]interface{}
 }
@@ -68,19 +68,11 @@ func (i *ItemStack) SetDisplayName(name string) {
 	i.Lock.Lock()
 	defer i.Lock.Unlock()
 	if i.Tag == nil {
-		i.Tag = nbt.NewCompound()
-		i.Tag.Name = "tag"
+		i.Tag = nbt.NewNBT()
 	}
-	if _, ok := i.Tag.Tags["display"]; !ok {
-		display := nbt.NewCompound()
-		display.Name = "display"
-		i.Tag.Tags["display"] = display
-	}
-	display := i.Tag.Tags["display"].(*nbt.Compound)
-	display.Tags["Name"] = nbt.String{
-		Name:  "Name",
-		Value: name,
-	}
+
+	display, _ := i.Tag.GetCompound("display", true)
+	display.Set("Name", name)
 }
 
 func (i *ItemStack) ClearLore() {
@@ -89,35 +81,21 @@ func (i *ItemStack) ClearLore() {
 	if i.Tag == nil {
 		return
 	}
-	if _, ok := i.Tag.Tags["display"]; !ok {
-		return
+	if display, ok := i.Tag.GetCompound("display", false); ok {
+		display.Remove("Lore")
 	}
-	display := i.Tag.Tags["display"].(*nbt.Compound)
-	delete(display.Tags, "Lore")
 }
 
 func (i *ItemStack) AddLore(line string) {
 	i.Lock.Lock()
 	defer i.Lock.Unlock()
 	if i.Tag == nil {
-		i.Tag = nbt.NewCompound()
-		i.Tag.Name = "tag"
+		i.Tag = nbt.NewNBT()
 	}
-	if _, ok := i.Tag.Tags["display"]; !ok {
-		display := nbt.NewCompound()
-		display.Name = "display"
-		i.Tag.Tags["display"] = display
-	}
-	display := i.Tag.Tags["display"].(*nbt.Compound)
-	if _, ok := display.Tags["Lore"]; !ok {
-		lore := nbt.List{}
-		lore.Name = "Lore"
-		lore.Type = nbt.TypeString
-		lore.Tags = make([]nbt.WriterTo, 0, 1)
-		display.Tags["Lore"] = lore
-	}
-	lore := display.Tags["Lore"].(nbt.List)
-	lore.Tags = append(lore.Tags, nbt.String{Value: line})
+	display, _ := i.Tag.GetCompound("display", true)
+	lore, _ := display.GetList("Lore", true)
+	lore = append(lore, line)
+	display.Set("Lore", lore)
 }
 
 func (i *ItemStack) SetMetadata(key string, value interface{}) {

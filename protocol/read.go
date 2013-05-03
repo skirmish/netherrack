@@ -84,7 +84,7 @@ func (c *Conn) readSlot() (itemstack soulsand.ItemStack) {
 	if l := c.readShort(); l != -1 {
 		data := make([]byte, l)
 		c.Read(data)
-		itemstackRaw.Tag = nbt.ParseCompound(nbt.Reader{R: bytes.NewReader(data)})
+		itemstackRaw.Tag = nbt.Parse(bytes.NewReader(data))
 	}
 	return
 }
