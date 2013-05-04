@@ -14,8 +14,6 @@ func (world *World) loadLevel() {
 	defer levelDataFile.Close()
 	var levelData nbt.Type
 	if err != nil {
-		levelDataFile, err = os.Create(filepath.Join("worlds", world.Name, "level.dat"))
-		defer levelDataFile.Close()
 		levelData = nbt.NewNBT()
 	} else {
 		gz, err := gzip.NewReader(levelDataFile)
