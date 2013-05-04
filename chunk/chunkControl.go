@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func chunkControler(chunk *Chunk) {
+func chunkController(chunk *Chunk) {
 	defer func() {
 		chunk.World.chunkKillChannel <- &ChunkPosition{chunk.X, chunk.Z}
 	}()

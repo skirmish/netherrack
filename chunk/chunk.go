@@ -23,11 +23,13 @@ type Chunk struct {
 	blockQueue     []blockChange
 }
 type SubChunk struct {
-	Type       []byte
-	MetaData   []byte
-	BlockLight []byte
-	SkyLight   []byte
-	Blocks     uint
+	Type        []byte
+	MetaData    []byte
+	BlockLight  []byte
+	SkyLight    []byte
+	Blocks      uint
+	blockLights uint
+	skyLights   uint
 }
 type ChunkPosition struct {
 	X, Z int32
@@ -75,16 +77,20 @@ func (c *Chunk) AddChange(x, y, z int, block, meta byte) {
 func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 	sec := y >> 4
 	if c.SubChunks[sec] == nil {
+		if blType == 0 {
+			return
+		}
 		c.SubChunks[sec] = CreateSubChunk()
 	}
 	ind := ((y & 15) << 8) | (z << 4) | x
-	if c.SubChunks[sec].Type[ind] == 0 && blType != 0 {
-		c.SubChunks[sec].Blocks++
-	} else if c.SubChunks[sec].Type[ind] != 0 && blType == 0 {
-		c.SubChunks[sec].Blocks--
+	section := c.SubChunks[sec]
+	if section.Type[ind] == 0 && blType != 0 {
+		section.Blocks++
+	} else if section.Type[ind] != 0 && blType == 0 {
+		section.Blocks--
 	}
-	c.SubChunks[sec].Type[ind] = blType
-	if c.SubChunks[sec].Blocks == 0 {
+	section.Type[ind] = blType
+	if section.Blocks == 0 && section.blockLights == 0 && section.skyLights == 0 {
 		c.SubChunks[sec] = nil
 	}
 }
@@ -103,18 +109,19 @@ func (c *Chunk) SetMeta(x, y, z int, data byte) {
 		return
 	}
 	i := ((y & 15) << 8) | (z << 4) | x
+	section := c.SubChunks[sec]
 	if i&1 == 0 {
-		c.SubChunks[sec].MetaData[i>>1] &= 0xF0
-		c.SubChunks[sec].MetaData[i>>1] |= data & 0xF
+		section.MetaData[i>>1] &= 0xF0
+		section.MetaData[i>>1] |= data & 0xF
 	} else {
-		c.SubChunks[sec].MetaData[i>>1] &= 0xF
-		c.SubChunks[sec].MetaData[i>>1] |= (data & 0xF) << 4
+		section.MetaData[i>>1] &= 0xF
+		section.MetaData[i>>1] |= data << 4
 	}
 }
 
 func (c *Chunk) GetMeta(x, y, z int) byte {
 	sec := y >> 4
-	if sec < 0 || sec >= 16 || c.SubChunks[sec] == nil {
+	if c.SubChunks[sec] == nil {
 		return 0
 	}
 	i := ((y & 15) << 8) | (z << 4) | x
@@ -127,29 +134,69 @@ func (c *Chunk) GetMeta(x, y, z int) byte {
 func (c *Chunk) SetBlockLight(x, y, z int, data byte) {
 	sec := y >> 4
 	if c.SubChunks[sec] == nil {
-		return
+		if data == 0 {
+			return
+		}
+		c.SubChunks[sec] = CreateSubChunk()
 	}
+	section := c.SubChunks[sec]
 	i := ((y & 15) << 8) | (z << 4) | x
+	idx := i >> 1
 	if i&1 == 0 {
-		c.SubChunks[sec].BlockLight[i>>1] &= 0xF0
-		c.SubChunks[sec].BlockLight[i>>1] |= data & 0xF
+		light := section.BlockLight[idx] & 0xF
+		if data == 0 && light != 0 {
+			section.blockLights--
+		} else if data != 0 && light == 0 {
+			section.blockLights++
+		}
+		section.BlockLight[idx] &= 0xF0
+		section.BlockLight[idx] |= data & 0xF
 	} else {
-		c.SubChunks[sec].BlockLight[i>>1] &= 0xF
-		c.SubChunks[sec].BlockLight[i>>1] |= (data & 0xF) << 4
+		light := section.BlockLight[idx] >> 4
+		if data == 0 && light != 0 {
+			section.blockLights--
+		} else if data != 0 && light == 0 {
+			section.blockLights++
+		}
+		section.BlockLight[idx] &= 0xF
+		section.BlockLight[idx] |= data << 4
+	}
+	if section.Blocks == 0 && section.blockLights == 0 && section.skyLights == 0 {
+		c.SubChunks[sec] = nil
 	}
 }
 func (c *Chunk) SetSkyLight(x, y, z int, data byte) {
 	sec := y >> 4
 	if c.SubChunks[sec] == nil {
-		return
+		if data == 0 {
+			return
+		}
+		c.SubChunks[sec] = CreateSubChunk()
 	}
+	section := c.SubChunks[sec]
 	i := ((y & 15) << 8) | (z << 4) | x
+	idx := i >> 1
 	if i&1 == 0 {
-		c.SubChunks[sec].SkyLight[i>>1] &= 0xF0
-		c.SubChunks[sec].SkyLight[i>>1] |= data & 0xF
+		light := section.SkyLight[idx] & 0xF
+		if data == 0 && light != 0 {
+			section.skyLights--
+		} else if data != 0 && light == 0 {
+			section.skyLights++
+		}
+		section.SkyLight[idx] &= 0xF0
+		section.SkyLight[idx] |= data & 0xF
 	} else {
-		c.SubChunks[sec].SkyLight[i>>1] &= 0xF
-		c.SubChunks[sec].SkyLight[i>>1] |= (data & 0xF) << 4
+		light := section.SkyLight[idx] >> 4
+		if data == 0 && light != 0 {
+			section.skyLights--
+		} else if data != 0 && light == 0 {
+			section.skyLights++
+		}
+		section.SkyLight[idx] &= 0xF
+		section.SkyLight[idx] |= data << 4
+	}
+	if section.Blocks == 0 && section.blockLights == 0 && section.skyLights == 0 {
+		c.SubChunks[sec] = nil
 	}
 }
 

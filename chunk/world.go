@@ -255,7 +255,7 @@ func (world *World) getChunk(cp ChunkPosition) *Chunk {
 	if !ok {
 		ch = CreateChunk(cp.X, cp.Z)
 		ch.World = world
-		go chunkControler(ch)
+		go chunkController(ch)
 		world.chunks[cp] = ch
 	}
 	return ch
