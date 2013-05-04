@@ -77,13 +77,13 @@ func (t Type) GetDouble(name string, def float64) (v float64, ok bool) {
 	return
 }
 
-func (t Type) GetByteArray(name string, def []byte) (v []byte, ok bool) {
+func (t Type) GetByteArray(name string, def []int8) (v []int8, ok bool) {
 	val, ok := t[name]
 	if !ok {
 		v = def
 		return
 	}
-	v = val.([]byte)
+	v = val.([]int8)
 	return
 }
 
