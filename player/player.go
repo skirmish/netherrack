@@ -98,15 +98,19 @@ func HandlePlayer(conn net.Conn) {
 		player.readPacketChannel <- struct{}{}
 	}()
 	player.World = server.GetWorld("main").(internal.World)
+	player.World.AddPlayer(player)
+	defer player.leaveWorld()
 	player.gamemode = server.GetDefaultGamemode()
 
-	player.Position.X = 0
-	player.Position.Y = 100
-	player.Position.Z = 0
-	player.Chunk.LX = 0
-	player.Chunk.X = 0
-	player.Chunk.LZ = 0
-	player.Chunk.Z = 0
+	spawnX, spawnY, spawnZ := player.World.GetSpawn()
+
+	player.Position.X = float64(spawnX)
+	player.Position.Y = float64(spawnY)
+	player.Position.Z = float64(spawnZ)
+	player.Chunk.LX = int32(player.Position.X) >> 4
+	player.Chunk.X = int32(player.Position.X) >> 4
+	player.Chunk.LZ = int32(player.Position.Z) >> 4
+	player.Chunk.Z = int32(player.Position.Z) >> 4
 	player.displayName = player.name
 	player.inventory = inventory.CreatePlayerInventory()
 	player.inventory.AddWatcher(player)
@@ -120,7 +124,7 @@ func HandlePlayer(conn net.Conn) {
 		runtime.Goexit()
 	}
 
-	player.connection.WriteSpawnPosition(0, 100, 0)
+	player.connection.WriteSpawnPosition(int32(spawnX), int32(spawnY), int32(spawnZ))
 	player.connection.WritePlayerPositionLook(player.Position.X, player.Position.Y, player.Position.Z, player.Position.Y+1.6, player.Position.Yaw, player.Position.Pitch, false)
 
 	log.Printf("Player \"%s\" logged in with %d", player.name, player.EID)
@@ -140,8 +144,8 @@ func HandlePlayer(conn net.Conn) {
 	defer player.Fire(event.NewLeave(player))
 
 	vd := int32(player.settings.viewDistance)
-	for x := -vd; x < vd+1; x++ {
-		for z := -vd; z < vd+1; z++ {
+	for x := player.Chunk.X - vd; x < player.Chunk.X+vd+1; x++ {
+		for z := player.Chunk.Z - vd; z < player.Chunk.Z+vd+1; z++ {
 			player.World.GetChunk(int32(x), int32(z), player.ChunkChannel, player.EntityDead)
 			player.World.JoinChunkAsWatcher(int32(x), int32(z), player)
 		}
@@ -191,6 +195,10 @@ func (player *Player) loop() {
 			runtime.Goexit()
 		}
 	}
+}
+
+func (p *Player) leaveWorld() {
+	p.World.RemovePlayer(p)
 }
 
 func (p *Player) SendMoveUpdate() {

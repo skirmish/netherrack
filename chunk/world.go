@@ -1,9 +1,11 @@
 package chunk
 
 import (
+	"github.com/thinkofdeath/netherrack/nbt"
 	"github.com/thinkofdeath/soulsand"
 	"github.com/thinkofdeath/soulsand/effect"
 	"sync"
+	"time"
 )
 
 //Compile time checks
@@ -23,11 +25,16 @@ type World struct {
 	chunkMessageChannel      chan *chunkMessage
 	chunkKillChannel         chan *ChunkPosition
 	chunkEventChannel        chan chunkEvent
+	worldEventChannel        chan func(soulsand.World)
 	chunks                   map[ChunkPosition]*Chunk
+	players                  map[string]soulsand.Player
+	settings                 nbt.Type
+	dataLock                 sync.RWMutex
 }
 
-func NewWorld() *World {
+func NewWorld(name string) *World {
 	world := &World{
+		Name:                     name,
 		chunkChannel:             make(chan *ChunkRequest, 500),
 		chunkJoinChannel:         make(chan *chunkEntityRequest, 500),
 		chunkLeaveChannel:        make(chan *chunkEntityRequest, 500),
@@ -36,6 +43,8 @@ func NewWorld() *World {
 		chunkMessageChannel:      make(chan *chunkMessage, 5000),
 		chunkKillChannel:         make(chan *ChunkPosition, 500),
 		chunkEventChannel:        make(chan chunkEvent, 5000),
+		worldEventChannel:        make(chan func(soulsand.World), 200),
+		players:                  make(map[string]soulsand.Player),
 		chunks:                   make(map[ChunkPosition]*Chunk),
 	}
 	go world.chunkWatcher()
@@ -43,6 +52,10 @@ func NewWorld() *World {
 }
 
 func (world *World) chunkWatcher() {
+	world.loadLevel()
+	defer world.save()
+	ticker := time.NewTicker(time.Second / 20)
+	defer ticker.Stop()
 	for {
 		select {
 		case pos := <-world.chunkKillChannel:
@@ -62,8 +75,59 @@ func (world *World) chunkWatcher() {
 			world.getChunk(msg.Pos).messageChannel <- msg
 		case msg := <-world.chunkEventChannel:
 			world.getChunk(msg.Pos).eventChannel <- msg.F
+		case f := <-world.worldEventChannel:
+			f(world)
+		case <-ticker.C:
+			time, _ := world.settings.GetLong("Time", 0)
+			time++
+			world.settings.Set("Time", time)
+			dayTime, _ := world.settings.GetLong("DayTime", 0)
+			dayTime++
+			world.settings.Set("DayTime", dayTime)
+			if dayTime%20 == 0 {
+				world.updateTime()
+			}
+			if time%6000 == 0 {
+				world.save()
+			}
 		}
 
+	}
+}
+
+func (world *World) GetSpawn() (x, y, z int) {
+	ret := make(chan struct{}, 1)
+	world.worldEventChannel <- func(soulsand.World) {
+		spawnX, _ := world.settings.GetInt("SpawnX", 0)
+		spawnY, _ := world.settings.GetInt("SpawnY", 64)
+		spawnZ, _ := world.settings.GetInt("SpawnZ", 0)
+		x, y, z = int(spawnX), int(spawnY), int(spawnZ)
+		ret <- struct{}{}
+	}
+	<-ret
+	return
+}
+
+func (world *World) updateTime() {
+	time, _ := world.settings.GetLong("Time", 0)
+	dayTime, _ := world.settings.GetLong("DayTime", 0)
+	for _, p := range world.players {
+		p.RunSync(func(se soulsand.SyncEntity) {
+			sp := se.(soulsand.SyncPlayer)
+			sp.GetConnection().WriteTimeUpdate(time, dayTime)
+		})
+	}
+}
+
+func (world *World) AddPlayer(player soulsand.Player) {
+	world.worldEventChannel <- func(soulsand.World) {
+		world.players[player.GetName()] = player
+	}
+}
+
+func (world *World) RemovePlayer(player soulsand.Player) {
+	world.worldEventChannel <- func(soulsand.World) {
+		delete(world.players, player.GetName())
 	}
 }
 
@@ -214,8 +278,7 @@ func GetWorld(name string) *World {
 	worldEvent <- func() {
 		w, ok := worlds[name]
 		if !ok {
-			w = NewWorld()
-			w.Name = name
+			w = NewWorld(name)
 			worlds[name] = w
 		}
 		res <- w

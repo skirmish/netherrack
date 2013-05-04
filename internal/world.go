@@ -18,4 +18,8 @@ type World interface {
 	SendChunkMessage(x, z, id int32, msg func(soulsand.SyncEntity))
 	//Send a chunk packet to the channel
 	GetChunk(x, z int32, ret chan [][]byte, stop chan struct{})
+
+	AddPlayer(player soulsand.Player)
+
+	RemovePlayer(player soulsand.Player)
 }

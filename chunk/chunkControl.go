@@ -14,7 +14,7 @@ func chunkControler(chunk *Chunk) {
 	defer func() {
 		chunk.World.chunkKillChannel <- &ChunkPosition{chunk.X, chunk.Z}
 	}()
-	generateChunk(chunk)
+	chunk.generate()
 	tOut := time.NewTimer(30 * time.Second)
 	defer tOut.Stop()
 	tick := time.NewTicker(time.Second / 20)
@@ -23,7 +23,7 @@ func chunkControler(chunk *Chunk) {
 		reset := true
 		select {
 		case cr := <-chunk.requests:
-			out := chunkToCompressedBytes(chunk)
+			out := chunk.toCompressedBytes()
 			select {
 			case cr.Ret <- out:
 			case <-cr.Stop:
@@ -105,14 +105,14 @@ func chunkControler(chunk *Chunk) {
 	}
 }
 
-func chunkToCompressedBytes(chunk *Chunk) [][]byte {
+func (chunk *Chunk) toCompressedBytes() [][]byte {
 	numSubs := 0
 	for i := 0; i < 16; i++ {
 		if chunk.SubChunks[i] != nil {
 			numSubs++
 		}
 	}
-	uncompData := make([]byte, (16*16*16+16*16*8*4)*numSubs+256)
+	uncompData := make([]byte, (16*16*16+16*16*8*3)*numSubs+256)
 	var mask uint16 = 0
 	pSize := 16 * 16 * 16 * numSubs
 	rI := 0
@@ -126,14 +126,14 @@ func chunkToCompressedBytes(chunk *Chunk) [][]byte {
 			rI++
 		}
 	}
-	copy(uncompData[(16*16*16+16*16*8*4)*rI:], chunk.Biome)
+	copy(uncompData[(16*16*16+16*16*8*3)*rI:], chunk.Biome)
 	var b bytes.Buffer
 	w, err := zlib.NewWriterLevel(&b, zlib.BestSpeed)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
-	w.Write(uncompData[:(16*16*16+16*16*8*4)*rI+256])
+	w.Write(uncompData[:(16*16*16+16*16*8*3)*rI+256])
 	w.Close()
 	data := b.Bytes()
 	out := make([]byte, 1+4+4+1+2+2+4)
