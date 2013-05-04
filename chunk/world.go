@@ -99,7 +99,7 @@ func (world *World) GetSpawn() (x, y, z int) {
 	ret := make(chan struct{}, 1)
 	world.worldEventChannel <- func(soulsand.World) {
 		spawnX, _ := world.settings.GetInt("SpawnX", 0)
-		spawnY, _ := world.settings.GetInt("SpawnY", 64)
+		spawnY, _ := world.settings.GetInt("SpawnY", 80)
 		spawnZ, _ := world.settings.GetInt("SpawnZ", 0)
 		x, y, z = int(spawnX), int(spawnY), int(spawnZ)
 		ret <- struct{}{}

@@ -11,11 +11,12 @@ func (world *World) loadLevel() {
 	os.MkdirAll(filepath.Join("worlds", world.Name), os.ModeDir|os.ModePerm)
 
 	levelDataFile, err := os.Open(filepath.Join("worlds", world.Name, "level.dat"))
-	defer levelDataFile.Close()
+
 	var levelData nbt.Type
 	if err != nil {
 		levelData = nbt.NewNBT()
 	} else {
+		defer levelDataFile.Close()
 		gz, err := gzip.NewReader(levelDataFile)
 		defer gz.Close()
 		if err != nil {

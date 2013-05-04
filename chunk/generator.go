@@ -42,10 +42,10 @@ func (chunk *Chunk) tryLoad() bool {
 	rx := chunk.X >> 5
 	rz := chunk.Z >> 5
 	region, err := os.Open(filepath.Join("worlds", chunk.World.Name, "region", fmt.Sprintf("r.%d.%d.mca", rx, rz)))
-	defer region.Close()
 	if err != nil {
 		return false
 	}
+	defer region.Close()
 	region.Seek(int64(((chunk.X-(rx<<5))+((chunk.Z-(rz<<5))<<5))*4), 0)
 
 	data := make([]byte, 4)
