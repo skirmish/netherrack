@@ -30,6 +30,7 @@ type World struct {
 	players                  map[string]soulsand.Player
 	settings                 nbt.Type
 	dataLock                 sync.RWMutex
+	regions                  map[uint64]*region
 }
 
 func NewWorld(name string) *World {
@@ -46,6 +47,7 @@ func NewWorld(name string) *World {
 		worldEventChannel:        make(chan func(soulsand.World), 200),
 		players:                  make(map[string]soulsand.Player),
 		chunks:                   make(map[ChunkPosition]*Chunk),
+		regions:                  make(map[uint64]*region),
 	}
 	go world.chunkWatcher()
 	return world

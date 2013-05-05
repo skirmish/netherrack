@@ -2,11 +2,13 @@ package chunk
 
 import (
 	"compress/zlib"
-	"fmt"
 	"github.com/thinkofdeath/netherrack/nbt"
+	// 	"compress/zlib"
+	// 	"fmt"
+	// 	"github.com/thinkofdeath/netherrack/nbt"
 	"github.com/thinkofdeath/soulsand/blocks"
-	"os"
-	"path/filepath"
+	// "os"
+	// "path/filepath"
 )
 
 func (chunk *Chunk) generate() {
@@ -37,28 +39,18 @@ func (chunk *Chunk) generate() {
 }
 
 func (chunk *Chunk) tryLoad() bool {
-	chunk.World.dataLock.RLock()
-	defer chunk.World.dataLock.RUnlock()
-	rx := chunk.X >> 5
-	rz := chunk.Z >> 5
-	region, err := os.Open(filepath.Join("worlds", chunk.World.Name, "region", fmt.Sprintf("r.%d.%d.mca", rx, rz)))
-	if err != nil {
+	region := chunk.World.getRegion(chunk.X>>5, chunk.Z>>5)
+	if !region.chunkExists(chunk.X, chunk.Z) {
 		return false
 	}
-	defer region.Close()
-	region.Seek(int64(((chunk.X-(rx<<5))+((chunk.Z-(rz<<5))<<5))*4), 0)
+	region.Lock()
+	defer region.Unlock()
+	offset := region.getOffset(chunk.X, chunk.Z)
+	regionFile := region.file
 
-	data := make([]byte, 4)
-	region.Read(data)
-	offset := int32(data[2]) | int32(data[1])<<8 | int32(data[0])<<16
-	count := data[3]
-	if offset == 0 || count == 0 {
-		return false
-	}
-
-	region.Seek(int64(offset)*4096, 0)
+	regionFile.Seek(int64(offset)*SECTOR_SIZE, 0)
 	headerBytes := make([]byte, 5)
-	region.Read(headerBytes)
+	regionFile.Read(headerBytes)
 	//size:= binary.BigEndian.Uint32(headerBytes)
 	compressionType := headerBytes[4]
 
@@ -66,7 +58,7 @@ func (chunk *Chunk) tryLoad() bool {
 		panic("Unsupported compression type")
 	}
 
-	zl, err := zlib.NewReader(region)
+	zl, err := zlib.NewReader(regionFile)
 	if err != nil {
 		panic("Compression error")
 	}
