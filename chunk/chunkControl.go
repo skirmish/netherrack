@@ -12,7 +12,6 @@ import (
 
 func chunkController(chunk *Chunk) {
 	defer func() {
-		chunk.World.chunkKillChannel <- &ChunkPosition{chunk.X, chunk.Z}
 		chunk.World.getRegion(chunk.X>>5, chunk.Z>>5).removeChunk()
 	}()
 	chunk.generate()
@@ -20,6 +19,7 @@ func chunkController(chunk *Chunk) {
 	defer tOut.Stop()
 	tick := time.NewTicker(time.Second / 20)
 	defer tick.Stop()
+
 	for {
 		reset := true
 		select {
@@ -44,7 +44,7 @@ func chunkController(chunk *Chunk) {
 				}
 			}
 		case cwr := <-chunk.watcherJoin:
-			chunk.Players[cwr.P.GetID()] = cwr.P
+			chunk.Players[cwr.P.GetName()] = cwr.P
 			for _, e := range chunk.Entitys {
 				if e.GetID() != cwr.P.GetID() {
 					s := e.(entity.Spawnable)
@@ -52,7 +52,23 @@ func chunkController(chunk *Chunk) {
 				}
 			}
 		case cwr := <-chunk.watcherLeave:
-			delete(chunk.Players, cwr.P.GetID())
+			//Empty join first
+		empty:
+			for {
+				select {
+				case wr := <-chunk.watcherJoin:
+					chunk.Players[cwr.P.GetName()] = wr.P
+					for _, e := range chunk.Entitys {
+						if e.GetID() != wr.P.GetID() {
+							s := e.(entity.Spawnable)
+							wr.P.RunSync(s.CreateSpawn())
+						}
+					}
+				default:
+					break empty
+				}
+			}
+			delete(chunk.Players, cwr.P.GetName())
 			for _, e := range chunk.Entitys {
 				if e.GetID() != cwr.P.GetID() {
 					s := e.(entity.Spawnable)
@@ -72,16 +88,20 @@ func chunkController(chunk *Chunk) {
 		case f := <-chunk.eventChannel:
 			f(chunk)
 		case <-tOut.C:
+			posChan := make(chan *ChunkPosition)
+			chunk.World.chunkKillChannel <- posChan
 			if len(chunk.Players) == 0 &&
 				len(chunk.watcherJoin) == 0 &&
-				len(chunk.Entitys) == 0 &&
 				len(chunk.eventChannel) == 0 &&
 				len(chunk.entityJoin) == 0 &&
 				len(chunk.entityLeave) == 0 &&
 				len(chunk.messageChannel) == 0 &&
 				len(chunk.requests) == 0 &&
 				len(chunk.watcherLeave) == 0 {
+				posChan <- &ChunkPosition{chunk.X, chunk.Z}
 				runtime.Goexit()
+			} else {
+				posChan <- nil
 			}
 		case <-tick.C:
 			reset = false

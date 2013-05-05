@@ -94,9 +94,7 @@ func HandlePlayer(conn net.Conn) {
 	}
 	player.Entity.Init(player)
 	defer player.Entity.Finalise()
-	defer func() {
-		player.readPacketChannel <- struct{}{}
-	}()
+	defer player.closeConnection()
 	player.World = server.GetWorld("main").(internal.World)
 	player.World.AddPlayer(player)
 	defer player.leaveWorld()
@@ -129,16 +127,6 @@ func HandlePlayer(conn net.Conn) {
 
 	log.Printf("Player \"%s\" logged in with %d", player.name, player.EID)
 
-	defer func() {
-		player.World.LeaveChunk(player.Chunk.X, player.Chunk.Z, player)
-		for x := player.Chunk.X - int32(player.settings.viewDistance); x < player.Chunk.X+int32(player.settings.viewDistance)+1; x++ {
-			for z := player.Chunk.Z - int32(player.settings.viewDistance); z < player.Chunk.Z+int32(player.settings.viewDistance)+1; z++ {
-				player.World.LeaveChunkAsWatcher(x, z, player)
-			}
-		}
-		log.Println("Player disconnected")
-	}()
-
 	system.AddPlayer(player)
 	defer system.RemovePlayer(player)
 	defer player.Fire(event.NewLeave(player))
@@ -150,12 +138,13 @@ func HandlePlayer(conn net.Conn) {
 			player.World.JoinChunkAsWatcher(int32(x), int32(z), player)
 		}
 	}
+	defer player.cleanChunks()
+
 	player.World.JoinChunk(player.Chunk.X, player.Chunk.Z, player)
 	player.spawn()
 	defer player.despawn()
 
 	go player.dataWatcher()
-	defer log.Println("Player disconnecting")
 
 	player.loop()
 }
@@ -201,6 +190,21 @@ func (p *Player) leaveWorld() {
 	p.World.RemovePlayer(p)
 }
 
+func (player *Player) cleanChunks() {
+	player.World.LeaveChunk(player.Chunk.X, player.Chunk.Z, player)
+	vd := int32(player.settings.viewDistance)
+	for x := player.Chunk.X - vd; x < player.Chunk.X+vd+1; x++ {
+		for z := player.Chunk.Z - vd; z < player.Chunk.Z+vd+1; z++ {
+			player.World.LeaveChunkAsWatcher(x, z, player)
+		}
+	}
+	log.Println("Player disconnected")
+}
+
+func (player *Player) closeConnection() {
+	player.readPacketChannel <- struct{}{}
+}
+
 func (p *Player) SendMoveUpdate() {
 	lx, lz := p.Chunk.LX, p.Chunk.LZ
 	if p.Entity.SendMoveUpdate() {
@@ -208,8 +212,8 @@ func (p *Player) SendMoveUpdate() {
 		for x := lx - vd; x < lx+vd+1; x++ {
 			for z := lz - vd; z < lz+vd+1; z++ {
 				if x < p.Chunk.X-vd || x >= p.Chunk.X+vd+1 || z < p.Chunk.Z-vd || z >= p.Chunk.Z+vd+1 {
-					p.connection.WriteChunkDataUnload(x, z)
 					p.World.LeaveChunkAsWatcher(x, z, p)
+					p.connection.WriteChunkDataUnload(x, z)
 				}
 			}
 		}

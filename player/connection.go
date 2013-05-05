@@ -74,7 +74,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 
 		player.World.RunSync(x>>4, z>>4, func(ch soulsand.SyncChunk) {
 			chunk := ch.(interface {
-				GetPlayerMap() map[int32]soulsand.Player
+				GetPlayerMap() map[string]soulsand.Player
 			})
 			rx := x - ((x >> 4) << 4)
 			rz := z - ((z >> 4) << 4)

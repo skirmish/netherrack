@@ -11,7 +11,7 @@ type Chunk struct {
 	X, Z           int32
 	SubChunks      []*SubChunk
 	Biome          []byte
-	Players        map[int32]soulsand.Player
+	Players        map[string]soulsand.Player
 	Entitys        map[int32]soulsand.Entity
 	requests       chan *ChunkRequest
 	watcherJoin    chan *chunkWatcherRequest
@@ -66,7 +66,7 @@ type chunkEvent struct {
 	F   func(soulsand.SyncChunk)
 }
 
-func (c *Chunk) GetPlayerMap() map[int32]soulsand.Player {
+func (c *Chunk) GetPlayerMap() map[string]soulsand.Player {
 	return c.Players
 }
 
@@ -210,7 +210,7 @@ func CreateChunk(x, z int32) *Chunk {
 		Z:              z,
 		SubChunks:      make([]*SubChunk, 16),
 		Biome:          make([]byte, 256),
-		Players:        make(map[int32]soulsand.Player),
+		Players:        make(map[string]soulsand.Player),
 		Entitys:        make(map[int32]soulsand.Entity),
 		requests:       make(chan *ChunkRequest, 500),
 		watcherJoin:    make(chan *chunkWatcherRequest, 200),

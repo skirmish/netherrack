@@ -23,7 +23,7 @@ type World struct {
 	chunkJoinWatcherChannel  chan *chunkWatcherRequest
 	chunkLeaveWatcherChannel chan *chunkWatcherRequest
 	chunkMessageChannel      chan *chunkMessage
-	chunkKillChannel         chan *ChunkPosition
+	chunkKillChannel         chan chan *ChunkPosition
 	chunkEventChannel        chan chunkEvent
 	worldEventChannel        chan func(soulsand.World)
 	chunks                   map[ChunkPosition]*Chunk
@@ -42,7 +42,7 @@ func NewWorld(name string) *World {
 		chunkJoinWatcherChannel:  make(chan *chunkWatcherRequest, 500),
 		chunkLeaveWatcherChannel: make(chan *chunkWatcherRequest, 500),
 		chunkMessageChannel:      make(chan *chunkMessage, 5000),
-		chunkKillChannel:         make(chan *ChunkPosition, 500),
+		chunkKillChannel:         make(chan chan *ChunkPosition),
 		chunkEventChannel:        make(chan chunkEvent, 5000),
 		worldEventChannel:        make(chan func(soulsand.World), 200),
 		players:                  make(map[string]soulsand.Player),
@@ -60,8 +60,11 @@ func (world *World) chunkWatcher() {
 	defer ticker.Stop()
 	for {
 		select {
-		case pos := <-world.chunkKillChannel:
-			delete(world.chunks, *pos)
+		case posChan := <-world.chunkKillChannel:
+			pos := <-posChan
+			if pos != nil {
+				delete(world.chunks, *pos)
+			}
 		case cr := <-world.chunkChannel:
 			cp := ChunkPosition{X: cr.X, Z: cr.Z}
 			world.getChunk(cp).requests <- cr
