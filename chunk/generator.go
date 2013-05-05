@@ -36,11 +36,10 @@ func (chunk *Chunk) generate() {
 
 func (chunk *Chunk) tryLoad() bool {
 	region := chunk.World.getRegion(chunk.X>>5, chunk.Z>>5)
+	region.addChunk()
 	if !region.chunkExists(chunk.X, chunk.Z) {
 		return false
 	}
-
-	region.addChunk()
 
 	region.RLock()
 	defer region.RUnlock()
