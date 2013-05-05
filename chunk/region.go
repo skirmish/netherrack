@@ -5,12 +5,13 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 )
 
 type region struct {
 	sync.RWMutex
 	world       *World
-	chunkCount  uint
+	chunkCount  int32
 	x, z        int32
 	file        *os.File
 	offsets     []int32
@@ -39,16 +40,11 @@ func (world *World) getRegion(x, z int32) *region {
 }
 
 func (region *region) addChunk() {
-	region.Lock()
-	defer region.Unlock()
-	region.chunkCount++
+	atomic.AddInt32(&region.chunkCount, 1)
 }
 
 func (region *region) removeChunk() {
-	region.Lock()
-	defer region.Unlock()
-	region.chunkCount--
-	if region.chunkCount == 0 {
+	if atomic.AddInt32(&region.chunkCount, -1) == 0 {
 		region.world.dataLock.Lock()
 		defer region.world.dataLock.Unlock()
 		delete(region.world.regions, (uint64(region.x)&0xFFFFFFFF)|uint64(region.z)<<32)

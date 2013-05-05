@@ -88,20 +88,21 @@ func chunkController(chunk *Chunk) {
 		case f := <-chunk.eventChannel:
 			f(chunk)
 		case <-tOut.C:
-			posChan := make(chan *ChunkPosition)
-			chunk.World.chunkKillChannel <- posChan
-			if len(chunk.Players) == 0 &&
-				len(chunk.watcherJoin) == 0 &&
-				len(chunk.eventChannel) == 0 &&
-				len(chunk.entityJoin) == 0 &&
-				len(chunk.entityLeave) == 0 &&
-				len(chunk.messageChannel) == 0 &&
-				len(chunk.requests) == 0 &&
-				len(chunk.watcherLeave) == 0 {
-				posChan <- &ChunkPosition{chunk.X, chunk.Z}
-				runtime.Goexit()
-			} else {
-				posChan <- nil
+			if len(chunk.Players) == 0 {
+				posChan := make(chan *ChunkPosition)
+				chunk.World.chunkKillChannel <- posChan
+				if len(chunk.watcherJoin) == 0 &&
+					len(chunk.eventChannel) == 0 &&
+					len(chunk.entityJoin) == 0 &&
+					len(chunk.entityLeave) == 0 &&
+					len(chunk.messageChannel) == 0 &&
+					len(chunk.requests) == 0 &&
+					len(chunk.watcherLeave) == 0 {
+					posChan <- &ChunkPosition{chunk.X, chunk.Z}
+					runtime.Goexit()
+				} else {
+					posChan <- nil
+				}
 			}
 		case <-tick.C:
 			reset = false
