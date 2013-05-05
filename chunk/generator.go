@@ -3,13 +3,8 @@ package chunk
 import (
 	"compress/zlib"
 	"github.com/thinkofdeath/netherrack/nbt"
-	"os"
-	// 	"compress/zlib"
-	// 	"fmt"
-	// 	"github.com/thinkofdeath/netherrack/nbt"
 	"github.com/thinkofdeath/soulsand/blocks"
-	// "os"
-	// "path/filepath"
+	"os"
 )
 
 func (chunk *Chunk) generate() {
@@ -44,6 +39,7 @@ func (chunk *Chunk) tryLoad() bool {
 	if !region.chunkExists(chunk.X, chunk.Z) {
 		return false
 	}
+
 	region.RLock()
 	defer region.RUnlock()
 	offset := region.getOffset(chunk.X, chunk.Z)

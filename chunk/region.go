@@ -22,18 +22,18 @@ const SECTOR_SIZE = 4096
 
 func (world *World) getRegion(x, z int32) *region {
 	world.dataLock.RLock()
-	r, ok := world.regions[uint64(x)|uint64(z)<<32]
+	r, ok := world.regions[(uint64(x)&0xFFFFFFFF)|uint64(z)<<32]
 	world.dataLock.RUnlock()
 	if !ok {
 		world.dataLock.Lock()
 		defer world.dataLock.Unlock()
-		if r, ok := world.regions[uint64(x)|uint64(z)<<32]; ok { //cover the case of multiple goroutines requesting a lock
+		if r, ok = world.regions[(uint64(x)&0xFFFFFFFF)|uint64(z)<<32]; ok { //cover the case of multiple goroutines requesting a lock
 			return r
 		}
 		r = &region{}
 		r.world = world
 		r.init(x, z)
-		world.regions[uint64(x)|uint64(z)<<32] = r
+		world.regions[(uint64(x)&0xFFFFFFFF)|uint64(z)<<32] = r
 	}
 	return r
 }
