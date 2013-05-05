@@ -3,6 +3,7 @@ package chunk
 import (
 	"compress/zlib"
 	"github.com/thinkofdeath/netherrack/nbt"
+	"os"
 	// 	"compress/zlib"
 	// 	"fmt"
 	// 	"github.com/thinkofdeath/netherrack/nbt"
@@ -43,22 +44,21 @@ func (chunk *Chunk) tryLoad() bool {
 	if !region.chunkExists(chunk.X, chunk.Z) {
 		return false
 	}
-	region.Lock()
-	defer region.Unlock()
+	region.RLock()
+	defer region.RUnlock()
 	offset := region.getOffset(chunk.X, chunk.Z)
 	regionFile := region.file
 
-	regionFile.Seek(int64(offset)*SECTOR_SIZE, 0)
 	headerBytes := make([]byte, 5)
-	regionFile.Read(headerBytes)
+	regionFile.ReadAt(headerBytes, int64(offset)*SECTOR_SIZE)
 	//size:= binary.BigEndian.Uint32(headerBytes)
 	compressionType := headerBytes[4]
 
 	if compressionType != 2 {
 		panic("Unsupported compression type")
 	}
-
-	zl, err := zlib.NewReader(regionFile)
+	fv := &fileView{regionFile, int64(offset)*SECTOR_SIZE + 5}
+	zl, err := zlib.NewReader(fv)
 	if err != nil {
 		panic("Compression error")
 	}
@@ -107,4 +107,15 @@ func (chunk *Chunk) tryLoad() bool {
 	}
 
 	return true
+}
+
+type fileView struct {
+	file   *os.File
+	offset int64
+}
+
+func (fv *fileView) Read(b []byte) (int, error) {
+	n, err := fv.file.ReadAt(b, fv.offset)
+	fv.offset += int64(n)
+	return n, err
 }
