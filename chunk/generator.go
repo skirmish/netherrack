@@ -40,6 +40,8 @@ func (chunk *Chunk) tryLoad() bool {
 		return false
 	}
 
+	region.addChunk()
+
 	region.RLock()
 	defer region.RUnlock()
 	offset := region.getOffset(chunk.X, chunk.Z)

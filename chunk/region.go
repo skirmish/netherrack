@@ -38,6 +38,23 @@ func (world *World) getRegion(x, z int32) *region {
 	return r
 }
 
+func (region *region) addChunk() {
+	region.Lock()
+	defer region.Unlock()
+	region.chunkCount++
+}
+
+func (region *region) removeChunk() {
+	region.Lock()
+	defer region.Unlock()
+	region.chunkCount--
+	if region.chunkCount == 0 {
+		region.world.dataLock.Lock()
+		defer region.world.dataLock.Unlock()
+		delete(region.world.regions, (uint64(region.x)&0xFFFFFFFF)|uint64(region.z)<<32)
+	}
+}
+
 func (region *region) init(rx, rz int32) {
 	region.x, region.z = rx, rz
 

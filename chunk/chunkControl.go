@@ -13,6 +13,7 @@ import (
 func chunkController(chunk *Chunk) {
 	defer func() {
 		chunk.World.chunkKillChannel <- &ChunkPosition{chunk.X, chunk.Z}
+		chunk.World.getRegion(chunk.X>>5, chunk.Z>>5).removeChunk()
 	}()
 	chunk.generate()
 	tOut := time.NewTimer(30 * time.Second)
