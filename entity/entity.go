@@ -98,8 +98,8 @@ func (e *Entity) SendMoveUpdate() (movedChunk bool) {
 	if e.Chunk.X != e.Chunk.LX || e.Chunk.Z != e.Chunk.LZ {
 		e.World.LeaveChunk(e.Chunk.LX, e.Chunk.LZ, e)
 		e.World.JoinChunk(e.Chunk.X, e.Chunk.Z, e)
-		e.World.SendChunkMessage(e.Chunk.LX, e.Chunk.LZ, e.GetID(), entityTrySpawn(e.Chunk.X, e.Chunk.Z, e.CreateSpawn()))
-		e.World.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.GetID(), entityTryDespawn(e.Chunk.LX, e.Chunk.LZ, e.CreateDespawn()))
+		e.World.SendChunkMessage(e.Chunk.LX, e.Chunk.LZ, e.GetID(), entityTryDespawn(e.Chunk.X, e.Chunk.Z, e.CreateDespawn()))
+		e.World.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.GetID(), entityTrySpawn(e.Chunk.LX, e.Chunk.LZ, e.CreateSpawn()))
 		e.Chunk.LX = e.Chunk.X
 		e.Chunk.LZ = e.Chunk.Z
 		movedChunk = true
