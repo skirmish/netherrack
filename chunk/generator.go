@@ -2,13 +2,10 @@ package chunk
 
 import (
 	"compress/zlib"
-	"fmt"
 	"github.com/thinkofdeath/netherrack/nbt"
-	"github.com/thinkofdeath/netherrack/system"
 	"github.com/thinkofdeath/soulsand"
 	"github.com/thinkofdeath/soulsand/blocks"
 	"os"
-	"time"
 )
 
 func (chunk *Chunk) generate() {
@@ -37,7 +34,6 @@ func (l *lightInfo) Append(l2 *lightInfo) *lightInfo {
 }
 
 func (chunk *Chunk) Relight() {
-	start := time.Now().UnixNano()
 	//Clear lights & Sky lights
 
 	var skyLightQueue *lightInfo
@@ -75,6 +71,8 @@ func (chunk *Chunk) Relight() {
 		for current != nil {
 			info := current
 			current = current.next
+			info.root = nil
+			info.next = nil
 			x := info.x
 			z := info.z
 			y := info.y
@@ -169,6 +167,8 @@ func (chunk *Chunk) Relight() {
 		for current != nil {
 			info := current
 			current = current.next
+			info.root = nil
+			info.next = nil
 			x := info.x
 			z := info.z
 			y := info.y
@@ -177,14 +177,11 @@ func (chunk *Chunk) Relight() {
 				continue
 			}
 			chunk.SetBlockLight(x, y, z, light)
-			//chunk.SetBlock(x, y, z, blocks.Wool.Id())
-			//chunk.SetMeta(x, y, z, light)
 
 			if y > 0 {
 				block := blocks.GetBlockById(chunk.GetBlock(x, y-1, z))
 				newLight := int8(light) - int8(block.LightFiltered()) - 1
 				if int8(chunk.GetBlockLight(x, y-1, z)) < newLight {
-					// blockLightQueue = append(blockLightQueue, uint32((y-1)<<8)|uint32(z)<<4|uint32(x)|uint32(newLight)<<16)
 					blockLightQueue = blockLightQueue.Append(&lightInfo{
 						x:     x,
 						y:     y - 1,
@@ -198,7 +195,6 @@ func (chunk *Chunk) Relight() {
 				block := blocks.GetBlockById(chunk.GetBlock(x, y+1, z))
 				newLight := int8(light) - int8(block.LightFiltered()) - 1
 				if int8(chunk.GetBlockLight(x, y+1, z)) < newLight {
-					// blockLightQueue = append(blockLightQueue, uint32((y+1)<<8)|uint32(z)<<4|uint32(x)|uint32(newLight)<<16)
 					blockLightQueue = blockLightQueue.Append(&lightInfo{
 						x:     x,
 						y:     y + 1,
@@ -212,7 +208,6 @@ func (chunk *Chunk) Relight() {
 				block := blocks.GetBlockById(chunk.GetBlock(x-1, y, z))
 				newLight := int8(light) - int8(block.LightFiltered()) - 1
 				if int8(chunk.GetBlockLight(x-1, y, z)) < newLight {
-					// blockLightQueue = append(blockLightQueue, uint32((y)<<8)|uint32(z)<<4|uint32(x-1)|uint32(newLight)<<16)
 					blockLightQueue = blockLightQueue.Append(&lightInfo{
 						x:     x - 1,
 						y:     y,
@@ -225,7 +220,6 @@ func (chunk *Chunk) Relight() {
 				block := blocks.GetBlockById(chunk.GetBlock(x+1, y, z))
 				newLight := int8(light) - int8(block.LightFiltered()) - 1
 				if int8(chunk.GetBlockLight(x+1, y, z)) < newLight {
-					// blockLightQueue = append(blockLightQueue, uint32((y)<<8)|uint32(z)<<4|uint32(x+1)|uint32(newLight)<<16)
 					blockLightQueue = blockLightQueue.Append(&lightInfo{
 						x:     x + 1,
 						y:     y,
@@ -239,7 +233,6 @@ func (chunk *Chunk) Relight() {
 				block := blocks.GetBlockById(chunk.GetBlock(x, y, z-1))
 				newLight := int8(light) - int8(block.LightFiltered()) - 1
 				if int8(chunk.GetBlockLight(x, y, z-1)) < newLight {
-					// blockLightQueue = append(blockLightQueue, uint32((y)<<8)|uint32(z-1)<<4|uint32(x)|uint32(newLight)<<16)
 					blockLightQueue = blockLightQueue.Append(&lightInfo{
 						x:     x,
 						y:     y,
@@ -252,7 +245,6 @@ func (chunk *Chunk) Relight() {
 				block := blocks.GetBlockById(chunk.GetBlock(x, y, z+1))
 				newLight := int8(light) - int8(block.LightFiltered()) - 1
 				if int8(chunk.GetBlockLight(x, y, z+1)) < newLight {
-					// blockLightQueue = append(blockLightQueue, uint32((y)<<8)|uint32(z+1)<<4|uint32(x)|uint32(newLight)<<16)
 					blockLightQueue = blockLightQueue.Append(&lightInfo{
 						x:     x,
 						y:     y,
@@ -263,8 +255,6 @@ func (chunk *Chunk) Relight() {
 			}
 		}
 	}
-	end := time.Now().UnixNano()
-	system.Broadcast(fmt.Sprintf("Chunk relit in %dms", (end-start)/1000000))
 }
 
 type defaultGenerator int
