@@ -31,6 +31,7 @@ type World struct {
 	settings                 nbt.Type
 	dataLock                 sync.RWMutex
 	regions                  map[uint64]*region
+	generator                soulsand.ChunkGenerator
 }
 
 func NewWorld(name string) *World {
@@ -48,6 +49,7 @@ func NewWorld(name string) *World {
 		players:                  make(map[string]soulsand.Player),
 		chunks:                   make(map[ChunkPosition]*Chunk),
 		regions:                  make(map[uint64]*region),
+		generator:                defaultGenerator(0),
 	}
 	go world.chunkWatcher()
 	return world

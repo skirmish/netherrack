@@ -63,6 +63,18 @@ func init() {
 		runtime.GC()
 		caller.SendMessageSync("GC Run")
 	})
+	command.Add("relight", func(caller soulsand.CommandSender) {
+		if player, ok := caller.(*Player); ok {
+			player.World.RunSync(int(player.Chunk.X), int(player.Chunk.Z), func(chunk soulsand.SyncChunk) {
+				chunk.Relight()
+				player.RunSync(func(soulsand.SyncEntity) {
+					player.World.GetChunk(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
+				})
+			})
+		} else {
+			caller.SendMessageSync("This can only be used by a player")
+		}
+	})
 }
 
 //Checks to make sure it matches the API

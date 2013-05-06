@@ -21,6 +21,7 @@ type Chunk struct {
 	messageChannel chan *chunkMessage
 	eventChannel   chan func(soulsand.SyncChunk)
 	blockQueue     []blockChange
+	heightMap      []int32
 }
 type SubChunk struct {
 	Type        []byte
@@ -86,8 +87,23 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 	section := c.SubChunks[sec]
 	if section.Type[ind] == 0 && blType != 0 {
 		section.Blocks++
+		if y > int(c.heightMap[x|z<<4])-1 {
+			c.heightMap[x|z<<4] = int32(y) + 1
+		}
 	} else if section.Type[ind] != 0 && blType == 0 {
 		section.Blocks--
+		if y+1 == int(c.heightMap[x|z<<4]) {
+			var ty int
+			for ty = y - 1; ty >= 0; ty-- {
+				if c.GetBlock(x, ty, z) != 0 {
+					c.heightMap[x|z<<4] = int32(ty) + 1
+					break
+				}
+			}
+			if ty == 0 {
+				c.heightMap[x|z<<4] = 0
+			}
+		}
 	}
 	section.Type[ind] = blType
 	if section.Blocks == 0 && section.blockLights == 0 && section.skyLights == 0 {
@@ -165,6 +181,23 @@ func (c *Chunk) SetBlockLight(x, y, z int, data byte) {
 		c.SubChunks[sec] = nil
 	}
 }
+
+func (c *Chunk) GetBlockLight(x, y, z int) byte {
+	sec := y >> 4
+	if c.SubChunks[sec] == nil {
+		return 0
+	}
+	section := c.SubChunks[sec]
+	i := ((y & 15) << 8) | (z << 4) | x
+	idx := i >> 1
+	if i&1 == 0 {
+		return section.BlockLight[idx] & 0xF
+
+	} else {
+		return section.BlockLight[idx] >> 4
+	}
+}
+
 func (c *Chunk) SetSkyLight(x, y, z int, data byte) {
 	sec := y >> 4
 	if c.SubChunks[sec] == nil {
@@ -200,6 +233,22 @@ func (c *Chunk) SetSkyLight(x, y, z int, data byte) {
 	}
 }
 
+func (c *Chunk) GetSkyLight(x, y, z int) byte {
+	sec := y >> 4
+	if c.SubChunks[sec] == nil {
+		return 0
+	}
+	section := c.SubChunks[sec]
+	i := ((y & 15) << 8) | (z << 4) | x
+	idx := i >> 1
+	if i&1 == 0 {
+		return section.SkyLight[idx] & 0xF
+
+	} else {
+		return section.SkyLight[idx] >> 4
+	}
+}
+
 func (c *Chunk) SetBiome(x, z int, biome byte) {
 	c.Biome[x|(z<<4)] = biome
 }
@@ -220,6 +269,7 @@ func CreateChunk(x, z int32) *Chunk {
 		messageChannel: make(chan *chunkMessage, 1000),
 		eventChannel:   make(chan func(soulsand.SyncChunk), 500),
 		blockQueue:     make([]blockChange, 0, 3),
+		heightMap:      make([]int32, 16*16),
 	}
 	return chunk
 }
