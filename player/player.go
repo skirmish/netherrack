@@ -17,6 +17,7 @@ import (
 	"log"
 	"net"
 	"runtime"
+	"runtime/debug"
 	"time"
 )
 
@@ -61,6 +62,7 @@ func init() {
 	})
 	command.Add("gc", func(caller soulsand.CommandSender) {
 		runtime.GC()
+		debug.FreeOSMemory()
 		caller.SendMessageSync("GC Run")
 	})
 	command.Add("relight", func(caller soulsand.CommandSender) {

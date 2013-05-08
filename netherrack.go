@@ -13,6 +13,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 )
 
@@ -52,6 +53,7 @@ func (server *Server) init() {
 
 func (server *Server) Start(ip string, port int) {
 	log.Printf("NumProcs: %d\n", runtime.GOMAXPROCS(-1))
+	debug.SetGCPercent(10)
 	go func() {
 		log.Println(http.ListenAndServe(ip+":25567", nil))
 	}()
