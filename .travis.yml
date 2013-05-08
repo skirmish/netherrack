@@ -1,4 +1,9 @@
 language: go
+before_install:
+  - hg clone https://code.google.com/p/go $HOME/go
+  - cd go/src && ./all.bash
+  - export GOPATH=$HOME
+  - export PATH=$HOME/go/bin:$PATH
 install:
   - go get github.com/thinkofdeath/soulsand
   - go get github.com/thinkofdeath/netherrack
