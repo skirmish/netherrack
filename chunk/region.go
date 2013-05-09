@@ -54,6 +54,8 @@ func (region *region) removeChunk() {
 func (region *region) init(rx, rz int32) {
 	region.x, region.z = rx, rz
 
+	os.MkdirAll(filepath.Join("worlds", region.world.Name, "region"), os.ModeDir|os.ModePerm)
+
 	path := filepath.Join("worlds", region.world.Name, "region", fmt.Sprintf("r.%d.%d.mca", rx, rz))
 	regionFile, err := os.Open(path)
 	if err != nil {

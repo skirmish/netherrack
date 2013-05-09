@@ -5,7 +5,9 @@ import (
 	"github.com/thinkofdeath/netherrack/nbt"
 	"github.com/thinkofdeath/soulsand"
 	"github.com/thinkofdeath/soulsand/blocks"
+	"log"
 	"os"
+	"time"
 )
 
 func (chunk *Chunk) generate() {
@@ -36,13 +38,14 @@ func (l *lightInfo) Append(l2 *lightInfo) *lightInfo {
 func (chunk *Chunk) Relight() {
 	//Clear lights & Sky lights
 
+	start := time.Now().UnixNano()
+
 	var skyLightQueue *lightInfo
 	var blockLightQueue *lightInfo
 
 	for x := 0; x < 16; x++ {
 		for z := 0; z < 16; z++ {
 			for y := 0; y < 256; y++ {
-				block := blocks.GetBlockById(chunk.GetBlock(x, y, z))
 				if y >= int(chunk.heightMap[x|z<<4]) {
 					skyLightQueue = skyLightQueue.Append(&lightInfo{
 						x:     x,
@@ -51,6 +54,7 @@ func (chunk *Chunk) Relight() {
 						light: 15,
 					})
 				}
+				block := blocks.GetBlockById(chunk.GetBlock(x, y, z))
 				if light := block.LightLevel(); light != 0 {
 					blockLightQueue = blockLightQueue.Append(&lightInfo{
 						x:     x,
@@ -60,8 +64,6 @@ func (chunk *Chunk) Relight() {
 					})
 
 				}
-				chunk.SetSkyLight(x, y, z, 0)
-				chunk.SetBlockLight(x, y, z, 0)
 			}
 		}
 	}
@@ -255,6 +257,9 @@ func (chunk *Chunk) Relight() {
 			}
 		}
 	}
+
+	taken := time.Now().UnixNano() - start
+	log.Printf("Time: %dms\n", taken/1000000)
 }
 
 type defaultGenerator int
