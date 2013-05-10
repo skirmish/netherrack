@@ -42,46 +42,189 @@ func (chunk *Chunk) Relight() {
 
 	var skyLightQueue *lightInfo
 	var blockLightQueue *lightInfo
+	var blockRemoveLightQueue *lightInfo
 
 	for x := 0; x < 16; x++ {
 		for z := 0; z < 16; z++ {
-			for y := 0; y < 256; y++ {
-				if y >= int(chunk.heightMap[x|z<<4]) {
+			height := chunk.heightMap[x|z<<4]
+			max := height
+			if x > 0 {
+				if nHeight := chunk.heightMap[(x-1)|z<<4]; nHeight > max {
+					max = nHeight
+				}
+			}
+			if x < 15 {
+				if nHeight := chunk.heightMap[(x+1)|z<<4]; nHeight > max {
+					max = nHeight
+				}
+			}
+			if z > 0 {
+				if nHeight := chunk.heightMap[x|(z-1)<<4]; nHeight > max {
+					max = nHeight
+				}
+			}
+			if z < 15 {
+				if nHeight := chunk.heightMap[x|(z+1)<<4]; nHeight > max {
+					max = nHeight
+				}
+			}
+			maxI := int(max)
+			for y := int(height); y < 256; y++ {
+				if y <= maxI {
 					skyLightQueue = skyLightQueue.Append(&lightInfo{
 						x:     x,
 						y:     y,
 						z:     z,
 						light: 15,
 					})
-				}
-				block := blocks.GetBlockById(chunk.GetBlock(x, y, z))
-				if light := block.LightLevel(); light != 0 {
-					blockLightQueue = blockLightQueue.Append(&lightInfo{
-						x:     x,
-						y:     y,
-						z:     z,
-						light: light,
-					})
-
+				} else {
+					chunk.SetSkyLight(x, y, z, 15)
 				}
 			}
 		}
 	}
 
-	if skyLightQueue != nil {
-		current := skyLightQueue.root
-		for current != nil {
+	log.Printf("SkySet Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
+	start = time.Now().UnixNano()
+
+	for bp, light := range chunk.lights {
+		x, y, z := bp.GetPosition()
+		blockLightQueue = blockLightQueue.Append(&lightInfo{
+			x:     x,
+			y:     y,
+			z:     z,
+			light: light,
+		})
+	}
+
+	log.Printf("BlockSet Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
+	start = time.Now().UnixNano()
+
+	for bp, light := range chunk.removedLights {
+		delete(chunk.removedLights, bp)
+		x, y, z := bp.GetPosition()
+		blockRemoveLightQueue = blockRemoveLightQueue.Append(&lightInfo{
+			x:     x,
+			y:     y,
+			z:     z,
+			light: light,
+		})
+	}
+
+	log.Printf("BlockRemoveSet Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
+	start = time.Now().UnixNano()
+
+	if blockRemoveLightQueue != nil {
+		current := blockRemoveLightQueue.root
+		for ; current != nil; current = current.next {
 			info := current
-			current = current.next
 			info.root = nil
-			info.next = nil
 			x := info.x
 			z := info.z
 			y := info.y
 			light := info.light
-			if light <= chunk.GetSkyLight(x, y, z) {
+
+			if chunk.GetBlockLight(x, y, z) != light {
 				continue
 			}
+
+			chunk.SetBlockLight(x, y, z, 0)
+
+			if y > 0 {
+				block := blocks.GetBlockById(chunk.GetBlock(x, y-1, z))
+				newLight := int8(light) - int8(block.LightFiltered()) - 1
+				if int8(chunk.GetBlockLight(x, y-1, z)) <= newLight {
+					blockRemoveLightQueue = blockRemoveLightQueue.Append(&lightInfo{
+						x:     x,
+						y:     y - 1,
+						z:     z,
+						light: byte(newLight),
+					})
+				}
+			}
+
+			if y < 255 {
+				block := blocks.GetBlockById(chunk.GetBlock(x, y+1, z))
+				newLight := int8(light) - int8(block.LightFiltered()) - 1
+				if int8(chunk.GetBlockLight(x, y+1, z)) <= newLight {
+					blockRemoveLightQueue = blockRemoveLightQueue.Append(&lightInfo{
+						x:     x,
+						y:     y + 1,
+						z:     z,
+						light: byte(newLight),
+					})
+				}
+			}
+
+			if x > 0 {
+				block := blocks.GetBlockById(chunk.GetBlock(x-1, y, z))
+				newLight := int8(light) - int8(block.LightFiltered()) - 1
+				if int8(chunk.GetBlockLight(x-1, y, z)) <= newLight {
+					blockRemoveLightQueue = blockRemoveLightQueue.Append(&lightInfo{
+						x:     x - 1,
+						y:     y,
+						z:     z,
+						light: byte(newLight),
+					})
+				}
+			}
+			if x < 15 {
+				block := blocks.GetBlockById(chunk.GetBlock(x+1, y, z))
+				newLight := int8(light) - int8(block.LightFiltered()) - 1
+				if int8(chunk.GetBlockLight(x+1, y, z)) <= newLight {
+					blockRemoveLightQueue = blockRemoveLightQueue.Append(&lightInfo{
+						x:     x + 1,
+						y:     y,
+						z:     z,
+						light: byte(newLight),
+					})
+				}
+			}
+
+			if z > 0 {
+				block := blocks.GetBlockById(chunk.GetBlock(x, y, z-1))
+				newLight := int8(light) - int8(block.LightFiltered()) - 1
+				if int8(chunk.GetBlockLight(x, y, z-1)) <= newLight {
+					blockRemoveLightQueue = blockRemoveLightQueue.Append(&lightInfo{
+						x:     x,
+						y:     y,
+						z:     z - 1,
+						light: byte(newLight),
+					})
+				}
+			}
+			if z < 15 {
+				block := blocks.GetBlockById(chunk.GetBlock(x, y, z+1))
+				newLight := int8(light) - int8(block.LightFiltered()) - 1
+				if int8(chunk.GetBlockLight(x, y, z+1)) <= newLight {
+					blockRemoveLightQueue = blockRemoveLightQueue.Append(&lightInfo{
+						x:     x,
+						y:     y,
+						z:     z + 1,
+						light: byte(newLight),
+					})
+				}
+			}
+		}
+	}
+
+	log.Printf("BlockRemoveRender Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
+	start = time.Now().UnixNano()
+
+	if skyLightQueue != nil {
+		current := skyLightQueue.root
+		for ; current != nil; current = current.next {
+			info := current
+			info.root = nil
+			x := info.x
+			z := info.z
+			y := info.y
+			light := info.light
+
+			if chunk.GetSkyLight(x, y, z) >= light {
+				continue
+			}
+
 			chunk.SetSkyLight(x, y, z, light)
 
 			if y > 0 {
@@ -164,20 +307,24 @@ func (chunk *Chunk) Relight() {
 			}
 		}
 	}
+
+	log.Printf("SkyRender Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
+	start = time.Now().UnixNano()
+
 	if blockLightQueue != nil {
 		current := blockLightQueue.root
-		for current != nil {
+		for ; current != nil; current = current.next {
 			info := current
-			current = current.next
 			info.root = nil
-			info.next = nil
 			x := info.x
 			z := info.z
 			y := info.y
 			light := info.light
-			if light <= chunk.GetBlockLight(x, y, z) {
+
+			if chunk.GetBlockLight(x, y, z) >= light {
 				continue
 			}
+
 			chunk.SetBlockLight(x, y, z, light)
 
 			if y > 0 {
@@ -258,8 +405,7 @@ func (chunk *Chunk) Relight() {
 		}
 	}
 
-	taken := time.Now().UnixNano() - start
-	log.Printf("Time: %dms\n", taken/1000000)
+	log.Printf("BlockRender Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
 }
 
 type defaultGenerator int

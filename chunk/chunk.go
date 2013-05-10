@@ -1,6 +1,10 @@
 package chunk
 
-import "github.com/thinkofdeath/soulsand"
+import (
+	"github.com/thinkofdeath/soulsand/blocks"
+
+	"github.com/thinkofdeath/soulsand"
+)
 
 var (
 	_ soulsand.SyncChunk = &Chunk{}
@@ -22,16 +26,30 @@ type Chunk struct {
 	eventChannel   chan func(soulsand.SyncChunk)
 	blockQueue     []blockChange
 	heightMap      []int32
+	lights         map[blockPosition]byte
+	removedLights  map[blockPosition]byte
 }
 type SubChunk struct {
-	Type        []byte
-	MetaData    []byte
-	BlockLight  []byte
-	SkyLight    []byte
-	Blocks      uint
-	blockLights uint
-	skyLights   uint
+	Type       []byte
+	MetaData   []byte
+	BlockLight []byte
+	SkyLight   []byte
+	blocks     uint
 }
+
+type blockPosition uint32
+
+func createBlockPosition(x, y, z int) blockPosition {
+	return blockPosition(uint32(x) | uint32(z)<<4 | uint32(y)<<8)
+}
+
+func (bp blockPosition) GetPosition() (x, y, z int) {
+	x = int(bp & 0xF)
+	z = int((bp >> 4) & 0xF)
+	y = int((bp >> 8) & 0xFF)
+	return
+}
+
 type ChunkPosition struct {
 	X, Z int32
 }
@@ -77,21 +95,28 @@ func (c *Chunk) AddChange(x, y, z int, block, meta byte) {
 
 func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 	sec := y >> 4
-	if c.SubChunks[sec] == nil {
-		if blType == 0 {
-			return
-		}
-		c.SubChunks[sec] = CreateSubChunk()
-	}
 	ind := ((y & 15) << 8) | (z << 4) | x
 	section := c.SubChunks[sec]
 	if section.Type[ind] == 0 && blType != 0 {
-		section.Blocks++
+		section.blocks++
 		if y > int(c.heightMap[x|z<<4])-1 {
 			c.heightMap[x|z<<4] = int32(y) + 1
 		}
+		block := blocks.GetBlockById(blType)
+		bp := createBlockPosition(x, y, z)
+		if light := block.LightLevel(); light != 0 {
+			c.lights[bp] = light
+		} else if light, ok := c.lights[bp]; ok {
+			c.removedLights[bp] = light
+			delete(c.lights, bp)
+		}
 	} else if section.Type[ind] != 0 && blType == 0 {
-		section.Blocks--
+		section.blocks--
+		bp := createBlockPosition(x, y, z)
+		if light, ok := c.lights[bp]; ok {
+			c.removedLights[bp] = light
+			delete(c.lights, bp)
+		}
 		if y+1 == int(c.heightMap[x|z<<4]) {
 			var ty int
 			for ty = y - 1; ty >= 0; ty-- {
@@ -106,24 +131,15 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 		}
 	}
 	section.Type[ind] = blType
-	if section.Blocks == 0 && section.blockLights == 0 && section.skyLights == 0 {
-		c.SubChunks[sec] = nil
-	}
 }
 
 func (c *Chunk) GetBlock(x, y, z int) byte {
 	sec := y >> 4
-	if sec < 0 || sec >= 16 || c.SubChunks[sec] == nil {
-		return 0
-	}
 	ind := ((y & 15) << 8) | (z << 4) | x
 	return c.SubChunks[sec].Type[ind]
 }
 func (c *Chunk) SetMeta(x, y, z int, data byte) {
 	sec := y >> 4
-	if c.SubChunks[sec] == nil {
-		return
-	}
 	i := ((y & 15) << 8) | (z << 4) | x
 	section := c.SubChunks[sec]
 	if i&1 == 0 {
@@ -137,9 +153,6 @@ func (c *Chunk) SetMeta(x, y, z int, data byte) {
 
 func (c *Chunk) GetMeta(x, y, z int) byte {
 	sec := y >> 4
-	if c.SubChunks[sec] == nil {
-		return 0
-	}
 	i := ((y & 15) << 8) | (z << 4) | x
 	if i&1 == 0 {
 		return c.SubChunks[sec].MetaData[i>>1] & 0xF
@@ -149,44 +162,20 @@ func (c *Chunk) GetMeta(x, y, z int) byte {
 
 func (c *Chunk) SetBlockLight(x, y, z int, data byte) {
 	sec := y >> 4
-	if c.SubChunks[sec] == nil {
-		if data == 0 {
-			return
-		}
-		c.SubChunks[sec] = CreateSubChunk()
-	}
 	section := c.SubChunks[sec]
 	i := ((y & 15) << 8) | (z << 4) | x
 	idx := i >> 1
 	if i&1 == 0 {
-		light := section.BlockLight[idx] & 0xF
-		if data == 0 && light != 0 {
-			section.blockLights--
-		} else if data != 0 && light == 0 {
-			section.blockLights++
-		}
 		section.BlockLight[idx] &= 0xF0
 		section.BlockLight[idx] |= data & 0xF
 	} else {
-		light := section.BlockLight[idx] >> 4
-		if data == 0 && light != 0 {
-			section.blockLights--
-		} else if data != 0 && light == 0 {
-			section.blockLights++
-		}
 		section.BlockLight[idx] &= 0xF
 		section.BlockLight[idx] |= data << 4
-	}
-	if section.Blocks == 0 && section.blockLights == 0 && section.skyLights == 0 {
-		c.SubChunks[sec] = nil
 	}
 }
 
 func (c *Chunk) GetBlockLight(x, y, z int) byte {
 	sec := y >> 4
-	if c.SubChunks[sec] == nil {
-		return 0
-	}
 	section := c.SubChunks[sec]
 	i := ((y & 15) << 8) | (z << 4) | x
 	idx := i >> 1
@@ -200,44 +189,20 @@ func (c *Chunk) GetBlockLight(x, y, z int) byte {
 
 func (c *Chunk) SetSkyLight(x, y, z int, data byte) {
 	sec := y >> 4
-	if c.SubChunks[sec] == nil {
-		if data == 0 {
-			return
-		}
-		c.SubChunks[sec] = CreateSubChunk()
-	}
 	section := c.SubChunks[sec]
 	i := ((y & 15) << 8) | (z << 4) | x
 	idx := i >> 1
 	if i&1 == 0 {
-		light := section.SkyLight[idx] & 0xF
-		if data == 0 && light != 0 {
-			section.skyLights--
-		} else if data != 0 && light == 0 {
-			section.skyLights++
-		}
 		section.SkyLight[idx] &= 0xF0
 		section.SkyLight[idx] |= data & 0xF
 	} else {
-		light := section.SkyLight[idx] >> 4
-		if data == 0 && light != 0 {
-			section.skyLights--
-		} else if data != 0 && light == 0 {
-			section.skyLights++
-		}
 		section.SkyLight[idx] &= 0xF
 		section.SkyLight[idx] |= data << 4
-	}
-	if section.Blocks == 0 && section.blockLights == 0 && section.skyLights == 0 {
-		c.SubChunks[sec] = nil
 	}
 }
 
 func (c *Chunk) GetSkyLight(x, y, z int) byte {
 	sec := y >> 4
-	if c.SubChunks[sec] == nil {
-		return 0
-	}
 	section := c.SubChunks[sec]
 	i := ((y & 15) << 8) | (z << 4) | x
 	idx := i >> 1
@@ -258,7 +223,7 @@ func CreateChunk(x, z int32) *Chunk {
 		X:              x,
 		Z:              z,
 		SubChunks:      make([]*SubChunk, 16),
-		Biome:          make([]byte, 256),
+		Biome:          make([]byte, 16*16),
 		Players:        make(map[string]soulsand.Player),
 		Entitys:        make(map[int32]soulsand.Entity),
 		requests:       make(chan *ChunkRequest, 500),
@@ -270,6 +235,11 @@ func CreateChunk(x, z int32) *Chunk {
 		eventChannel:   make(chan func(soulsand.SyncChunk), 500),
 		blockQueue:     make([]blockChange, 0, 3),
 		heightMap:      make([]int32, 16*16),
+		lights:         make(map[blockPosition]byte),
+		removedLights:  make(map[blockPosition]byte),
+	}
+	for i := 0; i < 16; i++ {
+		chunk.SubChunks[i] = CreateSubChunk()
 	}
 	return chunk
 }

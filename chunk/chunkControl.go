@@ -24,7 +24,7 @@ func chunkController(chunk *Chunk) {
 		reset := true
 		select {
 		case cr := <-chunk.requests:
-			out := chunk.toCompressedBytes()
+			out := chunk.toCompressedBytes(true)
 			select {
 			case cr.Ret <- out:
 			case <-cr.Stop:
@@ -127,7 +127,7 @@ func chunkController(chunk *Chunk) {
 	}
 }
 
-func (chunk *Chunk) toCompressedBytes() [][]byte {
+func (chunk *Chunk) toCompressedBytes(full bool) [][]byte {
 	numSubs := 0
 	for i := 0; i < 16; i++ {
 		if chunk.SubChunks[i] != nil {
