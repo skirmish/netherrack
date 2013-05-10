@@ -1,9 +1,9 @@
 package chunk
 
 import (
-	"github.com/thinkofdeath/netherrack/nbt"
-	"github.com/thinkofdeath/soulsand"
-	"github.com/thinkofdeath/soulsand/effect"
+	"github.com/NetherrackDev/netherrack/nbt"
+	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/effect"
 	"sync"
 	"time"
 )

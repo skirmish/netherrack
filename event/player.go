@@ -1,7 +1,7 @@
 package event
 
 import (
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/soulsand"
 )
 
 var _ soulsand.EventPlayerMessage = &PlayerMessage{}

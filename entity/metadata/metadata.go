@@ -2,8 +2,8 @@ package metadata
 
 import (
 	"encoding/binary"
-	"github.com/thinkofdeath/netherrack/items"
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/netherrack/items"
+	"github.com/NetherrackDev/soulsand"
 	"io"
 	"math"
 )

@@ -1,8 +1,8 @@
 package inventory
 
 import (
-	"github.com/thinkofdeath/netherrack/internal"
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/netherrack/internal"
+	"github.com/NetherrackDev/soulsand"
 	"sync"
 )
 

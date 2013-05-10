@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/soulsand"
 )
 
 type Event interface {

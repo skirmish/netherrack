@@ -1,10 +1,10 @@
 package player
 
 import (
-	"github.com/thinkofdeath/netherrack/entity"
-	"github.com/thinkofdeath/netherrack/internal"
-	"github.com/thinkofdeath/soulsand"
-	"github.com/thinkofdeath/soulsand/gamemode"
+	"github.com/NetherrackDev/netherrack/entity"
+	"github.com/NetherrackDev/netherrack/internal"
+	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/gamemode"
 )
 
 func (player *Player) GetName() string {

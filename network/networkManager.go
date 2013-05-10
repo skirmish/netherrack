@@ -3,8 +3,8 @@ package network
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/thinkofdeath/netherrack/player"
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/netherrack/player"
+	"github.com/NetherrackDev/soulsand"
 	"log"
 	"net"
 	"time"

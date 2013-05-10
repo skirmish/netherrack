@@ -3,9 +3,9 @@ package protocol
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/thinkofdeath/netherrack/items"
-	"github.com/thinkofdeath/netherrack/nbt"
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/netherrack/items"
+	"github.com/NetherrackDev/netherrack/nbt"
+	"github.com/NetherrackDev/soulsand"
 	"math"
 )
 

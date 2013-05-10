@@ -9,7 +9,7 @@ install:
   - export GOPATH=$HOME
   - export PATH=$HOME/go/bin:$PATH
   - go version
-  - go get github.com/thinkofdeath/soulsand
-  - go get github.com/thinkofdeath/netherrack
+  - go get github.com/NetherrackDev/soulsand
+  - go get github.com/NetherrackDev/netherrack
 script:
-  - go build -v github.com/thinkofdeath/netherrack
+  - go build -v github.com/NetherrackDev/netherrack

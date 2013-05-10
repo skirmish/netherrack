@@ -3,8 +3,8 @@ package chunk
 import (
 	"bytes"
 	"compress/zlib"
-	"github.com/thinkofdeath/netherrack/entity"
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/netherrack/entity"
+	"github.com/NetherrackDev/soulsand"
 	"log"
 	"runtime"
 	"time"

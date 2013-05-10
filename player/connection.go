@@ -1,14 +1,14 @@
 package player
 
 import (
-	"github.com/thinkofdeath/netherrack/event"
-	"github.com/thinkofdeath/netherrack/protocol"
-	"github.com/thinkofdeath/netherrack/system"
-	"github.com/thinkofdeath/soulsand"
-	"github.com/thinkofdeath/soulsand/blocks"
-	"github.com/thinkofdeath/soulsand/command"
-	"github.com/thinkofdeath/soulsand/effect"
-	"github.com/thinkofdeath/soulsand/gamemode"
+	"github.com/NetherrackDev/netherrack/event"
+	"github.com/NetherrackDev/netherrack/protocol"
+	"github.com/NetherrackDev/netherrack/system"
+	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/blocks"
+	"github.com/NetherrackDev/soulsand/command"
+	"github.com/NetherrackDev/soulsand/effect"
+	"github.com/NetherrackDev/soulsand/gamemode"
 	"log"
 	"math"
 	"runtime"

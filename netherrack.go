@@ -1,14 +1,14 @@
 package netherrack
 
 import (
-	"github.com/thinkofdeath/netherrack/chunk"
-	"github.com/thinkofdeath/netherrack/event"
-	"github.com/thinkofdeath/netherrack/network"
-	"github.com/thinkofdeath/netherrack/protocol"
-	"github.com/thinkofdeath/netherrack/system"
-	"github.com/thinkofdeath/soulsand"
-	"github.com/thinkofdeath/soulsand/gamemode"
-	"github.com/thinkofdeath/soulsand/locale"
+	"github.com/NetherrackDev/netherrack/chunk"
+	"github.com/NetherrackDev/netherrack/event"
+	"github.com/NetherrackDev/netherrack/network"
+	"github.com/NetherrackDev/netherrack/protocol"
+	"github.com/NetherrackDev/netherrack/system"
+	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/gamemode"
+	"github.com/NetherrackDev/soulsand/locale"
 	"log"
 	"net/http"
 	_ "net/http/pprof"

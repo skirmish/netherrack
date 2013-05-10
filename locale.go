@@ -1,7 +1,7 @@
 package netherrack
 
 import (
-	"github.com/thinkofdeath/soulsand/locale"
+	"github.com/NetherrackDev/soulsand/locale"
 )
 
 func setDefaultLocaleStrings() {

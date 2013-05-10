@@ -1,10 +1,10 @@
 package entity
 
 import (
-	"github.com/thinkofdeath/netherrack/entity/metadata"
-	"github.com/thinkofdeath/netherrack/internal"
-	"github.com/thinkofdeath/netherrack/system"
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/netherrack/entity/metadata"
+	"github.com/NetherrackDev/netherrack/internal"
+	"github.com/NetherrackDev/netherrack/system"
+	"github.com/NetherrackDev/soulsand"
 )
 
 //Compile time checks

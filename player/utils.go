@@ -1,9 +1,9 @@
 package player
 
 import (
-	"github.com/thinkofdeath/soulsand"
-	"github.com/thinkofdeath/soulsand/effect"
-	"github.com/thinkofdeath/soulsand/gamemode"
+	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/effect"
+	"github.com/NetherrackDev/soulsand/gamemode"
 )
 
 func (player *Player) PlayEffect(x, y, z int, eff effect.Type, data int, relative bool) error {

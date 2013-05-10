@@ -3,10 +3,10 @@ package protocol
 import (
 	"bytes"
 	"compress/gzip"
-	"github.com/thinkofdeath/netherrack/entity/metadata"
-	"github.com/thinkofdeath/netherrack/items"
-	"github.com/thinkofdeath/netherrack/nbt"
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/netherrack/entity/metadata"
+	"github.com/NetherrackDev/netherrack/items"
+	"github.com/NetherrackDev/netherrack/nbt"
+	"github.com/NetherrackDev/soulsand"
 )
 
 //Keep Alive (0x00)

@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/soulsand"
 )
 
 func (e *Entity) Remove() error {

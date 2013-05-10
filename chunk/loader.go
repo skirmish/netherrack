@@ -2,7 +2,7 @@ package chunk
 
 import (
 	"compress/gzip"
-	"github.com/thinkofdeath/netherrack/nbt"
+	"github.com/NetherrackDev/netherrack/nbt"
 	"os"
 	"path/filepath"
 )

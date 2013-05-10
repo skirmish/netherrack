@@ -1,9 +1,9 @@
 package chunk
 
 import (
-	"github.com/thinkofdeath/soulsand/blocks"
+	"github.com/NetherrackDev/soulsand/blocks"
 
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/soulsand"
 )
 
 var (
@@ -99,12 +99,12 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 	section := c.SubChunks[sec]
 	if section.Type[ind] == 0 && blType != 0 {
 		section.blocks++
-		if y > int(c.heightMap[x|z<<4])-1 {
-			c.heightMap[x|z<<4] = int32(y) + 1
-		}
 		block := blocks.GetBlockById(blType)
 		bp := createBlockPosition(x, y, z)
 		if light := block.LightLevel(); light != 0 {
+			if y > int(c.heightMap[x|z<<4])-1 {
+				c.heightMap[x|z<<4] = int32(y) + 1
+			}
 			c.lights[bp] = light
 		} else if light, ok := c.lights[bp]; ok {
 			c.removedLights[bp] = light

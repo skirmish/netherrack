@@ -1,8 +1,8 @@
 package items
 
 import (
-	"github.com/thinkofdeath/netherrack/nbt"
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/netherrack/nbt"
+	"github.com/NetherrackDev/soulsand"
 	"sync"
 )
 

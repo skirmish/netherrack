@@ -1,9 +1,9 @@
 package netherrack
 
 import (
-	"github.com/thinkofdeath/netherrack/inventory"
-	"github.com/thinkofdeath/netherrack/items"
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/netherrack/inventory"
+	"github.com/NetherrackDev/netherrack/items"
+	"github.com/NetherrackDev/soulsand"
 )
 
 type provider struct{}

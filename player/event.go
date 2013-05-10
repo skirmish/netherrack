@@ -1,8 +1,8 @@
 package player
 
 import (
-	"github.com/thinkofdeath/netherrack/entity/metadata"
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/netherrack/entity/metadata"
+	"github.com/NetherrackDev/soulsand"
 )
 
 func (p *Player) CreateSpawn() func(soulsand.SyncEntity) {

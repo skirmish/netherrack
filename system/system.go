@@ -2,9 +2,9 @@ package system
 
 import (
 	"fmt"
-	"github.com/thinkofdeath/netherrack/event"
-	"github.com/thinkofdeath/soulsand"
-	"github.com/thinkofdeath/soulsand/locale"
+	"github.com/NetherrackDev/netherrack/event"
+	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/locale"
 	"log"
 )
 

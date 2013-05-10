@@ -2,7 +2,7 @@ package entity
 
 import (
 	"errors"
-	"github.com/thinkofdeath/soulsand"
+	"github.com/NetherrackDev/soulsand"
 )
 
 func (e *Entity) GetPositionSync() (float64, float64, float64) {
