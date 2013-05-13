@@ -75,10 +75,8 @@ func (chunk *Chunk) Relight() {
 						light: 15,
 					})
 					chunk.SetSkyLight(x, y, z, 0)
-					chunk.SetBlock(x, y, z, blocks.Dandelion.Id())
 				} else {
 					chunk.SetSkyLight(x, y, z, 15)
-					chunk.SetBlock(x, y, z, blocks.Rose.Id())
 				}
 				chunk.SetBlockLight(x, y, z, 0)
 			}
@@ -112,14 +110,13 @@ func (chunk *Chunk) Relight() {
 			if chunk.GetSkyLight(x, y, z) >= light {
 				continue
 			}
-			//chunk.SetBlock(x, y, z, blocks.BrownMushroom.Id())
 
 			chunk.SetSkyLight(x, y, z, light)
 
-			if y > 0 {
+			if y > 0 || y < 255 {
 				block := blocks.GetBlockById(chunk.GetBlock(x, y-1, z))
 				newLight := int8(light) - int8(block.LightFiltered())
-				if newLight == 15 && block.StopsSkylight() {
+				if (newLight == 15 && block.StopsSkylight()) || chunk.GetSkyLight(x, y+1, z) != 15 {
 					newLight--
 				}
 				if int8(chunk.GetSkyLight(x, y-1, z)) < newLight {

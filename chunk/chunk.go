@@ -103,24 +103,23 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 		block := blocks.GetBlockById(blType)
 		bp := createBlockPosition(x, y, z)
 		if light := block.LightLevel(); light != 0 {
-			if y+1 > int(c.heightMap[x|z<<4]) {
-				c.heightMap[x|z<<4] = int32(y) + 1
-			}
 			c.lights[bp] = light
 		} else if _, ok := c.lights[bp]; ok {
-			if y+1 == int(c.heightMap[x|z<<4]) {
-				var ty int
-				for ty = y - 1; ty >= 0; ty-- {
-					if block := blocks.GetBlockById(c.GetBlock(x, ty, z)); block.LightFiltered() != 0 || block.StopsSkylight() {
-						c.heightMap[x|z<<4] = int32(ty) + 1
-						break
-					}
-				}
-				if ty == 0 {
-					c.heightMap[x|z<<4] = 0
+			delete(c.lights, bp)
+		}
+		if y+1 > int(c.heightMap[x|z<<4]) && (block.LightFiltered() != 0 || block.StopsSkylight()) {
+			c.heightMap[x|z<<4] = int32(y) + 1
+		} else if y+1 == int(c.heightMap[x|z<<4]) {
+			var ty int
+			for ty = y - 1; ty >= 0; ty-- {
+				if block := blocks.GetBlockById(c.GetBlock(x, ty, z)); block.LightFiltered() != 0 || block.StopsSkylight() {
+					c.heightMap[x|z<<4] = int32(ty) + 1
+					break
 				}
 			}
-			delete(c.lights, bp)
+			if ty == 0 {
+				c.heightMap[x|z<<4] = 0
+			}
 		}
 	} else if section.Type[ind] != 0 && blType == 0 {
 		section.blocks--

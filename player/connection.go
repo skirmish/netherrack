@@ -109,7 +109,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		case 5:
 			x++
 		}
-		player.World.SetBlock(x, y, z, blocks.Torch.Id(), 0)
+		player.World.SetBlock(x, y, z, blocks.Stone.Id(), 0)
 	},
 	0x10: func(c *protocol.Conn, player *Player) { //Held Item Change
 		slotID := c.ReadHeldItemChange()
