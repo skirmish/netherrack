@@ -5,14 +5,13 @@ import (
 	"github.com/NetherrackDev/netherrack/nbt"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/blocks"
-	"log"
 	"os"
-	"time"
 )
 
 func (chunk *Chunk) generate() {
 	if !chunk.tryLoad() {
 		chunk.World.generator.Generate(int(chunk.X), int(chunk.Z), chunk)
+		chunk.Relight()
 	}
 }
 
@@ -38,11 +37,8 @@ func (l *lightInfo) Append(l2 *lightInfo) *lightInfo {
 func (chunk *Chunk) Relight() {
 	//Clear lights & Sky lights
 
-	start := time.Now().UnixNano()
-
 	var skyLightQueue *lightInfo
 	var blockLightQueue *lightInfo
-	var blockRemoveLightQueue *lightInfo
 
 	for x := 0; x < 16; x++ {
 		for z := 0; z < 16; z++ {
@@ -78,20 +74,20 @@ func (chunk *Chunk) Relight() {
 						z:     z,
 						light: 15,
 					})
+					chunk.SetSkyLight(x, y, z, 0)
 					chunk.SetBlock(x, y, z, blocks.Dandelion.Id())
 				} else {
-					chunk.SetBlock(x, y, z, blocks.Rose.Id())
 					chunk.SetSkyLight(x, y, z, 15)
+					chunk.SetBlock(x, y, z, blocks.Rose.Id())
 				}
+				chunk.SetBlockLight(x, y, z, 0)
 			}
 			for y := 0; y < heightI; y++ {
 				chunk.SetSkyLight(x, y, z, 0)
+				chunk.SetBlockLight(x, y, z, 0)
 			}
 		}
 	}
-
-	log.Printf("SkySet Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
-	start = time.Now().UnixNano()
 
 	for bp, light := range chunk.lights {
 		x, y, z := bp.GetPosition()
@@ -102,65 +98,6 @@ func (chunk *Chunk) Relight() {
 			light: light,
 		})
 	}
-
-	log.Printf("BlockSet Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
-	start = time.Now().UnixNano()
-
-	for bp, light := range chunk.removedLights {
-		delete(chunk.removedLights, bp)
-		x, y, z := bp.GetPosition()
-		blockRemoveLightQueue = blockRemoveLightQueue.Append(&lightInfo{
-			x:     x,
-			y:     y,
-			z:     z,
-			light: light,
-		})
-	}
-
-	log.Printf("BlockRemoveSet Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
-	start = time.Now().UnixNano()
-
-	if blockRemoveLightQueue != nil {
-		current := blockRemoveLightQueue.root
-		for ; current != nil; current = current.next {
-			info := current
-			info.root = nil
-			x := info.x
-			z := info.z
-			y := info.y
-			light := info.light
-
-			if chunk.GetBlockLight(x, y, z) != light {
-				continue
-			}
-
-			chunk.SetBlockLight(x, y, z, 0)
-
-			if y > 0 {
-				blockRemoveLightQueue = chunk.checkBlockLightRemove(blockRemoveLightQueue, light, x, y, z, 0, -1, 0)
-			}
-			if y < 255 {
-				blockRemoveLightQueue = chunk.checkBlockLightRemove(blockRemoveLightQueue, light, x, y, z, 0, 1, 0)
-			}
-
-			if x > 0 {
-				blockRemoveLightQueue = chunk.checkBlockLightRemove(blockRemoveLightQueue, light, x, y, z, -1, 0, 0)
-			}
-			if x < 15 {
-				blockRemoveLightQueue = chunk.checkBlockLightRemove(blockRemoveLightQueue, light, x, y, z, 1, 0, 0)
-			}
-
-			if z > 0 {
-				blockRemoveLightQueue = chunk.checkBlockLightRemove(blockRemoveLightQueue, light, x, y, z, 0, 0, -1)
-			}
-			if z < 15 {
-				blockRemoveLightQueue = chunk.checkBlockLightRemove(blockRemoveLightQueue, light, x, y, z, 0, 0, 1)
-			}
-		}
-	}
-
-	log.Printf("BlockRemoveRender Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
-	start = time.Now().UnixNano()
 
 	if skyLightQueue != nil {
 		current := skyLightQueue.root
@@ -175,6 +112,7 @@ func (chunk *Chunk) Relight() {
 			if chunk.GetSkyLight(x, y, z) >= light {
 				continue
 			}
+			//chunk.SetBlock(x, y, z, blocks.BrownMushroom.Id())
 
 			chunk.SetSkyLight(x, y, z, light)
 
@@ -212,9 +150,6 @@ func (chunk *Chunk) Relight() {
 			}
 		}
 	}
-
-	log.Printf("SkyRender Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
-	start = time.Now().UnixNano()
 
 	if blockLightQueue != nil {
 		current := blockLightQueue.root
@@ -254,8 +189,7 @@ func (chunk *Chunk) Relight() {
 			}
 		}
 	}
-
-	log.Printf("BlockRender Time: %dms\n", (time.Now().UnixNano()-start)/1000000)
+	chunk.needsRelight = false
 }
 
 func (chunk *Chunk) checkBlockLightRemove(blockRemoveLightQueue *lightInfo, light byte, x, y, z, ox, oy, oz int) *lightInfo {
@@ -367,7 +301,7 @@ func (chunk *Chunk) tryLoad() bool {
 	heightMap, _ := level.GetIntArray("HeightMap", nil)
 	for x := 0; x < 16; x++ {
 		for z := 0; z < 16; z++ {
-			chunk.heightMap[x|z<<4] = heightMap[z|x<<4]
+			chunk.heightMap[x|z<<4] = heightMap[x|z<<4]
 		}
 	}
 
@@ -400,7 +334,7 @@ func (chunk *Chunk) tryLoad() bool {
 			}
 		}
 	}
-
+	chunk.needsRelight = false
 	return true
 }
 

@@ -24,6 +24,9 @@ func chunkController(chunk *Chunk) {
 		reset := true
 		select {
 		case cr := <-chunk.requests:
+			if chunk.needsRelight {
+				chunk.Relight()
+			}
 			out := chunk.toCompressedBytes(true)
 			select {
 			case cr.Ret <- out:
@@ -119,6 +122,9 @@ func chunkController(chunk *Chunk) {
 					})
 				}
 				chunk.blockQueue = chunk.blockQueue[0:0]
+			}
+			if chunk.needsRelight {
+				chunk.Relight()
 			}
 		}
 		if reset {

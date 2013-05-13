@@ -27,7 +27,7 @@ type Chunk struct {
 	blockQueue     []blockChange
 	heightMap      []int32
 	lights         map[blockPosition]byte
-	removedLights  map[blockPosition]byte
+	needsRelight   bool
 }
 type SubChunk struct {
 	Type       []byte
@@ -94,6 +94,7 @@ func (c *Chunk) AddChange(x, y, z int, block, meta byte) {
 }
 
 func (c *Chunk) SetBlock(x, y, z int, blType byte) {
+	c.needsRelight = true
 	sec := y >> 4
 	ind := ((y & 15) << 8) | (z << 4) | x
 	section := c.SubChunks[sec]
@@ -102,25 +103,35 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 		block := blocks.GetBlockById(blType)
 		bp := createBlockPosition(x, y, z)
 		if light := block.LightLevel(); light != 0 {
-			if y > int(c.heightMap[x|z<<4])-1 {
+			if y+1 > int(c.heightMap[x|z<<4]) {
 				c.heightMap[x|z<<4] = int32(y) + 1
 			}
 			c.lights[bp] = light
-		} else if light, ok := c.lights[bp]; ok {
-			c.removedLights[bp] = light
+		} else if _, ok := c.lights[bp]; ok {
+			if y+1 == int(c.heightMap[x|z<<4]) {
+				var ty int
+				for ty = y - 1; ty >= 0; ty-- {
+					if block := blocks.GetBlockById(c.GetBlock(x, ty, z)); block.LightFiltered() != 0 || block.StopsSkylight() {
+						c.heightMap[x|z<<4] = int32(ty) + 1
+						break
+					}
+				}
+				if ty == 0 {
+					c.heightMap[x|z<<4] = 0
+				}
+			}
 			delete(c.lights, bp)
 		}
 	} else if section.Type[ind] != 0 && blType == 0 {
 		section.blocks--
 		bp := createBlockPosition(x, y, z)
-		if light, ok := c.lights[bp]; ok {
-			c.removedLights[bp] = light
+		if _, ok := c.lights[bp]; ok {
 			delete(c.lights, bp)
 		}
 		if y+1 == int(c.heightMap[x|z<<4]) {
 			var ty int
 			for ty = y - 1; ty >= 0; ty-- {
-				if c.GetBlock(x, ty, z) != 0 {
+				if block := blocks.GetBlockById(c.GetBlock(x, ty, z)); block.LightFiltered() != 0 || block.StopsSkylight() {
 					c.heightMap[x|z<<4] = int32(ty) + 1
 					break
 				}
@@ -236,7 +247,6 @@ func CreateChunk(x, z int32) *Chunk {
 		blockQueue:     make([]blockChange, 0, 3),
 		heightMap:      make([]int32, 16*16),
 		lights:         make(map[blockPosition]byte),
-		removedLights:  make(map[blockPosition]byte),
 	}
 	for i := 0; i < 16; i++ {
 		chunk.SubChunks[i] = CreateSubChunk()
