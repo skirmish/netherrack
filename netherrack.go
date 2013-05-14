@@ -7,6 +7,7 @@ import (
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/system"
 	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/command"
 	"github.com/NetherrackDev/soulsand/gamemode"
 	"github.com/NetherrackDev/soulsand/locale"
 	"log"
@@ -58,6 +59,8 @@ func (server *Server) Start(ip string, port int) {
 		log.Println(http.ListenAndServe(ip+":25567", nil))
 	}()
 	log.Println("Starting Netherrack server")
+
+	command.Parse()
 
 	server.ProtoVersion = 61
 	protocol.PROTOVERSION = byte(server.ProtoVersion)
