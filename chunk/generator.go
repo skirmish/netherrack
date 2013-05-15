@@ -280,7 +280,10 @@ func (chunk *Chunk) tryLoad() bool {
 	if err != nil {
 		panic("Compression error")
 	}
-	chunkNBT := nbt.Parse(zl)
+	chunkNBT, err := nbt.Parse(zl)
+	if err != nil {
+		panic(err)
+	}
 
 	level, ok := chunkNBT.GetCompound("Level", false)
 	if !ok {

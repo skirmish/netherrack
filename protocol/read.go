@@ -7,6 +7,7 @@ import (
 	"github.com/NetherrackDev/netherrack/nbt"
 	"github.com/NetherrackDev/soulsand"
 	"math"
+	"runtime"
 )
 
 func (c *Conn) readBool() bool {
@@ -84,7 +85,11 @@ func (c *Conn) readSlot() (itemstack soulsand.ItemStack) {
 	if l := c.readShort(); l != -1 {
 		data := make([]byte, l)
 		c.Read(data)
-		itemstackRaw.Tag = nbt.Parse(bytes.NewReader(data))
+		tag, err := nbt.Parse(bytes.NewReader(data))
+		if err != nil {
+			runtime.Goexit()
+		}
+		itemstackRaw.Tag = tag
 	}
 	return
 }

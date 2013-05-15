@@ -22,7 +22,7 @@ func (world *World) loadLevel() {
 		if err != nil {
 			panic(err)
 		}
-		levelData = nbt.Parse(gz)
+		levelData, _ = nbt.Parse(gz)
 	}
 	world.settings, _ = levelData.GetCompound("Data", true)
 }

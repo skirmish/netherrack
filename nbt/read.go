@@ -2,20 +2,26 @@ package nbt
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
 	"math"
 )
 
-func Parse(reader io.Reader) Type {
+func Parse(reader io.Reader) (t Type, e error) {
+	defer func() {
+		if err := recover(); err != nil {
+			e = err.(error)
+		}
+	}()
 	out := make(Type)
 	r := Reader{R: reader}
 	typeID := r.ReadByte()
 	if typeID != 10 {
-		panic("Not an NBT file")
+		return nil, errors.New("Not an NBT file")
 	}
 	r.ReadString()
 	parseCompound(out, r)
-	return out
+	return out, nil
 }
 
 func parseCompound(out Type, r Reader) {
@@ -133,7 +139,10 @@ type Reader struct {
 
 func (r Reader) ReadUByte() byte {
 	b := make([]byte, 1)
-	r.R.Read(b)
+	_, err := r.R.Read(b)
+	if err != nil {
+		panic(err)
+	}
 	return b[0]
 }
 
@@ -143,7 +152,10 @@ func (r Reader) ReadByte() int8 {
 
 func (r Reader) ReadUShort() uint16 {
 	b := make([]byte, 2)
-	r.R.Read(b)
+	_, err := r.R.Read(b)
+	if err != nil {
+		panic(err)
+	}
 	return binary.BigEndian.Uint16(b)
 }
 
@@ -153,31 +165,46 @@ func (r Reader) ReadShort() int16 {
 
 func (r Reader) ReadInt() int32 {
 	b := make([]byte, 4)
-	r.R.Read(b)
+	_, err := r.R.Read(b)
+	if err != nil {
+		panic(err)
+	}
 	return int32(binary.BigEndian.Uint32(b))
 }
 
 func (r Reader) ReadLong() int64 {
 	b := make([]byte, 8)
-	r.R.Read(b)
+	_, err := r.R.Read(b)
+	if err != nil {
+		panic(err)
+	}
 	return int64(binary.BigEndian.Uint64(b))
 }
 
 func (r Reader) ReadFloat() float32 {
 	b := make([]byte, 4)
-	r.R.Read(b)
+	_, err := r.R.Read(b)
+	if err != nil {
+		panic(err)
+	}
 	return math.Float32frombits(binary.BigEndian.Uint32(b))
 }
 
 func (r Reader) ReadDouble() float64 {
 	b := make([]byte, 8)
-	r.R.Read(b)
+	_, err := r.R.Read(b)
+	if err != nil {
+		panic(err)
+	}
 	return math.Float64frombits(binary.BigEndian.Uint64(b))
 }
 
 func (r Reader) ReadString() string {
 	l := int(r.ReadUShort())
 	d := make([]byte, l)
-	r.R.Read(d)
+	_, err := r.R.Read(d)
+	if err != nil {
+		panic(err)
+	}
 	return string(d)
 }
