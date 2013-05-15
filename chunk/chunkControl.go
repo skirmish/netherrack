@@ -128,7 +128,7 @@ func chunkController(chunk *Chunk) {
 			}
 		}
 		if reset {
-			tOut.Reset(10 * time.Second)
+			tOut.Reset(1 * time.Second)
 		}
 	}
 }
