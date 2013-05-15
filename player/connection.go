@@ -94,6 +94,9 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		x := int(bx)
 		y := int(by)
 		z := int(bz)
+		if x == -1 && z == -1 && y == 255 {
+			return
+		}
 		switch direction {
 		case 0:
 			y--
