@@ -65,6 +65,13 @@ func init() {
 		debug.FreeOSMemory()
 		caller.SendMessageSync("GC Run")
 	})
+	command.Add("stats", func(caller soulsand.CommandSender) {
+		var stats runtime.MemStats
+		runtime.ReadMemStats(&stats)
+		caller.SendMessageSync(fmt.Sprintf("Sys: %dkb", stats.Sys/1024))
+		caller.SendMessageSync(fmt.Sprintf("Alloc: %dkb", stats.Alloc/1024))
+		caller.SendMessageSync(fmt.Sprintf("TotalAlloc: %dkb", stats.TotalAlloc/1024))
+	})
 	command.Add("relight", func(caller soulsand.CommandSender) {
 		if player, ok := caller.(*Player); ok {
 			player.World.RunSync(int(player.Chunk.X), int(player.Chunk.Z), func(chunk soulsand.SyncChunk) {
