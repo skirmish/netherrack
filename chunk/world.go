@@ -4,6 +4,7 @@ import (
 	"github.com/NetherrackDev/netherrack/nbt"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/effect"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -96,6 +97,20 @@ func (world *World) chunkWatcher() {
 			}
 			if time%6000 == 0 {
 				world.save()
+			}
+			if len(world.players) == 0 && len(world.chunks) == 0 {
+				lock := make(chan bool)
+				worldEvent <- func() {
+					if <-lock {
+						delete(worlds, world.Name)
+					}
+				}
+				if len(world.chunkJoinWatcherChannel) == 0 {
+					lock <- true
+				} else {
+					lock <- false
+				}
+				runtime.Goexit()
 			}
 		}
 
