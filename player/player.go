@@ -250,14 +250,14 @@ func (p *Player) SendMoveUpdate() {
 func (p *Player) chunkReload(old int) {
 	if old != 0 {
 		for x := p.Chunk.X - int32(old); x < p.Chunk.X+int32(old)+1; x++ {
-			for z := p.Chunk.X - int32(old); z < p.Chunk.Z+int32(old)+1; z++ {
+			for z := p.Chunk.Z - int32(old); z < p.Chunk.Z+int32(old)+1; z++ {
 				p.connection.WriteChunkDataUnload(x, z)
 				p.World.LeaveChunkAsWatcher(x, z, p)
 			}
 		}
 	}
 	for x := p.Chunk.X - int32(p.settings.viewDistance); x < p.Chunk.X+int32(p.settings.viewDistance)+1; x++ {
-		for z := p.Chunk.X - int32(p.settings.viewDistance); z < p.Chunk.Z+int32(p.settings.viewDistance)+1; z++ {
+		for z := p.Chunk.Z - int32(p.settings.viewDistance); z < p.Chunk.Z+int32(p.settings.viewDistance)+1; z++ {
 			p.World.GetChunk(x, z, p.ChunkChannel, p.EntityDead)
 			p.World.JoinChunkAsWatcher(x, z, p)
 		}
