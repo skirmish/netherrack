@@ -48,11 +48,12 @@ type Player struct {
 	gamemode gamemode.Type
 
 	settings struct {
-		locale       string
-		viewDistance int
-		chatFlags    byte
-		difficulty   byte
-		showCape     bool
+		locale          string
+		viewDistance    int
+		oldViewDistance int
+		chatFlags       byte
+		difficulty      byte
+		showCape        bool
 	}
 }
 
@@ -101,7 +102,7 @@ func HandlePlayer(conn net.Conn) {
 	player := &Player{}
 	runtime.SetFinalizer(player, finalPlayer)
 	player.Source.Init()
-	player.settings.viewDistance = 10
+	player.settings.viewDistance = 0
 	player.errorChannel = make(chan struct{}, 1)
 	player.currentPacketChannel = make(chan byte)
 	player.readPacketChannel = make(chan struct{}, 2)
@@ -152,13 +153,6 @@ func HandlePlayer(conn net.Conn) {
 	defer system.RemovePlayer(player)
 	defer player.Fire(event.NewLeave(player))
 
-	vd := int32(player.settings.viewDistance)
-	for x := player.Chunk.X - vd; x < player.Chunk.X+vd+1; x++ {
-		for z := player.Chunk.Z - vd; z < player.Chunk.Z+vd+1; z++ {
-			player.World.GetChunk(int32(x), int32(z), player.ChunkChannel, player.EntityDead)
-			player.World.JoinChunkAsWatcher(int32(x), int32(z), player)
-		}
-	}
 	defer player.cleanChunks()
 
 	player.World.JoinChunk(player.Chunk.X, player.Chunk.Z, player)
@@ -190,6 +184,10 @@ func (player *Player) loop() {
 			if player.CurrentTick%100 == 0 {
 				player.currentTickID = int32(player.CurrentTick)
 				player.connection.WriteKeepAlive(player.currentTickID)
+			}
+			if player.settings.oldViewDistance != player.settings.viewDistance {
+				player.chunkReload(player.settings.oldViewDistance)
+				player.settings.oldViewDistance = player.settings.viewDistance
 			}
 			player.SendMoveUpdate()
 		case pId := <-player.currentPacketChannel:
@@ -250,10 +248,12 @@ func (p *Player) SendMoveUpdate() {
 }
 
 func (p *Player) chunkReload(old int) {
-	for x := p.Chunk.X - int32(old); x < p.Chunk.X+int32(old)+1; x++ {
-		for z := p.Chunk.X - int32(old); z < p.Chunk.Z+int32(old)+1; z++ {
-			p.connection.WriteChunkDataUnload(x, z)
-			p.World.LeaveChunkAsWatcher(x, z, p)
+	if old != 0 {
+		for x := p.Chunk.X - int32(old); x < p.Chunk.X+int32(old)+1; x++ {
+			for z := p.Chunk.X - int32(old); z < p.Chunk.Z+int32(old)+1; z++ {
+				p.connection.WriteChunkDataUnload(x, z)
+				p.World.LeaveChunkAsWatcher(x, z, p)
+			}
 		}
 	}
 	for x := p.Chunk.X - int32(p.settings.viewDistance); x < p.Chunk.X+int32(p.settings.viewDistance)+1; x++ {

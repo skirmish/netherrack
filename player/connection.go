@@ -10,7 +10,6 @@ import (
 	"github.com/NetherrackDev/soulsand/effect"
 	"github.com/NetherrackDev/soulsand/gamemode"
 	"log"
-	"math"
 	"runtime"
 )
 
@@ -152,14 +151,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 	0xCC: func(c *protocol.Conn, player *Player) { //Client Settings
 		locale, viewDistance, chatFlags, difficulty, showCape := c.ReadClientSettings()
 		player.settings.locale = locale
-		old := player.settings.viewDistance
-		player.settings.viewDistance = int(math.Pow(2, 4-float64(viewDistance)))
-		if player.settings.viewDistance > 10 {
-			player.settings.viewDistance = 10
-		}
-		if old != player.settings.viewDistance {
-			player.chunkReload(old)
-		}
+		player.setViewDistance(int(viewDistance))
 		player.settings.chatFlags = byte(chatFlags)
 		player.settings.difficulty = byte(difficulty)
 		player.settings.showCape = showCape

@@ -5,7 +5,16 @@ import (
 	"github.com/NetherrackDev/netherrack/internal"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/gamemode"
+	"math"
 )
+
+func (player *Player) setViewDistance(viewDistance int) {
+	player.settings.oldViewDistance = player.settings.viewDistance
+	player.settings.viewDistance = int(math.Pow(2, 4-float64(viewDistance)))
+	if player.settings.viewDistance > 10 {
+		player.settings.viewDistance = 10
+	}
+}
 
 func (player *Player) GetName() string {
 	return player.name
