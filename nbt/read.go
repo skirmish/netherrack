@@ -44,9 +44,15 @@ compoundLoop:
 			out[r.ReadString()] = r.ReadDouble()
 		case 7:
 			name := r.ReadString()
-			data := make([]int8, r.ReadInt())
-			for i, _ := range data {
-				data[i] = r.ReadByte()
+			size := int(r.ReadInt())
+			data := make([]int8, size)
+			dataBytes := make([]byte, size)
+			n, err := io.ReadFull(r.R, dataBytes)
+			if err != nil || n != size {
+				panic(err)
+			}
+			for i := 0; i < size; i++ {
+				data[i] = int8(dataBytes[i])
 			}
 			out[name] = data
 		case 8:
