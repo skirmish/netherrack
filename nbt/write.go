@@ -94,9 +94,6 @@ func (t Type) writeTo(w io.Writer) {
 			w.Write(out)
 			w.Write([]byte(v))
 		case []interface{}:
-			if len(v) == 0 {
-				continue
-			}
 			out := make([]byte, 1+2)
 			out[0] = 9
 			binary.BigEndian.PutUint16(out[1:], uint16(len(k)))
@@ -128,8 +125,14 @@ func (t Type) writeTo(w io.Writer) {
 }
 
 func writeList(w io.Writer, list []interface{}) {
-	switch list[0].(type) {
-	case byte:
+	var val interface{}
+	if len(list) > 0 {
+		val = list[0]
+	} else {
+		val = int8(0)
+	}
+	switch val.(type) {
+	case int8:
 		w.Write([]byte{1})
 		out := make([]byte, 4+len(list))
 		binary.BigEndian.PutUint32(out, uint32(len(list)))
