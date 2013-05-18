@@ -17,7 +17,7 @@ func chunkController(chunk *Chunk) {
 	chunk.generate()
 	tOut := time.NewTimer(30 * time.Second)
 	defer tOut.Stop()
-	tick := time.NewTicker(time.Second / 20)
+	tick := time.NewTicker(time.Second / 10)
 	defer tick.Stop()
 
 	for {
