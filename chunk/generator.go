@@ -1,16 +1,17 @@
 package chunk
 
 import (
-	"compress/zlib"
-	"github.com/NetherrackDev/netherrack/nbt"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/blocks"
-	"os"
 )
 
 func (chunk *Chunk) generate() {
-	if !chunk.tryLoad() {
+	switch chunk.tryLoad() {
+	case 0:
 		chunk.World.generator.Generate(int(chunk.X), int(chunk.Z), chunk)
+		chunk.Relight()
+	case 2: //Damaged chunk
+		defaultGenerator(0).GenerateBlock(int(chunk.X), int(chunk.Z), chunk, blocks.RedstoneBlock.Id())
 		chunk.Relight()
 	}
 }
@@ -233,12 +234,16 @@ func (chunk *Chunk) checkBlockLight(blockLightQueue *lightInfo, light byte, x, y
 
 type defaultGenerator int
 
-func (defaultGenerator) Generate(x, z int, chunk soulsand.SyncChunk) {
+func (dg defaultGenerator) Generate(x, z int, chunk soulsand.SyncChunk) {
+	dg.GenerateBlock(x, z, chunk, blocks.Wool.Id())
+}
+
+func (defaultGenerator) GenerateBlock(x, z int, chunk soulsand.SyncChunk, block byte) {
 	for y := 0; y < 256; y++ {
 		for x := 0; x < 16; x++ {
 			for z := 0; z < 16; z++ {
 				if y <= 64 {
-					chunk.SetBlock(x, y, z, blocks.Wool.Id())
+					chunk.SetBlock(x, y, z, block)
 					if x == 0 || x == 15 || z == 0 || z == 15 {
 						chunk.SetMeta(x, y, z, 1)
 					} else {
@@ -253,98 +258,4 @@ func (defaultGenerator) Generate(x, z int, chunk soulsand.SyncChunk) {
 			chunk.SetBiome(x, z, 1)
 		}
 	}
-}
-
-func (chunk *Chunk) tryLoad() bool {
-	region := chunk.World.getRegion(chunk.X>>5, chunk.Z>>5)
-	region.addChunk()
-	if !region.chunkExists(chunk.X, chunk.Z) {
-		return false
-	}
-
-	region.RLock()
-	defer region.RUnlock()
-	offset := region.getOffset(chunk.X, chunk.Z)
-	regionFile := region.file
-
-	headerBytes := make([]byte, 5)
-	regionFile.ReadAt(headerBytes, int64(offset)*SECTOR_SIZE)
-	//size:= binary.BigEndian.Uint32(headerBytes)
-	compressionType := headerBytes[4]
-
-	if compressionType != 2 {
-		panic("Unsupported compression type")
-	}
-	fv := &fileView{regionFile, int64(offset)*SECTOR_SIZE + 5}
-	zl, err := zlib.NewReader(fv)
-	if err != nil {
-		panic("Compression error")
-	}
-	chunkNBT, err := nbt.Parse(zl)
-	if err != nil {
-		panic(err)
-	}
-
-	level, ok := chunkNBT.GetCompound("Level", false)
-	if !ok {
-		panic("Currupted chunk")
-	}
-
-	if biomes, ok := level.GetByteArray("Biomes", nil); ok {
-		for x := 0; x < 16; x++ {
-			for z := 0; z < 16; z++ {
-				chunk.SetBiome(x, z, byte(biomes[x+z*16]))
-			}
-		}
-	}
-
-	heightMap, _ := level.GetIntArray("HeightMap", nil)
-	for x := 0; x < 16; x++ {
-		for z := 0; z < 16; z++ {
-			chunk.heightMap[x|z<<4] = heightMap[x|z<<4]
-		}
-	}
-
-	sections, ok := level.GetList("Sections", false)
-	if !ok {
-		panic("Currupted chunk")
-	}
-	for _, s := range sections {
-		section := s.(nbt.Type)
-		sectionY, _ := section.GetByte("Y", 0)
-		blocks, _ := section.GetByteArray("Blocks", nil)
-		data, _ := section.GetByteArray("Data", nil)
-		blockLight, _ := section.GetByteArray("BlockLight", nil)
-		skyLight, _ := section.GetByteArray("SkyLight", nil)
-		for y := 0; y < 16; y++ {
-			for z := 0; z < 16; z++ {
-				for x := 0; x < 16; x++ {
-					i := x | z<<4 | y<<8
-					chunk.SetBlock(x, int(sectionY)*16+y, z, byte(blocks[i]))
-					if i&1 == 0 {
-						chunk.SetMeta(x, int(sectionY)*16+y, z, byte(data[i>>1])&0xF)
-						chunk.SetBlockLight(x, int(sectionY)*16+y, z, byte(blockLight[i>>1])&0xF)
-						chunk.SetSkyLight(x, int(sectionY)*16+y, z, byte(skyLight[i>>1])&0xF)
-						continue
-					}
-					chunk.SetMeta(x, int(sectionY)*16+y, z, byte(data[i>>1]>>4))
-					chunk.SetBlockLight(x, int(sectionY)*16+y, z, byte(blockLight[i>>1])>>4)
-					chunk.SetSkyLight(x, int(sectionY)*16+y, z, byte(skyLight[i>>1])>>4)
-				}
-			}
-		}
-	}
-	chunk.needsRelight = false
-	return true
-}
-
-type fileView struct {
-	file   *os.File
-	offset int64
-}
-
-func (fv *fileView) Read(b []byte) (int, error) {
-	n, err := fv.file.ReadAt(b, fv.offset)
-	fv.offset += int64(n)
-	return n, err
 }

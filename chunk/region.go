@@ -47,6 +47,7 @@ func (region *region) removeChunk() {
 	if atomic.AddInt32(&region.chunkCount, -1) == 0 {
 		region.world.dataLock.Lock()
 		defer region.world.dataLock.Unlock()
+		region.file.Close()
 		delete(region.world.regions, (uint64(region.x)&0xFFFFFFFF)|uint64(region.z)<<32)
 	}
 }
@@ -57,7 +58,7 @@ func (region *region) init(rx, rz int32) {
 	os.MkdirAll(filepath.Join("worlds", region.world.Name, "region"), os.ModeDir|os.ModePerm)
 
 	path := filepath.Join("worlds", region.world.Name, "region", fmt.Sprintf("r.%d.%d.mca", rx, rz))
-	regionFile, err := os.Open(path)
+	regionFile, err := os.OpenFile(path, os.O_RDWR, 0666)
 	if err != nil {
 		regionFile, err = os.Create(path)
 		if err != nil {
@@ -72,7 +73,7 @@ func (region *region) init(rx, rz int32) {
 	if err != nil {
 		panic(err)
 	}
-	region.usedSectors = make([]bool, (stat.Size()+SECTOR_SIZE/2)/SECTOR_SIZE)
+	region.usedSectors = make([]bool, (stat.Size()/SECTOR_SIZE)+1)
 	region.usedSectors[0], region.usedSectors[1] = true, true
 
 	region.offsets = make([]int32, 32*32)
@@ -97,8 +98,5 @@ func (region *region) getOffset(x, z int32) int32 {
 
 func (region *region) chunkExists(x, z int32) bool {
 	relX, relZ := x-(region.x<<5), z-(region.z<<5)
-	if region.offsets[relX|relZ<<5] == 0 || region.counts[relX|relZ<<5] == 0 {
-		return false
-	}
-	return true
+	return !(region.offsets[relX|relZ<<5] == 0 || region.counts[relX|relZ<<5] == 0)
 }

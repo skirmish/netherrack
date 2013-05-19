@@ -228,6 +228,10 @@ func (c *Chunk) SetBiome(x, z int, biome byte) {
 	c.Biome[x|(z<<4)] = biome
 }
 
+func (c *Chunk) GetBiome(x, z int) byte {
+	return c.Biome[x|(z<<4)]
+}
+
 func CreateChunk(x, z int32) *Chunk {
 	chunk := &Chunk{
 		X:              x,

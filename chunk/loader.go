@@ -28,6 +28,7 @@ func (world *World) loadLevel() {
 		}
 	}
 	world.settings, _ = levelData.GetCompound("Data", true)
+	world.settings.Set("LevelName", world.Name)
 }
 
 func (world *World) save() {
