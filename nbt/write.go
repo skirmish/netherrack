@@ -180,16 +180,19 @@ func writeList(w io.Writer, list []interface{}) {
 			binary.BigEndian.PutUint64(out[4+i*8:], math.Float64bits(f.(float64)))
 		}
 		w.Write(out)
-	case []byte:
+	case []int8:
 		w.Write([]byte{7})
 		out := make([]byte, 4)
 		binary.BigEndian.PutUint32(out, uint32(len(list)))
 		w.Write(out)
 		for _, b := range list {
-			by := b.([]byte)
+			by := b.([]int8)
+			out = make([]byte, 4+len(by))
 			binary.BigEndian.PutUint32(out, uint32(len(by)))
+			for i := 0; i < len(by); i++ {
+				out[4+i] = byte(by[i])
+			}
 			w.Write(out)
-			w.Write(by)
 		}
 	case string:
 		w.Write([]byte{8})
