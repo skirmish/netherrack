@@ -15,7 +15,6 @@ func chunkController(chunk *Chunk) {
 		chunk.World.getRegion(chunk.X>>5, chunk.Z>>5).removeChunk()
 	}()
 	chunk.generate()
-	defer chunk.Save()
 	tOut := time.NewTimer(30 * time.Second)
 	defer tOut.Stop()
 	tick := time.NewTicker(time.Second / 10)
@@ -102,7 +101,11 @@ func chunkController(chunk *Chunk) {
 					len(chunk.messageChannel) == 0 &&
 					len(chunk.requests) == 0 &&
 					len(chunk.watcherLeave) == 0 {
+					region := chunk.World.getRegion(chunk.X>>5, chunk.Z>>5)
+					region.Lock()
+					defer region.Unlock()
 					posChan <- &ChunkPosition{chunk.X, chunk.Z}
+					chunk.Save(false)
 					runtime.Goexit()
 				} else {
 					posChan <- nil

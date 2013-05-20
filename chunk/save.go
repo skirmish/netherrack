@@ -8,11 +8,13 @@ import (
 	"github.com/NetherrackDev/netherrack/nbt"
 )
 
-func (chunk *Chunk) Save() {
+func (chunk *Chunk) Save(lock bool) {
 
 	region := chunk.World.getRegion(chunk.X>>5, chunk.Z>>5)
-	region.Lock()
-	defer region.Unlock()
+	if lock {
+		region.Lock()
+		defer region.Unlock()
+	}
 	relX, relZ := chunk.X-(region.x<<5), chunk.Z-(region.z<<5)
 
 	var chunkNBT nbt.Type
