@@ -164,7 +164,7 @@ type Reader struct {
 
 func (r Reader) ReadUByte() byte {
 	b := make([]byte, 1)
-	_, err := r.R.Read(b)
+	_, err := io.ReadFull(r.R, b)
 	if err != nil {
 		panic(err)
 	}
@@ -177,7 +177,7 @@ func (r Reader) ReadByte() int8 {
 
 func (r Reader) ReadUShort() uint16 {
 	b := make([]byte, 2)
-	_, err := r.R.Read(b)
+	_, err := io.ReadFull(r.R, b)
 	if err != nil {
 		panic(err)
 	}
@@ -190,7 +190,7 @@ func (r Reader) ReadShort() int16 {
 
 func (r Reader) ReadInt() int32 {
 	b := make([]byte, 4)
-	_, err := r.R.Read(b)
+	_, err := io.ReadFull(r.R, b)
 	if err != nil {
 		panic(err)
 	}
@@ -199,7 +199,7 @@ func (r Reader) ReadInt() int32 {
 
 func (r Reader) ReadLong() int64 {
 	b := make([]byte, 8)
-	_, err := r.R.Read(b)
+	_, err := io.ReadFull(r.R, b)
 	if err != nil {
 		panic(err)
 	}
@@ -208,7 +208,7 @@ func (r Reader) ReadLong() int64 {
 
 func (r Reader) ReadFloat() float32 {
 	b := make([]byte, 4)
-	_, err := r.R.Read(b)
+	_, err := io.ReadFull(r.R, b)
 	if err != nil {
 		panic(err)
 	}
@@ -217,7 +217,7 @@ func (r Reader) ReadFloat() float32 {
 
 func (r Reader) ReadDouble() float64 {
 	b := make([]byte, 8)
-	_, err := r.R.Read(b)
+	_, err := io.ReadFull(r.R, b)
 	if err != nil {
 		panic(err)
 	}
@@ -227,7 +227,7 @@ func (r Reader) ReadDouble() float64 {
 func (r Reader) ReadString() string {
 	l := int(r.ReadUShort())
 	d := make([]byte, l)
-	_, err := r.R.Read(d)
+	_, err := io.ReadFull(r.R, d)
 	if err != nil {
 		panic(err)
 	}

@@ -15,7 +15,7 @@ func chunkController(chunk *Chunk) {
 		chunk.World.getRegion(chunk.X>>5, chunk.Z>>5).removeChunk()
 	}()
 	chunk.generate()
-	//defer chunk.Save()
+	defer chunk.Save()
 	tOut := time.NewTimer(30 * time.Second)
 	defer tOut.Stop()
 	tick := time.NewTicker(time.Second / 10)
