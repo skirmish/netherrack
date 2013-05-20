@@ -92,6 +92,11 @@ func chunkController(chunk *Chunk) {
 			f(chunk)
 		case <-tOut.C:
 			if len(chunk.Players) == 0 {
+				//Try and save
+				if chunk.needsSave {
+					chunk.Save()
+				}
+				//Did someone join during save
 				posChan := make(chan *ChunkPosition)
 				chunk.World.chunkKillChannel <- posChan
 				if len(chunk.watcherJoin) == 0 &&
@@ -101,11 +106,7 @@ func chunkController(chunk *Chunk) {
 					len(chunk.messageChannel) == 0 &&
 					len(chunk.requests) == 0 &&
 					len(chunk.watcherLeave) == 0 {
-					region := chunk.World.getRegion(chunk.X>>5, chunk.Z>>5)
-					region.Lock()
-					defer region.Unlock()
 					posChan <- &ChunkPosition{chunk.X, chunk.Z}
-					chunk.Save(false)
 					runtime.Goexit()
 				} else {
 					posChan <- nil

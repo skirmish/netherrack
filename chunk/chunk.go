@@ -28,6 +28,7 @@ type Chunk struct {
 	heightMap      []int32
 	lights         map[blockPosition]byte
 	needsRelight   bool
+	needsSave      bool
 }
 type SubChunk struct {
 	Type       []byte
@@ -95,6 +96,7 @@ func (c *Chunk) AddChange(x, y, z int, block, meta byte) {
 
 func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 	c.needsRelight = true
+	c.needsSave = true
 	sec := y >> 4
 	ind := ((y & 15) << 8) | (z << 4) | x
 	section := c.SubChunks[sec]
@@ -149,6 +151,7 @@ func (c *Chunk) GetBlock(x, y, z int) byte {
 	return c.SubChunks[sec].Type[ind]
 }
 func (c *Chunk) SetMeta(x, y, z int, data byte) {
+	c.needsSave = true
 	sec := y >> 4
 	i := ((y & 15) << 8) | (z << 4) | x
 	section := c.SubChunks[sec]
@@ -171,6 +174,7 @@ func (c *Chunk) GetMeta(x, y, z int) byte {
 }
 
 func (c *Chunk) SetBlockLight(x, y, z int, data byte) {
+	c.needsSave = true
 	sec := y >> 4
 	section := c.SubChunks[sec]
 	i := ((y & 15) << 8) | (z << 4) | x
@@ -198,6 +202,7 @@ func (c *Chunk) GetBlockLight(x, y, z int) byte {
 }
 
 func (c *Chunk) SetSkyLight(x, y, z int, data byte) {
+	c.needsSave = true
 	sec := y >> 4
 	section := c.SubChunks[sec]
 	i := ((y & 15) << 8) | (z << 4) | x
@@ -225,6 +230,7 @@ func (c *Chunk) GetSkyLight(x, y, z int) byte {
 }
 
 func (c *Chunk) SetBiome(x, z int, biome byte) {
+	c.needsSave = true
 	c.Biome[x|(z<<4)] = biome
 }
 

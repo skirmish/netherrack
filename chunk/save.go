@@ -8,35 +8,12 @@ import (
 	"github.com/NetherrackDev/netherrack/nbt"
 )
 
-func (chunk *Chunk) Save(lock bool) {
+func (chunk *Chunk) Save() {
 
 	region := chunk.World.getRegion(chunk.X>>5, chunk.Z>>5)
-	if lock {
-		region.Lock()
-		defer region.Unlock()
-	}
 	relX, relZ := chunk.X-(region.x<<5), chunk.Z-(region.z<<5)
 
-	var chunkNBT nbt.Type
-
-	if region.chunkExists(chunk.X, chunk.Z) {
-		var err error
-		chunkNBT, err = chunk.loadNBT()
-		if err == nil {
-			offset := region.getOffset(chunk.X, chunk.Z)
-			off := int(offset)
-			count := int(region.counts[relX|relZ<<5])
-			for i := off; i < off+count; i++ {
-				region.usedSectors[i] = false
-			}
-		} else {
-			chunkNBT = nbt.NewNBT()
-		}
-
-	} else {
-		chunkNBT = nbt.NewNBT()
-	}
-
+	chunkNBT := chunk.getNBT()
 	level, _ := chunkNBT.GetCompound("Level", true)
 
 	level.Set("xPos", chunk.X)
@@ -107,6 +84,7 @@ func (chunk *Chunk) Save(lock bool) {
 	}
 	chunkNBT.WriteTo(gz, fmt.Sprintf("Chunk [%d,%d]", relX, relZ))
 	gz.Close()*/
+	region.Lock()
 	size := data.Len()
 	count := ((size + 5) / SECTOR_SIZE) + 1
 	offset := len(region.usedSectors)
@@ -126,26 +104,10 @@ check:
 		}
 	}
 
-	region.counts[relX|relZ<<5] = byte(count)
-	region.offsets[relX|relZ<<5] = int32(offset)
-
-	regionFile := region.file
-
-	stat, err := regionFile.Stat()
-	if err != nil {
-		panic(err)
-	}
-	if int64(offset+count)*SECTOR_SIZE > stat.Size() {
-		regionFile.Truncate(int64(offset+count) * SECTOR_SIZE)
-	}
-	regionFile.Seek(int64(relX|relZ*32)*4, 0)
-	chunkLocation := make([]byte, 4)
-
 	i := relX | relZ<<5
-	off := region.offsets[i]
-	chunkLocation[2], chunkLocation[1], chunkLocation[0] = byte(off), byte(off>>8), byte(off>>16)
-	chunkLocation[3] = region.counts[i]
-	regionFile.Write(chunkLocation)
+	region.counts[i] = byte(count)
+	region.offsets[i] = int32(offset)
+
 	if region.offsets[i]+int32(region.counts[i]) >= int32(len(region.usedSectors)) {
 		temp := region.usedSectors
 		region.usedSectors = make([]bool, len(region.usedSectors)+64)
@@ -155,17 +117,70 @@ check:
 		region.usedSectors[j] = true
 	}
 
-	regionFile.Seek(int64(offset)*SECTOR_SIZE, 0)
+	regionFile := region.file
+
+	/*stat, err := regionFile.Stat()
+	if err != nil {
+		region.Unlock()
+		panic(err)
+	}
+	if int64(offset+count)*SECTOR_SIZE > stat.Size() {
+		regionFile.Truncate(int64(offset+count) * SECTOR_SIZE)
+	}*/
+	region.Unlock()
+
+	chunkLocation := make([]byte, 4)
+	off := region.offsets[i]
+	chunkLocation[2], chunkLocation[1], chunkLocation[0] = byte(off), byte(off>>8), byte(off>>16)
+	chunkLocation[3] = region.counts[i]
+	regionFile.WriteAt(chunkLocation, int64(relX|relZ*32)*4)
+
 	headerBytes := make([]byte, 5)
 	binary.BigEndian.PutUint32(headerBytes, uint32(size+1))
 	headerBytes[4] = 2
-	regionFile.Write(headerBytes)
-	_, err = data.WriteTo(regionFile)
+	regionFile.WriteAt(headerBytes, int64(offset)*SECTOR_SIZE)
+	data.Write(make([]byte, count*SECTOR_SIZE-data.Len()-5))
+	_, err = regionFile.WriteAt(data.Bytes(), int64(offset)*SECTOR_SIZE+5)
 	if err != nil {
 		panic(err)
 	}
 	err = regionFile.Sync()
 	if err != nil {
 		panic(err)
+	}
+	chunk.needsSave = false
+}
+
+func (chunk *Chunk) getNBT() (chunkNBT nbt.Type) {
+	region := chunk.World.getRegion(chunk.X>>5, chunk.Z>>5)
+	region.RLock()
+	defer region.RUnlock()
+	relX, relZ := chunk.X-(region.x<<5), chunk.Z-(region.z<<5)
+
+	if region.chunkExists(chunk.X, chunk.Z) {
+		var err error
+		chunkNBT, err = chunk.loadNBT()
+		if err == nil {
+			offset := region.getOffset(chunk.X, chunk.Z)
+			off := int(offset)
+			count := int(region.counts[relX|relZ<<5])
+			region.RUnlock()
+			region.freeSectors(off, count)
+			region.RLock()
+		} else {
+			chunkNBT = nbt.NewNBT()
+		}
+
+	} else {
+		chunkNBT = nbt.NewNBT()
+	}
+	return
+}
+
+func (region *region) freeSectors(off, count int) {
+	region.Lock()
+	defer region.Unlock()
+	for i := off; i < off+count; i++ {
+		region.usedSectors[i] = false
 	}
 }

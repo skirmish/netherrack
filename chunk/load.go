@@ -75,6 +75,7 @@ func (chunk *Chunk) tryLoad() byte {
 		}
 	}
 	chunk.needsRelight = false
+	chunk.needsSave = false
 	return 1
 }
 

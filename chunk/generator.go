@@ -10,6 +10,7 @@ func (chunk *Chunk) generate() {
 	case 0:
 		chunk.World.generator.Generate(int(chunk.X), int(chunk.Z), chunk)
 		chunk.Relight()
+		chunk.needsSave = true
 	case 2: //Damaged chunk
 		defaultGenerator(0).GenerateBlock(int(chunk.X), int(chunk.Z), chunk, blocks.RedstoneBlock.Id())
 		chunk.Relight()
