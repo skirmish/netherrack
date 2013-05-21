@@ -13,7 +13,10 @@ func (chunk *Chunk) Save() {
 	region := chunk.World.getRegion(chunk.X>>5, chunk.Z>>5)
 	relX, relZ := chunk.X-(region.x<<5), chunk.Z-(region.z<<5)
 
+	//The reason that the old chunk is loaded first is so that any extra/unsupported NBT
+	//tags are not lost during saving
 	chunkNBT := chunk.getNBT()
+
 	level, _ := chunkNBT.GetCompound("Level", true)
 
 	level.Set("xPos", chunk.X)
@@ -78,12 +81,8 @@ func (chunk *Chunk) Save() {
 	}
 	chunkNBT.WriteTo(zl, fmt.Sprintf("Chunk [%d,%d]", relX, relZ))
 	zl.Close()
-	/*gz, err := gzip.NewWriterLevel(&data, gzip.BestSpeed)
-	if err != nil {
-		panic(err)
-	}
-	chunkNBT.WriteTo(gz, fmt.Sprintf("Chunk [%d,%d]", relX, relZ))
-	gz.Close()*/
+
+	//Lock the region to allow free sectors to be found
 	region.Lock()
 	size := data.Len()
 	count := ((size + 5) / SECTOR_SIZE) + 1
@@ -109,6 +108,7 @@ check:
 	region.offsets[i] = int32(offset)
 
 	if region.offsets[i]+int32(region.counts[i]) >= int32(len(region.usedSectors)) {
+		//Increase the size of the usedSectors array
 		temp := region.usedSectors
 		region.usedSectors = make([]bool, len(region.usedSectors)+64)
 		copy(region.usedSectors, temp)
@@ -118,15 +118,6 @@ check:
 	}
 
 	regionFile := region.file
-
-	/*stat, err := regionFile.Stat()
-	if err != nil {
-		region.Unlock()
-		panic(err)
-	}
-	if int64(offset+count)*SECTOR_SIZE > stat.Size() {
-		regionFile.Truncate(int64(offset+count) * SECTOR_SIZE)
-	}*/
 	region.Unlock()
 
 	chunkLocation := make([]byte, 4)
@@ -138,12 +129,20 @@ check:
 	headerBytes := make([]byte, 5)
 	binary.BigEndian.PutUint32(headerBytes, uint32(size+1))
 	headerBytes[4] = 2
-	regionFile.WriteAt(headerBytes, int64(offset)*SECTOR_SIZE)
-	data.Write(make([]byte, count*SECTOR_SIZE-data.Len()-5))
+	_, err = regionFile.WriteAt(headerBytes, int64(offset)*SECTOR_SIZE)
+	if err != nil {
+		panic(err)
+	}
 	_, err = regionFile.WriteAt(data.Bytes(), int64(offset)*SECTOR_SIZE+5)
 	if err != nil {
 		panic(err)
 	}
+	//Pad the file to allow normal minecraft to load it
+	_, err = regionFile.WriteAt([]byte{0}, int64(offset+count)*SECTOR_SIZE-1)
+	if err != nil {
+		panic(err)
+	}
+	//Sync the changes to the file
 	err = regionFile.Sync()
 	if err != nil {
 		panic(err)
@@ -165,7 +164,9 @@ func (chunk *Chunk) getNBT() (chunkNBT nbt.Type) {
 			off := int(offset)
 			count := int(region.counts[relX|relZ<<5])
 			region.RUnlock()
+			region.Lock()
 			region.freeSectors(off, count)
+			region.Unlock()
 			region.RLock()
 		} else {
 			chunkNBT = nbt.NewNBT()
