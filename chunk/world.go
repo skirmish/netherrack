@@ -307,3 +307,11 @@ func GetWorld(name string) *World {
 	}
 	return <-res
 }
+
+func GetWorldCount() int {
+	res := make(chan int, 1)
+	worldEvent <- func() {
+		res <- len(worlds)
+	}
+	return <-res
+}

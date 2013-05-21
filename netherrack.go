@@ -13,9 +13,11 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"runtime"
 	"runtime/debug"
 	"strconv"
+	"time"
 )
 
 //Compile time checks
@@ -28,6 +30,18 @@ func init() {
 	server := &Server{}
 	server.init()
 	soulsand.SetServer(server, &provider{})
+
+	command.Add("safestop", func(sender soulsand.CommandSender) {
+		sender.SendMessageSync("Waiting for worlds to empty")
+		//TODO: Kick players and prevent them from joining
+		go func() {
+			for chunk.GetWorldCount() > 0 {
+				time.Sleep(time.Second)
+			}
+			sender.SendMessageSync("Killing server")
+			os.Exit(0)
+		}()
+	})
 }
 
 type Server struct {
