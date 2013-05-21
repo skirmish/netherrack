@@ -7,14 +7,14 @@ import (
 	"math"
 )
 
-func Parse(reader io.Reader) (t Type, e error) {
+func Parse(re io.Reader) (t Type, e error) {
 	defer func() {
 		if err := recover(); err != nil {
 			e = err.(error)
 		}
 	}()
 	out := make(Type)
-	r := Reader{R: reader}
+	r := reader{R: re}
 	typeID := r.ReadByte()
 	if typeID != 10 {
 		return nil, errors.New("Not an NBT file")
@@ -25,7 +25,7 @@ func Parse(reader io.Reader) (t Type, e error) {
 	return
 }
 
-func parseCompound(out Type, r Reader) {
+func parseCompound(out Type, r reader) {
 compoundLoop:
 	for {
 		switch r.ReadByte() {
@@ -84,7 +84,7 @@ compoundLoop:
 	}
 }
 
-func parseList(r Reader) []interface{} {
+func parseList(r reader) []interface{} {
 	typeID := r.ReadByte()
 	list := make([]interface{}, r.ReadInt())
 	switch typeID {
@@ -158,11 +158,11 @@ func parseList(r Reader) []interface{} {
 	return list
 }
 
-type Reader struct {
+type reader struct {
 	R io.Reader
 }
 
-func (r Reader) ReadUByte() byte {
+func (r reader) ReadUByte() byte {
 	b := make([]byte, 1)
 	_, err := io.ReadFull(r.R, b)
 	if err != nil {
@@ -171,11 +171,11 @@ func (r Reader) ReadUByte() byte {
 	return b[0]
 }
 
-func (r Reader) ReadByte() int8 {
+func (r reader) ReadByte() int8 {
 	return int8(r.ReadUByte())
 }
 
-func (r Reader) ReadUShort() uint16 {
+func (r reader) ReadUShort() uint16 {
 	b := make([]byte, 2)
 	_, err := io.ReadFull(r.R, b)
 	if err != nil {
@@ -184,11 +184,11 @@ func (r Reader) ReadUShort() uint16 {
 	return binary.BigEndian.Uint16(b)
 }
 
-func (r Reader) ReadShort() int16 {
+func (r reader) ReadShort() int16 {
 	return int16(r.ReadUShort())
 }
 
-func (r Reader) ReadInt() int32 {
+func (r reader) ReadInt() int32 {
 	b := make([]byte, 4)
 	_, err := io.ReadFull(r.R, b)
 	if err != nil {
@@ -197,7 +197,7 @@ func (r Reader) ReadInt() int32 {
 	return int32(binary.BigEndian.Uint32(b))
 }
 
-func (r Reader) ReadLong() int64 {
+func (r reader) ReadLong() int64 {
 	b := make([]byte, 8)
 	_, err := io.ReadFull(r.R, b)
 	if err != nil {
@@ -206,7 +206,7 @@ func (r Reader) ReadLong() int64 {
 	return int64(binary.BigEndian.Uint64(b))
 }
 
-func (r Reader) ReadFloat() float32 {
+func (r reader) ReadFloat() float32 {
 	b := make([]byte, 4)
 	_, err := io.ReadFull(r.R, b)
 	if err != nil {
@@ -215,7 +215,7 @@ func (r Reader) ReadFloat() float32 {
 	return math.Float32frombits(binary.BigEndian.Uint32(b))
 }
 
-func (r Reader) ReadDouble() float64 {
+func (r reader) ReadDouble() float64 {
 	b := make([]byte, 8)
 	_, err := io.ReadFull(r.R, b)
 	if err != nil {
@@ -224,7 +224,7 @@ func (r Reader) ReadDouble() float64 {
 	return math.Float64frombits(binary.BigEndian.Uint64(b))
 }
 
-func (r Reader) ReadString() string {
+func (r reader) ReadString() string {
 	l := int(r.ReadUShort())
 	d := make([]byte, l)
 	_, err := io.ReadFull(r.R, d)
