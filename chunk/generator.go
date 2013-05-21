@@ -160,7 +160,7 @@ func (chunk *Chunk) Relight() {
 			y := info.y
 			light := info.light
 
-			if chunk.GetBlockLight(x, y, z) >= light {
+			if block := blocks.GetBlockById(chunk.GetBlock(x, y, z)); chunk.GetBlockLight(x, y, z) >= light || block.LightFiltered() >= light {
 				continue
 			}
 

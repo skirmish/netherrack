@@ -283,6 +283,18 @@ func (world *World) getChunk(cp ChunkPosition) *Chunk {
 	return ch
 }
 
+func (world *World) chunkExists(x, z int32) bool {
+	world.dataLock.RLock()
+	r, ok := world.regions[(uint64(x>>5)&0xFFFFFFFF)|uint64(z>>5)<<32]
+	world.dataLock.RUnlock()
+	if !ok {
+		return false
+	}
+	r.RLock()
+	defer r.RUnlock()
+	return r.chunkExists(x, z)
+}
+
 var (
 	worldEvent = make(chan func(), 200)
 	worlds     = make(map[string]*World)
