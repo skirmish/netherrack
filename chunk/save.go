@@ -164,9 +164,7 @@ func (chunk *Chunk) getNBT() (chunkNBT nbt.Type) {
 			off := int(offset)
 			count := int(region.counts[relX|relZ<<5])
 			region.RUnlock()
-			region.Lock()
 			region.freeSectors(off, count)
-			region.Unlock()
 			region.RLock()
 		} else {
 			chunkNBT = nbt.NewNBT()
