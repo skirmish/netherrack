@@ -139,34 +139,41 @@ func chunkController(chunk *Chunk) {
 }
 
 func (chunk *Chunk) toCompressedBytes(full bool) [][]byte {
-	numSubs := 0
-	for i := 0; i < 16; i++ {
-		if chunk.SubChunks[i] != nil {
-			numSubs++
-		}
-	}
-	uncompData := make([]byte, (16*16*16+16*16*8*3)*numSubs+256)
-	var mask uint16 = 0
-	pSize := 16 * 16 * 16 * numSubs
-	rI := 0
-	for i := 0; i < 16; i++ {
-		if chunk.SubChunks[i] != nil {
-			copy(uncompData[16*16*16*rI:16*16*16*(rI+1)], chunk.SubChunks[i].Type)
-			copy(uncompData[pSize+16*16*8*rI:pSize+16*16*8*(rI+1)], chunk.SubChunks[i].MetaData)
-			copy(uncompData[pSize+(pSize/2)+16*16*8*rI:pSize+(pSize/2)+16*16*8*(rI+1)], chunk.SubChunks[i].BlockLight)
-			copy(uncompData[pSize*2+16*16*8*rI:pSize*2+16*16*8*(rI+1)], chunk.SubChunks[i].SkyLight)
-			mask |= 1 << uint(i)
-			rI++
-		}
-	}
-	copy(uncompData[(16*16*16+16*16*8*3)*rI:], chunk.Biome)
 	var b bytes.Buffer
+	b.Grow(5000) //Average size of compressed chunk
 	w, err := zlib.NewWriterLevel(&b, zlib.BestSpeed)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
-	w.Write(uncompData[:(16*16*16+16*16*8*3)*rI+256])
+	var mask uint16 = 0
+	//Blocks
+	for i := 0; i < 16; i++ {
+		if chunk.SubChunks[i] != nil {
+			w.Write(chunk.SubChunks[i].Type)
+			mask |= 1 << uint(i)
+		}
+	}
+	//Metadata
+	for i := 0; i < 16; i++ {
+		if chunk.SubChunks[i] != nil {
+			w.Write(chunk.SubChunks[i].MetaData)
+		}
+	}
+	//BlockLight
+	for i := 0; i < 16; i++ {
+		if chunk.SubChunks[i] != nil {
+			w.Write(chunk.SubChunks[i].BlockLight)
+		}
+	}
+	//Skylight
+	for i := 0; i < 16; i++ {
+		if chunk.SubChunks[i] != nil {
+			w.Write(chunk.SubChunks[i].SkyLight)
+		}
+	}
+	//Biomes
+	w.Write(chunk.Biome)
 	w.Close()
 	data := b.Bytes()
 	out := make([]byte, 1+4+4+1+2+2+4)
