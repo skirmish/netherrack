@@ -5,7 +5,6 @@ import (
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/system"
 	"github.com/NetherrackDev/soulsand"
-	"github.com/NetherrackDev/soulsand/blocks"
 	"github.com/NetherrackDev/soulsand/command"
 	"github.com/NetherrackDev/soulsand/effect"
 	"github.com/NetherrackDev/soulsand/gamemode"
@@ -111,7 +110,9 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		case 5:
 			x++
 		}
-		player.World.SetBlock(x, y, z, blocks.Stone.Id(), 0)
+		if item := player.inventory.GetHotbarSlot(player.CurrentSlot); item != nil && item.GetID() < 256 {
+			player.World.SetBlock(x, y, z, byte(item.GetID()), 0)
+		}
 	},
 	0x10: func(c *protocol.Conn, player *Player) { //Held Item Change
 		slotID := c.ReadHeldItemChange()
@@ -136,7 +137,8 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		c.ReadConfirmTransaction()
 	},
 	0x6B: func(c *protocol.Conn, player *Player) { //Creative Inventory Action
-		c.ReadCreativeInventoryAction()
+		slot, item := c.ReadCreativeInventoryAction()
+		player.inventory.SetSlot(int(slot), item)
 	},
 	0x6C: func(c *protocol.Conn, player *Player) { //Enchant Item
 		c.ReadEnchantItem()

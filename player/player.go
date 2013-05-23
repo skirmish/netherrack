@@ -76,7 +76,10 @@ func init() {
 	command.Add("relight", func(caller soulsand.CommandSender) {
 		if player, ok := caller.(*Player); ok {
 			player.World.RunSync(int(player.Chunk.X), int(player.Chunk.Z), func(chunk soulsand.SyncChunk) {
+				start := time.Now().UnixNano()
 				chunk.Relight()
+				end := time.Now().UnixNano()
+				player.SendMessage(fmt.Sprintf("Time taken: %.3fms", float64(end-start)/1000000.0))
 				player.RunSync(func(soulsand.SyncEntity) {
 					player.World.GetChunk(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
 				})
