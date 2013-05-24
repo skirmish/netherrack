@@ -18,6 +18,7 @@ import (
 	"net"
 	"runtime"
 	"runtime/debug"
+	"testing"
 	"time"
 )
 
@@ -83,6 +84,23 @@ func init() {
 				player.RunSync(func(soulsand.SyncEntity) {
 					player.World.GetChunk(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
 				})
+			})
+		} else {
+			caller.SendMessageSync("This can only be used by a player")
+		}
+	})
+	command.Add("bench light", func(caller soulsand.CommandSender) {
+		if player, ok := caller.(*Player); ok {
+			player.World.RunSync(int(player.Chunk.X), int(player.Chunk.Z), func(chunk soulsand.SyncChunk) {
+				res := testing.Benchmark(func(b *testing.B) {
+					for i := 0; i < b.N; i++ {
+						chunk.Relight()
+					}
+				})
+				player.SendMessage(soulsand.ColourCyan + "Benchmark complete")
+				player.SendMessage(soulsand.ColourBrightGreen + fmt.Sprintf("AllocsPerOp: %d", res.AllocsPerOp()))
+				player.SendMessage(soulsand.ColourBrightGreen + fmt.Sprintf("AllocedBytesPerOp: %d", res.AllocedBytesPerOp()))
+				player.SendMessage(soulsand.ColourBrightGreen + fmt.Sprintf("MsPerOp: %.2f", float64(res.NsPerOp())/1000000.0))
 			})
 		} else {
 			caller.SendMessageSync("This can only be used by a player")
