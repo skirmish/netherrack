@@ -47,9 +47,9 @@ func chunkController(chunk *Chunk) {
 				}
 			}
 		case cwr := <-chunk.watcherJoin:
-			chunk.Players[cwr.P.GetName()] = cwr.P
+			chunk.Players[cwr.P.Name()] = cwr.P
 			for _, e := range chunk.Entitys {
-				if e.GetID() != cwr.P.GetID() {
+				if e.ID() != cwr.P.ID() {
 					s := e.(entity.Spawnable)
 					cwr.P.RunSync(s.CreateSpawn())
 				}
@@ -60,9 +60,9 @@ func chunkController(chunk *Chunk) {
 			for {
 				select {
 				case wr := <-chunk.watcherJoin:
-					chunk.Players[cwr.P.GetName()] = wr.P
+					chunk.Players[cwr.P.Name()] = wr.P
 					for _, e := range chunk.Entitys {
-						if e.GetID() != wr.P.GetID() {
+						if e.ID() != wr.P.ID() {
 							s := e.(entity.Spawnable)
 							wr.P.RunSync(s.CreateSpawn())
 						}
@@ -71,20 +71,20 @@ func chunkController(chunk *Chunk) {
 					break empty
 				}
 			}
-			delete(chunk.Players, cwr.P.GetName())
+			delete(chunk.Players, cwr.P.Name())
 			for _, e := range chunk.Entitys {
-				if e.GetID() != cwr.P.GetID() {
+				if e.ID() != cwr.P.ID() {
 					s := e.(entity.Spawnable)
 					cwr.P.RunSync(s.CreateDespawn())
 				}
 			}
 		case cer := <-chunk.entityJoin:
-			chunk.Entitys[cer.E.GetID()] = cer.E
+			chunk.Entitys[cer.E.ID()] = cer.E
 		case cer := <-chunk.entityLeave:
-			delete(chunk.Entitys, cer.E.GetID())
+			delete(chunk.Entitys, cer.E.ID())
 		case msg := <-chunk.messageChannel:
 			for _, p := range chunk.Players {
-				if p.GetID() != msg.ID {
+				if p.ID() != msg.ID {
 					p.RunSync(msg.Msg)
 				}
 			}
@@ -123,7 +123,7 @@ func chunkController(chunk *Chunk) {
 				for _, p := range chunk.Players {
 					p.RunSync(func(s soulsand.SyncEntity) {
 						sPlayer := s.(soulsand.SyncPlayer)
-						sPlayer.GetConnection().WriteMultiBlockChange(chunk.X, chunk.Z, blockData)
+						sPlayer.Connection().WriteMultiBlockChange(chunk.X, chunk.Z, blockData)
 					})
 				}
 				chunk.blockQueue = chunk.blockQueue[0:0]
@@ -173,7 +173,7 @@ func (chunk *Chunk) toCompressedBytes(full bool) [][]byte {
 		}
 	}
 	//Biomes
-	w.Write(chunk.Biome)
+	w.Write(chunk.biome)
 	w.Close()
 	data := b.Bytes()
 	out := make([]byte, 1+4+4+1+2+2+4)

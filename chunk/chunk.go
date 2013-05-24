@@ -14,7 +14,7 @@ type Chunk struct {
 	World          *World
 	X, Z           int32
 	SubChunks      []*SubChunk
-	Biome          []byte
+	biome          []byte
 	Players        map[string]soulsand.Player
 	Entitys        map[int32]soulsand.Entity
 	requests       chan *ChunkRequest
@@ -120,7 +120,7 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 		} else if y+1 == int(c.heightMap[x|z<<4]) {
 			var ty int
 			for ty = y - 1; ty >= 0; ty-- {
-				if block := blocks.GetBlockById(c.GetBlock(x, ty, z)); block.LightFiltered() != 0 || block.StopsSkylight() {
+				if block := blocks.GetBlockById(c.Block(x, ty, z)); block.LightFiltered() != 0 || block.StopsSkylight() {
 					c.heightMap[x|z<<4] = int32(ty) + 1
 					break
 				}
@@ -138,7 +138,7 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 		if y+1 == int(c.heightMap[x|z<<4]) {
 			var ty int
 			for ty = y - 1; ty >= 0; ty-- {
-				if block := blocks.GetBlockById(c.GetBlock(x, ty, z)); block.LightFiltered() != 0 || block.StopsSkylight() {
+				if block := blocks.GetBlockById(c.Block(x, ty, z)); block.LightFiltered() != 0 || block.StopsSkylight() {
 					c.heightMap[x|z<<4] = int32(ty) + 1
 					break
 				}
@@ -151,7 +151,7 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 	section.Type[ind] = blType
 }
 
-func (c *Chunk) GetBlock(x, y, z int) byte {
+func (c *Chunk) Block(x, y, z int) byte {
 	sec := y >> 4
 	ind := ((y & 15) << 8) | (z << 4) | x
 	return c.SubChunks[sec].Type[ind]
@@ -170,7 +170,7 @@ func (c *Chunk) SetMeta(x, y, z int, data byte) {
 	}
 }
 
-func (c *Chunk) GetMeta(x, y, z int) byte {
+func (c *Chunk) Meta(x, y, z int) byte {
 	sec := y >> 4
 	i := ((y & 15) << 8) | (z << 4) | x
 	if i&1 == 0 {
@@ -194,7 +194,7 @@ func (c *Chunk) SetBlockLight(x, y, z int, data byte) {
 	}
 }
 
-func (c *Chunk) GetBlockLight(x, y, z int) byte {
+func (c *Chunk) BlockLight(x, y, z int) byte {
 	sec := y >> 4
 	section := c.SubChunks[sec]
 	i := ((y & 15) << 8) | (z << 4) | x
@@ -222,7 +222,7 @@ func (c *Chunk) SetSkyLight(x, y, z int, data byte) {
 	}
 }
 
-func (c *Chunk) GetSkyLight(x, y, z int) byte {
+func (c *Chunk) SkyLight(x, y, z int) byte {
 	sec := y >> 4
 	section := c.SubChunks[sec]
 	i := ((y & 15) << 8) | (z << 4) | x
@@ -237,11 +237,11 @@ func (c *Chunk) GetSkyLight(x, y, z int) byte {
 
 func (c *Chunk) SetBiome(x, z int, biome byte) {
 	c.needsSave = true
-	c.Biome[x|(z<<4)] = biome
+	c.biome[x|(z<<4)] = biome
 }
 
-func (c *Chunk) GetBiome(x, z int) byte {
-	return c.Biome[x|(z<<4)]
+func (c *Chunk) Biome(x, z int) byte {
+	return c.biome[x|(z<<4)]
 }
 
 func (c *Chunk) HeightX(x, z int) int32 {
@@ -258,7 +258,7 @@ func CreateChunk(x, z int32) *Chunk {
 		X:              x,
 		Z:              z,
 		SubChunks:      make([]*SubChunk, 16),
-		Biome:          make([]byte, 16*16),
+		biome:          make([]byte, 16*16),
 		Players:        make(map[string]soulsand.Player),
 		Entitys:        make(map[int32]soulsand.Entity),
 		requests:       make(chan *ChunkRequest, 500),

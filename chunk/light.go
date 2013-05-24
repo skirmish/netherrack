@@ -96,19 +96,19 @@ func (chunk *Chunk) Relight() {
 			y := info.y
 			light := info.light
 
-			if chunk.GetSkyLight(x, y, z) >= light {
+			if chunk.SkyLight(x, y, z) >= light {
 				continue
 			}
 
 			chunk.SetSkyLight(x, y, z, light)
 
 			if y > 0 || y < 255 {
-				block := blocks.GetBlockById(chunk.GetBlock(x, y-1, z))
+				block := blocks.GetBlockById(chunk.Block(x, y-1, z))
 				newLight := int8(light) - int8(block.LightFiltered())
-				if (newLight == 15 && block.StopsSkylight()) || chunk.GetSkyLight(x, y+1, z) != 15 {
+				if (newLight == 15 && block.StopsSkylight()) || chunk.SkyLight(x, y+1, z) != 15 {
 					newLight--
 				}
-				if int8(chunk.GetSkyLight(x, y-1, z)) < newLight {
+				if int8(chunk.SkyLight(x, y-1, z)) < newLight {
 					skyLightQueue = skyLightQueue.Append(&lightInfo{
 						x:     x,
 						y:     y - 1,
@@ -147,7 +147,7 @@ func (chunk *Chunk) Relight() {
 			y := info.y
 			light := info.light
 
-			if chunk.GetBlockLight(x, y, z) >= light {
+			if chunk.BlockLight(x, y, z) >= light {
 				continue
 			}
 
@@ -178,24 +178,10 @@ func (chunk *Chunk) Relight() {
 	chunk.needsRelight = false
 }
 
-func (chunk *Chunk) checkBlockLightRemove(blockRemoveLightQueue *lightInfo, light byte, x, y, z, ox, oy, oz int) *lightInfo {
-	block := blocks.GetBlockById(chunk.GetBlock(x+ox, y+oy, z+oz))
-	newLight := int8(light) - int8(block.LightFiltered()) - 1
-	if int8(chunk.GetBlockLight(x+ox, y+oy, z+oz)) <= newLight {
-		blockRemoveLightQueue = blockRemoveLightQueue.Append(&lightInfo{
-			x:     x + ox,
-			y:     y + oy,
-			z:     z + oz,
-			light: byte(newLight),
-		})
-	}
-	return blockRemoveLightQueue
-}
-
 func (chunk *Chunk) checkSkyLight(skyLightQueue *lightInfo, light byte, x, y, z, ox, oy, oz int) *lightInfo {
-	block := blocks.GetBlockById(chunk.GetBlock(x+ox, y+oy, z+oz))
+	block := blocks.GetBlockById(chunk.Block(x+ox, y+oy, z+oz))
 	newLight := int8(light) - int8(block.LightFiltered()) - 1
-	if int8(chunk.GetSkyLight(x+ox, y+oy, z+oz)) < newLight {
+	if int8(chunk.SkyLight(x+ox, y+oy, z+oz)) < newLight {
 		skyLightQueue = skyLightQueue.Append(&lightInfo{
 			x:     x + ox,
 			y:     y + oy,
@@ -207,9 +193,9 @@ func (chunk *Chunk) checkSkyLight(skyLightQueue *lightInfo, light byte, x, y, z,
 }
 
 func (chunk *Chunk) checkBlockLight(blockLightQueue *lightInfo, light byte, x, y, z, ox, oy, oz int) *lightInfo {
-	block := blocks.GetBlockById(chunk.GetBlock(x+ox, y+oy, z+oz))
+	block := blocks.GetBlockById(chunk.Block(x+ox, y+oy, z+oz))
 	newLight := int8(light) - int8(block.LightFiltered()) - 1
-	if int8(chunk.GetBlockLight(x+ox, y+oy, z+oz)) < newLight {
+	if int8(chunk.BlockLight(x+ox, y+oy, z+oz)) < newLight {
 		blockLightQueue = blockLightQueue.Append(&lightInfo{
 			x:     x + ox,
 			y:     y + oy,

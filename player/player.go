@@ -132,7 +132,7 @@ func HandlePlayer(conn net.Conn) {
 	player.connection, player.name = protocol.NewConnection(conn)
 
 	if server.GetPlayer(player.name) != nil {
-		player.connection.WriteDisconnect(locale.Get(player.GetLocaleSync(), "disconnect.reason.loggedin"))
+		player.connection.WriteDisconnect(locale.Get(player.LocaleSync(), "disconnect.reason.loggedin"))
 		runtime.Goexit()
 	}
 	player.Entity.Init(player)
@@ -145,13 +145,12 @@ func HandlePlayer(conn net.Conn) {
 
 	spawnX, spawnY, spawnZ := player.World.GetSpawn()
 
-	player.Position.X = float64(spawnX)
-	player.Position.Y = float64(spawnY)
-	player.Position.Z = float64(spawnZ)
-	player.Chunk.LX = int32(player.Position.X) >> 4
-	player.Chunk.X = int32(player.Position.X) >> 4
-	player.Chunk.LZ = int32(player.Position.Z) >> 4
-	player.Chunk.Z = int32(player.Position.Z) >> 4
+	player.SetPositionSync(float64(spawnX), float64(spawnY), float64(spawnZ))
+	x, _, z := player.PositionSync()
+	player.Chunk.LX = int32(x) >> 4
+	player.Chunk.X = int32(x) >> 4
+	player.Chunk.LZ = int32(z) >> 4
+	player.Chunk.Z = int32(z) >> 4
 	player.displayName = player.name
 	player.inventory = inventory.CreatePlayerInventory()
 	player.inventory.AddWatcher(player)
@@ -159,14 +158,16 @@ func HandlePlayer(conn net.Conn) {
 
 	player.connection.WriteLoginRequest(player.EID, "flat", int8(player.gamemode), 0, 3, 32)
 
-	eventType, ev := event.NewJoin(player, locale.Get(player.GetLocaleSync(), "disconnect.reason.unknown"))
+	eventType, ev := event.NewJoin(player, locale.Get(player.LocaleSync(), "disconnect.reason.unknown"))
 	if system.EventSource.Fire(eventType, ev) {
 		player.connection.WriteDisconnect(ev.Reason)
 		runtime.Goexit()
 	}
 
 	player.connection.WriteSpawnPosition(int32(spawnX), int32(spawnY), int32(spawnZ))
-	player.connection.WritePlayerPositionLook(player.Position.X, player.Position.Y, player.Position.Z, player.Position.Y+1.6, player.Position.Yaw, player.Position.Pitch, false)
+	x, y, z := player.PositionSync()
+	yaw, pitch := player.LookSync()
+	player.connection.WritePlayerPositionLook(x, y, z, y+1.6, yaw, pitch, false)
 
 	log.Printf("Player \"%s\" logged in with %d", player.name, player.EID)
 
@@ -286,11 +287,11 @@ func (p *Player) chunkReload(old int) {
 }
 
 func (p *Player) spawn() {
-	p.World.SendChunkMessage(p.Chunk.X, p.Chunk.Z, p.GetID(), p.CreateSpawn())
+	p.World.SendChunkMessage(p.Chunk.X, p.Chunk.Z, p.ID(), p.CreateSpawn())
 }
 
 func (p *Player) despawn() {
-	p.World.SendChunkMessage(p.Chunk.X, p.Chunk.Z, p.GetID(), p.CreateDespawn())
+	p.World.SendChunkMessage(p.Chunk.X, p.Chunk.Z, p.ID(), p.CreateDespawn())
 }
 
 func (p *Player) dataWatcher() {

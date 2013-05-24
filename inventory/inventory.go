@@ -37,7 +37,7 @@ func (inv *Type) SetSlot(slot int, item soulsand.ItemStack) {
 	for _, p := range inv.watchers {
 		p.RunSync(func(se soulsand.SyncEntity) {
 			sp := se.(soulsand.SyncPlayer)
-			sp.GetConnection().WriteSetSlot(5, int16(slot), item)
+			sp.Connection().WriteSetSlot(5, int16(slot), item)
 		})
 	}
 }
@@ -53,17 +53,17 @@ func (inv *Type) GetName() string {
 func (inv *Type) AddWatcher(p soulsand.Player) {
 	inv.watcherLock.Lock()
 	defer inv.watcherLock.Unlock()
-	inv.watchers[p.GetName()] = p
+	inv.watchers[p.Name()] = p
 	inv.lock.RLock()
 	defer inv.lock.RUnlock()
 	p.RunSync(func(se soulsand.SyncEntity) {
 		sp := se.(soulsand.SyncPlayer)
-		sp.GetConnection().WriteSetWindowItems(5, inv.items)
+		sp.Connection().WriteSetWindowItems(5, inv.items)
 	})
 }
 
 func (inv *Type) RemoveWatcher(p soulsand.Player) {
 	inv.watcherLock.Lock()
 	defer inv.watcherLock.Unlock()
-	delete(inv.watchers, p.GetName())
+	delete(inv.watchers, p.Name())
 }

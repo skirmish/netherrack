@@ -6,11 +6,11 @@ import (
 )
 
 func (p *Player) CreateSpawn() func(soulsand.SyncEntity) {
-	id := p.GetID()
-	name := p.GetName()
-	x, y, z := p.Position.X, p.Position.Y, p.Position.Z
-	yaw, pitch := p.Position.Yaw, p.Position.Pitch
-	metadata := (p.GetEntityMetadata().(metadata.Type)).Clone()
+	id := p.ID()
+	name := p.Name()
+	x, y, z := p.PositionSync()
+	yaw, pitch := p.LookSync()
+	metadata := (p.EntityMetadata().(metadata.Type)).Clone()
 	return func(p soulsand.SyncEntity) {
 		player := p.(*Player)
 		player.connection.WriteSpawnNamedEntity(
@@ -27,7 +27,7 @@ func (p *Player) CreateSpawn() func(soulsand.SyncEntity) {
 }
 
 func (p *Player) CreateDespawn() func(soulsand.SyncEntity) {
-	id := p.GetID()
+	id := p.ID()
 	return func(p soulsand.SyncEntity) {
 		player := p.(*Player)
 		player.connection.WriteDestroyEntity([]int32{id})

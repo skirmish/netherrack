@@ -42,25 +42,19 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 	0x0B: func(c *protocol.Conn, player *Player) { //Player Position
 		x, y, _, z, _ := c.ReadPlayerPosition()
 		if !player.IgnoreMoveUpdates {
-			player.Position.X = x
-			player.Position.Y = y
-			player.Position.Z = z
+			player.SetPositionSync(x, y, z)
 		}
 	},
 	0x0C: func(c *protocol.Conn, player *Player) { //Player Look
 		yaw, pitch, _ := c.ReadPlayerLook()
-		player.Position.Yaw = yaw
-		player.Position.Pitch = pitch
+		player.SetLookSync(yaw, pitch)
 	},
 	0x0D: func(c *protocol.Conn, player *Player) { //Player Position and Look
 		x, y, _, z, yaw, pitch, _ := c.ReadPlayerPositionLook()
 		if !player.IgnoreMoveUpdates {
-			player.Position.X = x
-			player.Position.Y = y
-			player.Position.Z = z
+			player.SetPositionSync(x, y, z)
 		}
-		player.Position.Yaw = yaw
-		player.Position.Pitch = pitch
+		player.SetLookSync(yaw, pitch)
 	},
 	0x0E: func(c *protocol.Conn, player *Player) { //Player Digging
 		status, bx, by, bz, _ := c.ReadPlayerDigging()
@@ -77,11 +71,11 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 			})
 			rx := x - ((x >> 4) << 4)
 			rz := z - ((z >> 4) << 4)
-			block := ch.GetBlock(rx, y, rz)
-			meta := ch.GetMeta(rx, y, rz)
+			block := ch.Block(rx, y, rz)
+			meta := ch.Meta(rx, y, rz)
 			m := chunk.GetPlayerMap()
 			for _, p := range m {
-				if p.GetName() != player.GetName() {
+				if p.Name() != player.Name() {
 					p.PlayEffect(x, y, z, effect.BlockBreak, int(block)|(int(meta)<<12), true)
 				}
 			}
@@ -168,7 +162,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		c.ReadPluginMessage()
 	},
 	0xFF: func(c *protocol.Conn, player *Player) { //Disconnect
-		log.Printf("Player %s disconnect %s\n", player.GetName(), c.ReadDisconnect())
+		log.Printf("Player %s disconnect %s\n", player.Name(), c.ReadDisconnect())
 		runtime.Goexit()
 	},
 }

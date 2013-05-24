@@ -29,7 +29,7 @@ func (pi *PlayerInventory) SetSlot(slot int, item soulsand.ItemStack) {
 	for _, p := range pi.watchers {
 		p.RunSync(func(se soulsand.SyncEntity) {
 			sp := se.(soulsand.SyncPlayer)
-			sp.GetConnection().WriteSetSlot(0, int16(slot), item)
+			sp.Connection().WriteSetSlot(0, int16(slot), item)
 		})
 	}
 }
@@ -37,12 +37,12 @@ func (pi *PlayerInventory) SetSlot(slot int, item soulsand.ItemStack) {
 func (pi *PlayerInventory) AddWatcher(p soulsand.Player) {
 	pi.watcherLock.Lock()
 	defer pi.watcherLock.Unlock()
-	pi.watchers[p.GetName()] = p
+	pi.watchers[p.Name()] = p
 	pi.lock.RLock()
 	defer pi.lock.RUnlock()
 	p.RunSync(func(se soulsand.SyncEntity) {
 		sp := se.(soulsand.SyncPlayer)
-		sp.GetConnection().WriteSetWindowItems(0, pi.items)
+		sp.Connection().WriteSetWindowItems(0, pi.items)
 	})
 }
 

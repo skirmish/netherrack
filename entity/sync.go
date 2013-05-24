@@ -5,12 +5,20 @@ import (
 	"github.com/NetherrackDev/soulsand"
 )
 
-func (e *Entity) GetPositionSync() (float64, float64, float64) {
-	return e.Position.X, e.Position.Y, e.Position.Z
+func (e *Entity) PositionSync() (float64, float64, float64) {
+	return e.position.X, e.position.Y, e.position.Z
 }
 
 func (e *Entity) SetPositionSync(x, y, z float64) {
-	e.Position.X, e.Position.Y, e.Position.Z = x, y, z
+	e.position.X, e.position.Y, e.position.Z = x, y, z
+}
+
+func (e *Entity) LookSync() (float32, float32) {
+	return e.position.Yaw, e.position.Pitch
+}
+
+func (e *Entity) SetLookSync(yaw, pitch float32) {
+	e.position.Yaw, e.position.Pitch = yaw, pitch
 }
 
 func (e *Entity) RunSync(f func(soulsand.SyncEntity)) error {
@@ -40,6 +48,6 @@ func (e *Entity) CallSync(f func(soulsand.SyncEntity, chan interface{})) (interf
 	return nil, err
 }
 
-func (e *Entity) GetEntityMetadata() soulsand.EntityMetadata {
+func (e *Entity) EntityMetadata() soulsand.EntityMetadata {
 	return e.metadata
 }

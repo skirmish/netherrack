@@ -16,15 +16,15 @@ func (player *Player) setViewDistance(viewDistance int) {
 	}
 }
 
-func (player *Player) GetName() string {
+func (player *Player) Name() string {
 	return player.name
 }
 
-func (player *Player) GetViewDistanceSync() int {
+func (player *Player) ViewDistanceSync() int {
 	return player.settings.viewDistance
 }
 
-func (player *Player) GetLocaleSync() string {
+func (player *Player) LocaleSync() string {
 	return player.settings.locale
 }
 
@@ -32,7 +32,7 @@ func (player *Player) SendMessageSync(msg string) {
 	player.connection.WriteChatMessage(msg)
 }
 
-func (player *Player) GetDisplayNameSync() string {
+func (player *Player) DisplayNameSync() string {
 	return player.displayName
 }
 
@@ -45,11 +45,11 @@ func (player *Player) SetGamemodeSync(mode gamemode.Type) {
 	player.connection.WriteChangeGameState(3, int8(mode))
 }
 
-func (player *Player) GetGamemodeSync() gamemode.Type {
+func (player *Player) GamemodeSync() gamemode.Type {
 	return player.gamemode
 }
 
-func (player *Player) GetConnection() soulsand.UnsafeConnection {
+func (player *Player) Connection() soulsand.UnsafeConnection {
 	return player.connection
 }
 

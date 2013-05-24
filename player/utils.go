@@ -18,7 +18,7 @@ func (player *Player) SetGamemode(mode gamemode.Type) error {
 	})
 }
 
-func (player *Player) GetGamemode() (gamemode.Type, error) {
+func (player *Player) Gamemode() (gamemode.Type, error) {
 	val, err := player.CallSync(func(e soulsand.SyncEntity, ret chan interface{}) {
 		ret <- player.gamemode
 	})
@@ -28,7 +28,7 @@ func (player *Player) GetGamemode() (gamemode.Type, error) {
 	return 0, err
 }
 
-func (player *Player) GetLocale() (string, error) {
+func (player *Player) Locale() (string, error) {
 	val, err := player.CallSync(func(e soulsand.SyncEntity, ret chan interface{}) {
 		ret <- player.settings.locale
 	})
@@ -57,10 +57,12 @@ func (player *Player) UpdateExperience() {
 }
 
 func (player *Player) UpdatePosition() {
-	player.connection.WritePlayerPositionLook(player.Position.X, player.Position.Y, player.Position.Z, player.Position.Y+1.6, player.Position.Yaw, player.Position.Pitch, false)
+	x, y, z := player.PositionSync()
+	yaw, pitch := player.LookSync()
+	player.connection.WritePlayerPositionLook(x, y, z, y+1.6, yaw, pitch, false)
 }
 
-func (player *Player) GetDisplayName() (string, error) {
+func (player *Player) DisplayName() (string, error) {
 	val, err := player.CallSync(func(e soulsand.SyncEntity, ret chan interface{}) {
 		ret <- player.displayName
 	})

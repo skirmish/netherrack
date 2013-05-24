@@ -33,7 +33,7 @@ func (chunk *Chunk) Save() {
 	biomeData := make([]int8, 16*16)
 	for x := 0; x < 16; x++ {
 		for z := 0; z < 16; z++ {
-			biomeData[x|z<<4] = int8(chunk.GetBiome(x, z))
+			biomeData[x|z<<4] = int8(chunk.Biome(x, z))
 		}
 	}
 	level.Set("Biomes", biomeData)

@@ -47,13 +47,13 @@ func Broadcast(message string) {
 
 func AddPlayer(p soulsand.Player) {
 	channel <- func() {
-		playersByName[p.GetName()] = p
-		displayName, err := p.GetDisplayName()
+		playersByName[p.Name()] = p
+		displayName, err := p.DisplayName()
 		if err != nil {
 			return
 		}
 		for _, player := range playersByName {
-			playerLocale, err := player.GetLocale()
+			playerLocale, err := player.Locale()
 			if err != nil {
 				continue
 			}
@@ -64,12 +64,12 @@ func AddPlayer(p soulsand.Player) {
 }
 
 func RemovePlayer(p soulsand.Player) {
-	displayName := (p.(soulsand.SyncPlayer)).GetDisplayNameSync()
-	name := p.GetName()
+	displayName := (p.(soulsand.SyncPlayer)).DisplayNameSync()
+	name := p.Name()
 	channel <- func() {
 		delete(playersByName, name)
 		for _, player := range playersByName {
-			playerLocale, err := player.GetLocale()
+			playerLocale, err := player.Locale()
 			if err != nil {
 				continue
 			}
@@ -105,7 +105,7 @@ func GetFreeEntityID(e soulsand.Entity) int32 {
 }
 
 func FreeEntityID(e soulsand.Entity) {
-	id := e.GetID()
+	id := e.ID()
 	channel <- func() {
 		delete(entitysById, id)
 	}

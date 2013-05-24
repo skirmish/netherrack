@@ -136,20 +136,20 @@ func (world *World) updateTime() {
 	for _, p := range world.players {
 		p.RunSync(func(se soulsand.SyncEntity) {
 			sp := se.(soulsand.SyncPlayer)
-			sp.GetConnection().WriteTimeUpdate(time, dayTime)
+			sp.Connection().WriteTimeUpdate(time, dayTime)
 		})
 	}
 }
 
 func (world *World) AddPlayer(player soulsand.Player) {
 	world.worldEventChannel <- func(soulsand.World) {
-		world.players[player.GetName()] = player
+		world.players[player.Name()] = player
 	}
 }
 
 func (world *World) RemovePlayer(player soulsand.Player) {
 	world.worldEventChannel <- func(soulsand.World) {
-		delete(world.players, player.GetName())
+		delete(world.players, player.Name())
 	}
 }
 
@@ -186,8 +186,8 @@ func (world *World) GetBlock(x, y, z int) []byte {
 	cz := z >> 4
 	ret := make(chan []byte, 1)
 	world.RunSync(cx, cz, func(c soulsand.SyncChunk) {
-		ret <- []byte{c.GetBlock(x-cx*16, y, z-cz*16),
-			c.GetMeta(x-cx*16, y, z-cz*16)}
+		ret <- []byte{c.Block(x-cx*16, y, z-cz*16),
+			c.Meta(x-cx*16, y, z-cz*16)}
 	})
 	return <-ret
 }
@@ -209,8 +209,8 @@ func (world *World) GetBlocks(x, y, z, w, h, d int) *Blocks {
 				cz := tz >> 4
 				wait.Add(1)
 				world.RunSync(cx, cz, func(c soulsand.SyncChunk) {
-					out.setBlock(bx, by, bz, c.GetBlock(tx-cx*16, ty, tz-cz*16))
-					out.setMeta(bx, by, bz, c.GetMeta(tx-cx*16, ty, tz-cz*16))
+					out.setBlock(bx, by, bz, c.Block(tx-cx*16, ty, tz-cz*16))
+					out.setMeta(bx, by, bz, c.Meta(tx-cx*16, ty, tz-cz*16))
 					wait.Done()
 				})
 			}
