@@ -77,7 +77,7 @@ func (chunk *Chunk) Relight() {
 	}
 
 	for bp, light := range chunk.lights {
-		x, y, z := bp.GetPosition()
+		x, y, z := bp.Position()
 		blockLightQueue = blockLightQueue.Append(&lightInfo{
 			x:     x,
 			y:     y,

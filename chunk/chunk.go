@@ -27,8 +27,14 @@ type Chunk struct {
 	blockQueue     []blockChange
 	heightMap      []int32
 	lights         map[blockPosition]byte
-	needsRelight   bool
-	needsSave      bool
+	lightInfo      struct {
+		north map[int16]byte
+		south map[int16]byte
+		east  map[int16]byte
+		west  map[int16]byte
+	}
+	needsRelight bool
+	needsSave    bool
 }
 type SubChunk struct {
 	Type       []byte
@@ -44,7 +50,7 @@ func createBlockPosition(x, y, z int) blockPosition {
 	return blockPosition(uint32(x) | uint32(z)<<4 | uint32(y)<<8)
 }
 
-func (bp blockPosition) GetPosition() (x, y, z int) {
+func (bp blockPosition) Position() (x, y, z int) {
 	x = int(bp & 0xF)
 	z = int((bp >> 4) & 0xF)
 	y = int((bp >> 8) & 0xFF)
@@ -238,6 +244,15 @@ func (c *Chunk) GetBiome(x, z int) byte {
 	return c.Biome[x|(z<<4)]
 }
 
+func (c *Chunk) HeightX(x, z int) int32 {
+	if x >= 0 && x < 16 && z >= 0 && z < 16 {
+		return c.heightMap[x|z<<4]
+	}
+	cx, cz := (int(c.X)<<4+x)>>4, (int(c.Z)<<4+z)>>4
+	_, _ = cx, cz
+	return 0
+}
+
 func CreateChunk(x, z int32) *Chunk {
 	chunk := &Chunk{
 		X:              x,
@@ -257,6 +272,10 @@ func CreateChunk(x, z int32) *Chunk {
 		heightMap:      make([]int32, 16*16),
 		lights:         make(map[blockPosition]byte),
 	}
+	chunk.lightInfo.north = make(map[int16]byte)
+	chunk.lightInfo.south = make(map[int16]byte)
+	chunk.lightInfo.east = make(map[int16]byte)
+	chunk.lightInfo.west = make(map[int16]byte)
 	for i := 0; i < 16; i++ {
 		chunk.SubChunks[i] = CreateSubChunk()
 	}

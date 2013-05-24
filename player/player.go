@@ -82,7 +82,7 @@ func init() {
 				end := time.Now().UnixNano()
 				player.SendMessage(fmt.Sprintf("Time taken: %.3fms", float64(end-start)/1000000.0))
 				player.RunSync(func(soulsand.SyncEntity) {
-					player.World.GetChunk(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
+					player.World.GetChunkData(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
 				})
 			})
 		} else {
@@ -260,7 +260,7 @@ func (p *Player) SendMoveUpdate() {
 		for x := p.Chunk.X - vd; x < p.Chunk.X+vd+1; x++ {
 			for z := p.Chunk.Z - vd; z < p.Chunk.Z+vd+1; z++ {
 				if x < lx-vd || x >= lx+vd+1 || z < lz-vd || z >= lz+vd+1 {
-					p.World.GetChunk(x, z, p.ChunkChannel, p.EntityDead)
+					p.World.GetChunkData(x, z, p.ChunkChannel, p.EntityDead)
 					p.World.JoinChunkAsWatcher(x, z, p)
 				}
 			}
@@ -279,7 +279,7 @@ func (p *Player) chunkReload(old int) {
 	}
 	for x := p.Chunk.X - int32(p.settings.viewDistance); x < p.Chunk.X+int32(p.settings.viewDistance)+1; x++ {
 		for z := p.Chunk.Z - int32(p.settings.viewDistance); z < p.Chunk.Z+int32(p.settings.viewDistance)+1; z++ {
-			p.World.GetChunk(x, z, p.ChunkChannel, p.EntityDead)
+			p.World.GetChunkData(x, z, p.ChunkChannel, p.EntityDead)
 			p.World.JoinChunkAsWatcher(x, z, p)
 		}
 	}

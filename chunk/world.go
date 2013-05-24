@@ -220,7 +220,7 @@ func (world *World) GetBlocks(x, y, z, w, h, d int) *Blocks {
 	return out
 }
 
-func (world *World) GetChunk(x, z int32, ret chan [][]byte, stop chan struct{}) {
+func (world *World) GetChunkData(x, z int32, ret chan [][]byte, stop chan struct{}) {
 	world.chunkChannel <- &ChunkRequest{
 		X: x, Z: z,
 		Stop: stop,
