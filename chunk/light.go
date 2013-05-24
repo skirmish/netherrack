@@ -1,147 +1,221 @@
 package chunk
 
 import (
-	"github.com/NetherrackDev/netherrack/debug"
 	"github.com/NetherrackDev/soulsand/blocks"
-	"os"
 )
 
 type lightInfo struct {
-	x, y, z int
-	light   byte
+	x     int
+	y     int
+	z     int
+	light byte
+	next  *lightInfo
+	root  *lightInfo
+}
+
+func (l *lightInfo) Append(l2 *lightInfo) *lightInfo {
+	if l != nil {
+		l.next = l2
+		l2.root = l.root
+	} else {
+		l2.root = l2
+	}
+	return l2
 }
 
 func (chunk *Chunk) Relight() {
+	//Clear lights & Sky lights
 
-	//start := time.Now()
-
-	skyLights := make([]blockPosition, 0, 16*16*150)
+	var skyLightQueue *lightInfo
+	var blockLightQueue *lightInfo
 
 	for x := 0; x < 16; x++ {
 		for z := 0; z < 16; z++ {
-			for y := 0; y < 256; y++ {
-				if y >= int(chunk.heightMap[x|z<<4]) {
-					skyLights = append(skyLights, createBlockPosition(x, y, z))
-					chunk.SetSkyLight(x, y, z, 15)
-				} else {
-					chunk.SetSkyLight(x, y, z, 0)
+			height := chunk.heightMap[x|z<<4]
+			max := 256 - height
+			if x > 0 {
+				if nHeight := 256 - chunk.heightMap[(x-1)|z<<4]; nHeight < max {
+					max = nHeight
 				}
+			}
+			if x < 15 {
+				if nHeight := 256 - chunk.heightMap[(x+1)|z<<4]; nHeight < max {
+					max = nHeight
+				}
+			}
+			if z > 0 {
+				if nHeight := 256 - chunk.heightMap[x|(z-1)<<4]; nHeight < max {
+					max = nHeight
+				}
+			}
+			if z < 15 {
+				if nHeight := 256 - chunk.heightMap[x|(z+1)<<4]; nHeight < max {
+					max = nHeight
+				}
+			}
+			maxI := 256 - int(max)
+			heightI := int(height)
+			for y := heightI; y < 256; y++ {
+				if y <= maxI {
+					skyLightQueue = skyLightQueue.Append(&lightInfo{
+						x:     x,
+						y:     y,
+						z:     z,
+						light: 15,
+					})
+					chunk.SetSkyLight(x, y, z, 0)
+				} else {
+					chunk.SetSkyLight(x, y, z, 15)
+				}
+				chunk.SetBlockLight(x, y, z, 0)
+			}
+			for y := 0; y < heightI; y++ {
+				chunk.SetSkyLight(x, y, z, 0)
 				chunk.SetBlockLight(x, y, z, 0)
 			}
 		}
 	}
 
-	//log.Printf("Clear: %.2f", float64(time.Now().Sub(start).Nanoseconds())/1000000.0)
-	//start = time.Now()
-
-	for pos, light := range chunk.lights {
-		x, y, z := pos.GetPosition()
-		chunk.SetBlockLight(x, y, z, light)
-		chunk.propagateBlockLight(x, y, z, light)
-
-		chunk.propagateBlockLight(x, y-1, z, light-1)
-		chunk.propagateBlockLight(x, y+1, z, light-1)
-		chunk.propagateBlockLight(x-1, y, z, light-1)
-		chunk.propagateBlockLight(x+1, y, z, light-1)
-		chunk.propagateBlockLight(x, y, z-1, light-1)
-		chunk.propagateBlockLight(x, y, z+1, light-1)
+	for bp, light := range chunk.lights {
+		x, y, z := bp.GetPosition()
+		blockLightQueue = blockLightQueue.Append(&lightInfo{
+			x:     x,
+			y:     y,
+			z:     z,
+			light: light,
+		})
 	}
 
-	//log.Printf("BlockLight: %.2f", float64(time.Now().Sub(start).Nanoseconds())/1000000.0)
-	//start = time.Now()
-	debug.Start("SkyLight")
-	stack := make([]lightInfo, 16*16*16)
-	stackPointer := 0
+	if skyLightQueue != nil {
+		current := skyLightQueue.root
+		for ; current != nil; current = current.next {
+			info := current
+			info.root = nil
+			x := info.x
+			z := info.z
+			y := info.y
+			light := info.light
 
-	for len(skyLights) > 0 {
-		x, y, z := skyLights[0].GetPosition()
-		skyLights = skyLights[1:]
+			if chunk.GetSkyLight(x, y, z) >= light {
+				continue
+			}
 
-		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x, y-1, z, 15)
-		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x, y+1, z, 14)
-		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x-1, y, z, 14)
-		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x+1, y, z, 14)
-		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x, y, z-1, 14)
-		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x, y, z+1, 14)
+			chunk.SetSkyLight(x, y, z, light)
 
-		debug.StepIn("StackLoop")
-		for stackPointer != 0 {
-			stackPointer--
-			current := stack[stackPointer]
-			stackPointer = chunk.propagateSkyLight(stack, stackPointer, current.x, current.y, current.z, current.light)
+			if y > 0 || y < 255 {
+				block := blocks.GetBlockById(chunk.GetBlock(x, y-1, z))
+				newLight := int8(light) - int8(block.LightFiltered())
+				if (newLight == 15 && block.StopsSkylight()) || chunk.GetSkyLight(x, y+1, z) != 15 {
+					newLight--
+				}
+				if int8(chunk.GetSkyLight(x, y-1, z)) < newLight {
+					skyLightQueue = skyLightQueue.Append(&lightInfo{
+						x:     x,
+						y:     y - 1,
+						z:     z,
+						light: byte(newLight),
+					})
+				}
+			}
+			if y < 255 {
+				skyLightQueue = chunk.checkSkyLight(skyLightQueue, light, x, y, z, 0, 1, 0)
+			}
+
+			if x > 0 {
+				skyLightQueue = chunk.checkSkyLight(skyLightQueue, light, x, y, z, -1, 0, 0)
+			}
+			if x < 15 {
+				skyLightQueue = chunk.checkSkyLight(skyLightQueue, light, x, y, z, 1, 0, 0)
+			}
+
+			if z > 0 {
+				skyLightQueue = chunk.checkSkyLight(skyLightQueue, light, x, y, z, 0, 0, -1)
+			}
+			if z < 15 {
+				skyLightQueue = chunk.checkSkyLight(skyLightQueue, light, x, y, z, 0, 0, 1)
+			}
 		}
-		debug.StepOut()
 	}
-	debug.Stop()
-	f, _ := os.Create("relight.txt")
-	defer f.Close()
-	debug.Print(f, true)
 
-	//log.Printf("SkyLight: %.2f", float64(time.Now().Sub(start).Nanoseconds())/1000000.0)
+	if blockLightQueue != nil {
+		current := blockLightQueue.root
+		for ; current != nil; current = current.next {
+			info := current
+			info.root = nil
+			x := info.x
+			z := info.z
+			y := info.y
+			light := info.light
 
+			if chunk.GetBlockLight(x, y, z) >= light {
+				continue
+			}
+
+			chunk.SetBlockLight(x, y, z, light)
+
+			if y > 0 {
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, 0, -1, 0)
+			}
+			if y < 255 {
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, 0, 1, 0)
+			}
+
+			if x > 0 {
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, -1, 0, 0)
+			}
+			if x < 15 {
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, 1, 0, 0)
+			}
+
+			if z > 0 {
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, 0, 0, -1)
+			}
+			if z < 15 {
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, 0, 0, 1)
+			}
+		}
+	}
 	chunk.needsRelight = false
 }
 
-func (chunk *Chunk) propagateBlockLight(x, y, z int, light byte) {
-	if y < 0 || y > 255 || x < 0 || x > 15 || z < 0 || z > 15 {
-		return
+func (chunk *Chunk) checkBlockLightRemove(blockRemoveLightQueue *lightInfo, light byte, x, y, z, ox, oy, oz int) *lightInfo {
+	block := blocks.GetBlockById(chunk.GetBlock(x+ox, y+oy, z+oz))
+	newLight := int8(light) - int8(block.LightFiltered()) - 1
+	if int8(chunk.GetBlockLight(x+ox, y+oy, z+oz)) <= newLight {
+		blockRemoveLightQueue = blockRemoveLightQueue.Append(&lightInfo{
+			x:     x + ox,
+			y:     y + oy,
+			z:     z + oz,
+			light: byte(newLight),
+		})
 	}
-	block := blocks.GetBlockById(chunk.GetBlock(x, y, z))
-	light = light - block.LightFiltered()
-	if light == 0 || light > 15 || light <= chunk.GetBlockLight(x, y, z) {
-		return
-	}
-	chunk.SetBlockLight(x, y, z, light)
-
-	chunk.propagateBlockLight(x, y-1, z, light-1)
-	chunk.propagateBlockLight(x, y+1, z, light-1)
-	chunk.propagateBlockLight(x-1, y, z, light-1)
-	chunk.propagateBlockLight(x+1, y, z, light-1)
-	chunk.propagateBlockLight(x, y, z-1, light-1)
-	chunk.propagateBlockLight(x, y, z+1, light-1)
+	return blockRemoveLightQueue
 }
 
-func (chunk *Chunk) propagateSkyLight(stack []lightInfo, stackPointer, x, y, z int, light byte) int {
-	debug.StepIn("Propagate SkyLight")
-	defer debug.StepOut()
-	if y < 0 || y > 255 || x < 0 || x > 15 || z < 0 || z > 15 {
-		return stackPointer
+func (chunk *Chunk) checkSkyLight(skyLightQueue *lightInfo, light byte, x, y, z, ox, oy, oz int) *lightInfo {
+	block := blocks.GetBlockById(chunk.GetBlock(x+ox, y+oy, z+oz))
+	newLight := int8(light) - int8(block.LightFiltered()) - 1
+	if int8(chunk.GetSkyLight(x+ox, y+oy, z+oz)) < newLight {
+		skyLightQueue = skyLightQueue.Append(&lightInfo{
+			x:     x + ox,
+			y:     y + oy,
+			z:     z + oz,
+			light: byte(newLight),
+		})
 	}
-	block := blocks.GetBlockById(chunk.GetBlock(x, y, z))
-	light = light - block.LightFiltered()
-	if light == 0 || light > 15 || light <= chunk.GetSkyLight(x, y, z) {
-		return stackPointer
+	return skyLightQueue
+}
+
+func (chunk *Chunk) checkBlockLight(blockLightQueue *lightInfo, light byte, x, y, z, ox, oy, oz int) *lightInfo {
+	block := blocks.GetBlockById(chunk.GetBlock(x+ox, y+oy, z+oz))
+	newLight := int8(light) - int8(block.LightFiltered()) - 1
+	if int8(chunk.GetBlockLight(x+ox, y+oy, z+oz)) < newLight {
+		blockLightQueue = blockLightQueue.Append(&lightInfo{
+			x:     x + ox,
+			y:     y + oy,
+			z:     z + oz,
+			light: byte(newLight),
+		})
 	}
-	chunk.SetSkyLight(x, y, z, light)
-
-	if light == 15 && !block.StopsSkylight() {
-		//stackP = append(stackP, lightInfo{x, y - 1, z, light})
-		stack[stackPointer] = lightInfo{x, y - 1, z, light}
-		stackPointer++
-	} else {
-		///stackP = append(stackP, lightInfo{x, y - 1, z, light - 1})
-		stack[stackPointer] = lightInfo{x, y - 1, z, light - 1}
-		stackPointer++
-	}
-	//stackP = append(stackP, lightInfo{x, y + 1, z, light - 1})
-	stack[stackPointer] = lightInfo{x, y + 1, z, light - 1}
-	stackPointer++
-
-	//stackP = append(stackP, lightInfo{x - 1, y, z, light - 1})
-	stack[stackPointer] = lightInfo{x - 1, y, z, light - 1}
-	stackPointer++
-
-	//stackP = append(stackP, lightInfo{x + 1, y, z, light - 1})
-	stack[stackPointer] = lightInfo{x + 1, y, z, light - 1}
-	stackPointer++
-
-	//stackP = append(stackP, lightInfo{x, y, z - 1, light - 1})
-	stack[stackPointer] = lightInfo{x, y, z - 1, light - 1}
-	stackPointer++
-
-	//stackP = append(stackP, lightInfo{x, y, z + 1, light - 1})
-	stack[stackPointer] = lightInfo{x, y, z + 1, light - 1}
-	stackPointer++
-
-	return stackPointer
+	return blockLightQueue
 }
