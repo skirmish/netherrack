@@ -1,9 +1,9 @@
 package chunk
 
 import (
+	"github.com/NetherrackDev/netherrack/debug"
 	"github.com/NetherrackDev/soulsand/blocks"
-	//"log"
-	//"time"
+	"os"
 )
 
 type lightInfo struct {
@@ -49,26 +49,33 @@ func (chunk *Chunk) Relight() {
 
 	//log.Printf("BlockLight: %.2f", float64(time.Now().Sub(start).Nanoseconds())/1000000.0)
 	//start = time.Now()
-
-	stack := make([]lightInfo, 0, 16*16*16)
+	debug.Start("SkyLight")
+	stack := make([]lightInfo, 16*16*16)
+	stackPointer := 0
 
 	for len(skyLights) > 0 {
 		x, y, z := skyLights[0].GetPosition()
 		skyLights = skyLights[1:]
 
-		chunk.propagateSkyLight(&stack, x, y-1, z, 15)
-		chunk.propagateSkyLight(&stack, x, y+1, z, 14)
-		chunk.propagateSkyLight(&stack, x-1, y, z, 14)
-		chunk.propagateSkyLight(&stack, x+1, y, z, 14)
-		chunk.propagateSkyLight(&stack, x, y, z-1, 14)
-		chunk.propagateSkyLight(&stack, x, y, z+1, 14)
+		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x, y-1, z, 15)
+		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x, y+1, z, 14)
+		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x-1, y, z, 14)
+		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x+1, y, z, 14)
+		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x, y, z-1, 14)
+		stackPointer = chunk.propagateSkyLight(stack, stackPointer, x, y, z+1, 14)
 
-		for len(stack) > 0 {
-			current := stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
-			chunk.propagateSkyLight(&stack, current.x, current.y, current.z, current.light)
+		debug.StepIn("StackLoop")
+		for stackPointer != 0 {
+			stackPointer--
+			current := stack[stackPointer]
+			stackPointer = chunk.propagateSkyLight(stack, stackPointer, current.x, current.y, current.z, current.light)
 		}
+		debug.StepOut()
 	}
+	debug.Stop()
+	f, _ := os.Create("relight.txt")
+	defer f.Close()
+	debug.Print(f, true)
 
 	//log.Printf("SkyLight: %.2f", float64(time.Now().Sub(start).Nanoseconds())/1000000.0)
 
@@ -94,27 +101,47 @@ func (chunk *Chunk) propagateBlockLight(x, y, z int, light byte) {
 	chunk.propagateBlockLight(x, y, z+1, light-1)
 }
 
-func (chunk *Chunk) propagateSkyLight(stack *[]lightInfo, x, y, z int, light byte) {
+func (chunk *Chunk) propagateSkyLight(stack []lightInfo, stackPointer, x, y, z int, light byte) int {
+	debug.StepIn("Propagate SkyLight")
+	defer debug.StepOut()
 	if y < 0 || y > 255 || x < 0 || x > 15 || z < 0 || z > 15 {
-		return
+		return stackPointer
 	}
 	block := blocks.GetBlockById(chunk.GetBlock(x, y, z))
 	light = light - block.LightFiltered()
 	if light == 0 || light > 15 || light <= chunk.GetSkyLight(x, y, z) {
-		return
+		return stackPointer
 	}
 	chunk.SetSkyLight(x, y, z, light)
 
-	stackP := *stack
-
 	if light == 15 && !block.StopsSkylight() {
-		stackP = append(stackP, lightInfo{x, y - 1, z, light})
+		//stackP = append(stackP, lightInfo{x, y - 1, z, light})
+		stack[stackPointer] = lightInfo{x, y - 1, z, light}
+		stackPointer++
 	} else {
-		stackP = append(stackP, lightInfo{x, y - 1, z, light - 1})
+		///stackP = append(stackP, lightInfo{x, y - 1, z, light - 1})
+		stack[stackPointer] = lightInfo{x, y - 1, z, light - 1}
+		stackPointer++
 	}
-	stackP = append(stackP, lightInfo{x, y + 1, z, light - 1})
-	stackP = append(stackP, lightInfo{x - 1, y, z, light - 1})
-	stackP = append(stackP, lightInfo{x + 1, y, z, light - 1})
-	stackP = append(stackP, lightInfo{x, y, z - 1, light - 1})
-	stackP = append(stackP, lightInfo{x, y, z + 1, light - 1})
+	//stackP = append(stackP, lightInfo{x, y + 1, z, light - 1})
+	stack[stackPointer] = lightInfo{x, y + 1, z, light - 1}
+	stackPointer++
+
+	//stackP = append(stackP, lightInfo{x - 1, y, z, light - 1})
+	stack[stackPointer] = lightInfo{x - 1, y, z, light - 1}
+	stackPointer++
+
+	//stackP = append(stackP, lightInfo{x + 1, y, z, light - 1})
+	stack[stackPointer] = lightInfo{x + 1, y, z, light - 1}
+	stackPointer++
+
+	//stackP = append(stackP, lightInfo{x, y, z - 1, light - 1})
+	stack[stackPointer] = lightInfo{x, y, z - 1, light - 1}
+	stackPointer++
+
+	//stackP = append(stackP, lightInfo{x, y, z + 1, light - 1})
+	stack[stackPointer] = lightInfo{x, y, z + 1, light - 1}
+	stackPointer++
+
+	return stackPointer
 }
