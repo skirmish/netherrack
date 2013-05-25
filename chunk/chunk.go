@@ -27,11 +27,16 @@ type Chunk struct {
 	blockQueue     []blockChange
 	heightMap      []int32
 	lights         map[blockPosition]byte
+	skyLights      map[blockPosition]byte
 	lightInfo      struct {
-		north map[uint16]byte
-		south map[uint16]byte
-		east  map[uint16]byte
-		west  map[uint16]byte
+		north    map[uint16]byte
+		south    map[uint16]byte
+		east     map[uint16]byte
+		west     map[uint16]byte
+		northSky map[uint16]byte
+		southSky map[uint16]byte
+		eastSky  map[uint16]byte
+		westSky  map[uint16]byte
 	}
 	needsRelight bool
 	needsSave    bool
@@ -244,13 +249,25 @@ func (c *Chunk) Biome(x, z int) byte {
 	return c.biome[x|(z<<4)]
 }
 
+func (c *Chunk) Height(x, z int) int32 {
+	return c.heightMap[x|z<<4]
+}
+
 func (c *Chunk) HeightX(x, z int) int32 {
 	if x >= 0 && x < 16 && z >= 0 && z < 16 {
-		return c.heightMap[x|z<<4]
+		return c.Height(x, z)
 	}
-	cx, cz := (int(c.X)<<4+x)>>4, (int(c.Z)<<4+z)>>4
-	_, _ = cx, cz
-	return 0
+	/*x, z = (int(c.X)<<4)+x, (int(c.Z)<<4)+z
+	cx, cz := x>>4, z>>4
+	if c.World.chunkLoaded(int32(cx), int32(cz)) {
+		ret := make(chan int32, 1)
+		c.World.RunSync(cx, cz, func(otherC soulsand.SyncChunk) {
+			ret <- otherC.(*Chunk).Height(x-(cx<<4), z-(cz<<4))
+		})
+		return <-ret
+	} else {*/
+	return 255
+	/*}*/
 }
 
 func CreateChunk(x, z int32) *Chunk {
@@ -271,11 +288,16 @@ func CreateChunk(x, z int32) *Chunk {
 		blockQueue:     make([]blockChange, 0, 3),
 		heightMap:      make([]int32, 16*16),
 		lights:         make(map[blockPosition]byte),
+		skyLights:      make(map[blockPosition]byte),
 	}
 	chunk.lightInfo.north = make(map[uint16]byte)
 	chunk.lightInfo.south = make(map[uint16]byte)
 	chunk.lightInfo.east = make(map[uint16]byte)
 	chunk.lightInfo.west = make(map[uint16]byte)
+	chunk.lightInfo.northSky = make(map[uint16]byte)
+	chunk.lightInfo.southSky = make(map[uint16]byte)
+	chunk.lightInfo.eastSky = make(map[uint16]byte)
+	chunk.lightInfo.westSky = make(map[uint16]byte)
 	for i := 0; i < 16; i++ {
 		chunk.SubChunks[i] = CreateSubChunk()
 	}
