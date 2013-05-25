@@ -9,12 +9,31 @@ func (chunk *Chunk) generate() {
 	switch chunk.tryLoad() {
 	case 0:
 		chunk.World.generator.Generate(int(chunk.X), int(chunk.Z), chunk)
-		chunk.Relight()
+		chunk.needsRelight = true
 		chunk.needsSave = true
+		if chunk.World.chunkLoaded(chunk.X+1, chunk.Z) {
+			chunk.World.RunSync(int(chunk.X+1), int(chunk.Z), relight)
+		}
+
+		if chunk.World.chunkLoaded(chunk.X-1, chunk.Z) {
+			chunk.World.RunSync(int(chunk.X-1), int(chunk.Z), relight)
+		}
+
+		if chunk.World.chunkLoaded(chunk.X, chunk.Z+1) {
+			chunk.World.RunSync(int(chunk.X), int(chunk.Z+1), relight)
+		}
+
+		if chunk.World.chunkLoaded(chunk.X, chunk.Z-1) {
+			chunk.World.RunSync(int(chunk.X), int(chunk.Z-1), relight)
+		}
 	case 2: //Damaged chunk
 		defaultGenerator(0).GenerateBlock(int(chunk.X), int(chunk.Z), chunk, blocks.RedstoneBlock.Id())
-		chunk.Relight()
+		chunk.needsRelight = true
 	}
+}
+
+func relight(chunk soulsand.SyncChunk) {
+	chunk.(*Chunk).needsRelight = true
 }
 
 type defaultGenerator int

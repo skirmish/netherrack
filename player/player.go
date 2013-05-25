@@ -59,6 +59,13 @@ type Player struct {
 }
 
 func init() {
+	command.Add("time set [int]", func(caller soulsand.CommandSender, time int) {
+		if player, ok := caller.(*Player); ok {
+			player.World.SetTime(int64(time))
+		} else {
+			caller.SendMessageSync("This can only be used by a player")
+		}
+	})
 	command.Add("say [string]", func(p soulsand.CommandSender, msg string) {
 		system.Broadcast(fmt.Sprintf("["+soulsand.ColourPurple+"Server"+soulsand.ChatReset+"]:"+soulsand.ColourPink+" %s", msg))
 	})

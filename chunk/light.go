@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/blocks"
 )
 
@@ -25,6 +26,11 @@ func (l *lightInfo) Append(l2 *lightInfo) *lightInfo {
 
 func (chunk *Chunk) Relight() {
 	//Clear lights & Sky lights
+
+	north := make(map[uint16]byte)
+	south := make(map[uint16]byte)
+	east := make(map[uint16]byte)
+	west := make(map[uint16]byte)
 
 	var skyLightQueue *lightInfo
 	var blockLightQueue *lightInfo
@@ -153,28 +159,157 @@ func (chunk *Chunk) Relight() {
 
 			chunk.SetBlockLight(x, y, z, light)
 
+			block := blocks.GetBlockById(chunk.Block(x, y, z))
+			newLight := int8(light) - int8(block.LightFiltered()) - 1
+			if newLight <= 0 {
+				continue
+			}
+
 			if y > 0 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, 0, -1, 0)
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, 0, -1, 0)
 			}
 			if y < 255 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, 0, 1, 0)
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, 0, 1, 0)
 			}
 
 			if x > 0 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, -1, 0, 0)
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, -1, 0, 0)
+			} else {
+				pos := uint16(z | y<<4)
+				if oLight := int8(west[pos]); oLight < newLight {
+					west[pos] = byte(newLight)
+				}
 			}
 			if x < 15 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, 1, 0, 0)
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, 1, 0, 0)
+			} else {
+				pos := uint16(z | y<<4)
+				if oLight := int8(east[pos]); oLight < newLight {
+					east[pos] = byte(newLight)
+				}
 			}
 
 			if z > 0 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, 0, 0, -1)
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, 0, 0, -1)
+			} else {
+				pos := uint16(x | y<<4)
+				if oLight := int8(north[pos]); oLight < newLight {
+					north[pos] = byte(newLight)
+				}
 			}
 			if z < 15 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, light, x, y, z, 0, 0, 1)
+				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, 0, 0, 1)
+			} else {
+				pos := uint16(x | y<<4)
+				if oLight := int8(south[pos]); oLight < newLight {
+					south[pos] = byte(newLight)
+				}
 			}
 		}
 	}
+
+	if chunk.World.chunkLoaded(chunk.X, chunk.Z-1) { //North
+		oldNorth := chunk.lightInfo.north
+		newNorth := north //No need for locks as the map will never be changed past this point
+		chunk.World.RunSync(int(chunk.X), int(chunk.Z-1), func(c soulsand.SyncChunk) {
+			otherChunk := c.(*Chunk)
+			relight := false
+			for pos, _ := range oldNorth {
+				x := pos & 0xF
+				y := pos >> 4
+				delete(otherChunk.lights, createBlockPosition(int(x), int(y), 15))
+			}
+			for pos, light := range newNorth {
+				if oLight := oldNorth[pos]; oLight != light {
+					relight = true
+				}
+				x := pos & 0xF
+				y := pos >> 4
+				otherChunk.lights[createBlockPosition(int(x), int(y), 15)] = light
+			}
+			if relight {
+				otherChunk.needsRelight = true
+			}
+		})
+	}
+	if chunk.World.chunkLoaded(chunk.X, chunk.Z+1) { //South
+		oldSouth := chunk.lightInfo.south
+		newSouth := south
+		chunk.World.RunSync(int(chunk.X), int(chunk.Z+1), func(c soulsand.SyncChunk) {
+			otherChunk := c.(*Chunk)
+			relight := false
+			for pos, _ := range oldSouth {
+				x := pos & 0xF
+				y := pos >> 4
+				delete(otherChunk.lights, createBlockPosition(int(x), int(y), 0))
+			}
+			for pos, light := range newSouth {
+				if oLight := oldSouth[pos]; oLight != light {
+					relight = true
+				}
+				x := pos & 0xF
+				y := pos >> 4
+				otherChunk.lights[createBlockPosition(int(x), int(y), 0)] = light
+			}
+			if relight {
+				otherChunk.needsRelight = true
+			}
+		})
+	}
+	if chunk.World.chunkLoaded(chunk.X+1, chunk.Z) { //East
+		oldEast := chunk.lightInfo.east
+		newEast := east
+		chunk.World.RunSync(int(chunk.X+1), int(chunk.Z), func(c soulsand.SyncChunk) {
+			otherChunk := c.(*Chunk)
+			relight := false
+			for pos, _ := range oldEast {
+				z := pos & 0xF
+				y := pos >> 4
+				delete(otherChunk.lights, createBlockPosition(0, int(y), int(z)))
+			}
+			for pos, light := range newEast {
+				if oLight := oldEast[pos]; oLight != light {
+					relight = true
+				}
+				z := pos & 0xF
+				y := pos >> 4
+				otherChunk.lights[createBlockPosition(0, int(y), int(z))] = light
+			}
+			if relight {
+				otherChunk.needsRelight = true
+			}
+		})
+	}
+	if chunk.World.chunkLoaded(chunk.X-1, chunk.Z) { //West
+		oldWest := chunk.lightInfo.west
+		newWest := west
+		chunk.World.RunSync(int(chunk.X-1), int(chunk.Z), func(c soulsand.SyncChunk) {
+			otherChunk := c.(*Chunk)
+			relight := false
+			for pos, _ := range oldWest {
+				z := pos & 0xF
+				y := pos >> 4
+				delete(otherChunk.lights, createBlockPosition(15, int(y), int(z)))
+			}
+			for pos, light := range newWest {
+				if oLight := oldWest[pos]; oLight != light {
+					relight = true
+				}
+				z := pos & 0xF
+				y := pos >> 4
+				otherChunk.lights[createBlockPosition(15, int(y), int(z))] = light
+			}
+			if relight {
+				otherChunk.needsRelight = true
+			}
+		})
+	}
+
+	chunk.lightInfo.north = north
+	chunk.lightInfo.south = south
+	chunk.lightInfo.east = east
+	chunk.lightInfo.west = west
+
 	chunk.needsRelight = false
 }
 
@@ -192,15 +327,15 @@ func (chunk *Chunk) checkSkyLight(skyLightQueue *lightInfo, light byte, x, y, z,
 	return skyLightQueue
 }
 
-func (chunk *Chunk) checkBlockLight(blockLightQueue *lightInfo, light byte, x, y, z, ox, oy, oz int) *lightInfo {
-	block := blocks.GetBlockById(chunk.Block(x+ox, y+oy, z+oz))
-	newLight := int8(light) - int8(block.LightFiltered()) - 1
-	if int8(chunk.BlockLight(x+ox, y+oy, z+oz)) < newLight {
+func (chunk *Chunk) checkBlockLight(blockLightQueue *lightInfo, light int8, x, y, z, ox, oy, oz int) *lightInfo {
+	// block := blocks.GetBlockById(chunk.Block(x+ox, y+oy, z+oz))
+	// newLight := int8(light) - int8(block.LightFiltered()) - 1
+	if int8(chunk.BlockLight(x+ox, y+oy, z+oz)) < light {
 		blockLightQueue = blockLightQueue.Append(&lightInfo{
 			x:     x + ox,
 			y:     y + oy,
 			z:     z + oz,
-			light: byte(newLight),
+			light: byte(light),
 		})
 	}
 	return blockLightQueue

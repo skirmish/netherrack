@@ -28,10 +28,10 @@ type Chunk struct {
 	heightMap      []int32
 	lights         map[blockPosition]byte
 	lightInfo      struct {
-		north map[int16]byte
-		south map[int16]byte
-		east  map[int16]byte
-		west  map[int16]byte
+		north map[uint16]byte
+		south map[uint16]byte
+		east  map[uint16]byte
+		west  map[uint16]byte
 	}
 	needsRelight bool
 	needsSave    bool
@@ -272,10 +272,10 @@ func CreateChunk(x, z int32) *Chunk {
 		heightMap:      make([]int32, 16*16),
 		lights:         make(map[blockPosition]byte),
 	}
-	chunk.lightInfo.north = make(map[int16]byte)
-	chunk.lightInfo.south = make(map[int16]byte)
-	chunk.lightInfo.east = make(map[int16]byte)
-	chunk.lightInfo.west = make(map[int16]byte)
+	chunk.lightInfo.north = make(map[uint16]byte)
+	chunk.lightInfo.south = make(map[uint16]byte)
+	chunk.lightInfo.east = make(map[uint16]byte)
+	chunk.lightInfo.west = make(map[uint16]byte)
 	for i := 0; i < 16; i++ {
 		chunk.SubChunks[i] = CreateSubChunk()
 	}

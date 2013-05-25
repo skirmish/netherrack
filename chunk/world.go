@@ -92,7 +92,7 @@ func (world *World) chunkWatcher() {
 			dayTime, _ := world.settings.GetLong("DayTime", 0)
 			dayTime++
 			world.settings.Set("DayTime", dayTime)
-			if dayTime%20 == 0 {
+			if time%20 == 0 {
 				world.updateTime()
 			}
 			if time%6000 == 0 {
@@ -293,6 +293,21 @@ func (world *World) chunkExists(x, z int32) bool {
 	r.RLock()
 	defer r.RUnlock()
 	return r.chunkExists(x, z)
+}
+
+func (world *World) chunkLoaded(x, z int32) bool {
+	ret := make(chan bool, 1)
+	world.worldEventChannel <- func(soulsand.World) {
+		_, ok := world.chunks[ChunkPosition{x, z}]
+		ret <- ok
+	}
+	return <-ret
+}
+
+func (world *World) SetTime(time int64) {
+	world.worldEventChannel <- func(soulsand.World) {
+		world.settings.Set("DayTime", time)
+	}
 }
 
 var (
