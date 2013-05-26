@@ -194,7 +194,7 @@ func HandlePlayer(conn net.Conn) {
 }
 
 func (player *Player) loop() {
-	timer := time.NewTicker(time.Second / 20)
+	timer := time.NewTicker(time.Second / 10)
 	defer timer.Stop()
 	for {
 		select {

@@ -4,11 +4,21 @@ import (
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/effect"
 	"github.com/NetherrackDev/soulsand/gamemode"
+	"github.com/NetherrackDev/soulsand/sound"
 )
 
 func (player *Player) PlayEffect(x, y, z int, eff effect.Type, data int, relative bool) error {
 	return player.RunSync(func(soulsand.SyncEntity) {
 		player.connection.WriteSoundOrParticleEffect(int32(eff), int32(x), byte(y), int32(z), int32(data), !relative)
+	})
+}
+
+func (player *Player) PlaySound(x, y, z float64, name sound.Type, volume float32, pitch int8) error {
+	if len(name) == 0 {
+		return nil
+	}
+	return player.RunSync(func(soulsand.SyncEntity) {
+		player.connection.WriteNamedSoundEffect(string(name), int32(x*8), int32(y*8), int32(z*8), volume, pitch)
 	})
 }
 

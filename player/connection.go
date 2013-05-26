@@ -5,6 +5,7 @@ import (
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/system"
 	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/blocks"
 	"github.com/NetherrackDev/soulsand/command"
 	"github.com/NetherrackDev/soulsand/effect"
 	"github.com/NetherrackDev/soulsand/gamemode"
@@ -105,7 +106,9 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 			x++
 		}
 		if item := player.inventory.GetHotbarSlot(player.CurrentSlot); item != nil && item.GetID() < 256 {
-			player.World.SetBlock(x, y, z, byte(item.GetID()), 0)
+			id := byte(item.GetID())
+			player.World.SetBlock(x, y, z, id, 0)
+			player.PlaySound(float64(x)+0.5, float64(y)+0.5, float64(z)+0.5, blocks.GetBlockById(id).PlacementSound(), 1, 50)
 		}
 	},
 	0x10: func(c *protocol.Conn, player *Player) { //Held Item Change
