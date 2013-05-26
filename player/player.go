@@ -228,7 +228,6 @@ func (player *Player) loop() {
 			}
 			player.readPacketChannel <- struct{}{}
 		case <-player.errorChannel:
-			log.Println("Error")
 			runtime.Goexit()
 		}
 	}

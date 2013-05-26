@@ -242,13 +242,23 @@ func (chunk *Chunk) Relight() {
 		}
 	}
 
-	if chunk.World.chunkLoaded(chunk.X, chunk.Z-1) { //North
+	depth := 0
+	if chunk.relightDepth == 0 {
+		depth = 2
+	} else if chunk.relightDepth == 2 {
+		depth = 1
+	}
+
+	if chunk.relightDepth != 1 && chunk.World.chunkLoaded(chunk.X, chunk.Z-1) { //North
 		oldNorth := chunk.lightInfo.north
 		newNorth := north //No need for locks as the map will never be changed past this point
 		oldNorthSky := chunk.lightInfo.northSky
 		newNorthSky := northSky
 		chunk.World.RunSync(int(chunk.X), int(chunk.Z-1), func(c soulsand.SyncChunk) {
 			otherChunk := c.(*Chunk)
+			if otherChunk.relightDepth < depth {
+				otherChunk.relightDepth = depth
+			}
 			relight := false
 			for pos, _ := range oldNorth {
 				x := pos & 0xF
@@ -281,13 +291,16 @@ func (chunk *Chunk) Relight() {
 			}
 		})
 	}
-	if chunk.World.chunkLoaded(chunk.X, chunk.Z+1) { //South
+	if chunk.relightDepth != 1 && chunk.World.chunkLoaded(chunk.X, chunk.Z+1) { //South
 		oldSouth := chunk.lightInfo.south
 		newSouth := south
 		oldSouthSky := chunk.lightInfo.southSky
 		newSouthSky := southSky
 		chunk.World.RunSync(int(chunk.X), int(chunk.Z+1), func(c soulsand.SyncChunk) {
 			otherChunk := c.(*Chunk)
+			if otherChunk.relightDepth < depth {
+				otherChunk.relightDepth = depth
+			}
 			relight := false
 			for pos, _ := range oldSouth {
 				x := pos & 0xF
@@ -320,13 +333,16 @@ func (chunk *Chunk) Relight() {
 			}
 		})
 	}
-	if chunk.World.chunkLoaded(chunk.X+1, chunk.Z) { //East
+	if chunk.relightDepth != 1 && chunk.World.chunkLoaded(chunk.X+1, chunk.Z) { //East
 		oldEast := chunk.lightInfo.east
 		newEast := east
 		oldEastSky := chunk.lightInfo.eastSky
 		newEastSky := eastSky
 		chunk.World.RunSync(int(chunk.X+1), int(chunk.Z), func(c soulsand.SyncChunk) {
 			otherChunk := c.(*Chunk)
+			if otherChunk.relightDepth < depth {
+				otherChunk.relightDepth = depth
+			}
 			relight := false
 			for pos, _ := range oldEast {
 				z := pos & 0xF
@@ -359,13 +375,16 @@ func (chunk *Chunk) Relight() {
 			}
 		})
 	}
-	if chunk.World.chunkLoaded(chunk.X-1, chunk.Z) { //West
+	if chunk.relightDepth != 1 && chunk.World.chunkLoaded(chunk.X-1, chunk.Z) { //West
 		oldWest := chunk.lightInfo.west
 		newWest := west
 		oldWestSky := chunk.lightInfo.westSky
 		newWestSky := westSky
 		chunk.World.RunSync(int(chunk.X-1), int(chunk.Z), func(c soulsand.SyncChunk) {
 			otherChunk := c.(*Chunk)
+			if otherChunk.relightDepth < depth {
+				otherChunk.relightDepth = depth
+			}
 			relight := false
 			for pos, _ := range oldWest {
 				z := pos & 0xF
@@ -409,6 +428,7 @@ func (chunk *Chunk) Relight() {
 	chunk.lightInfo.eastSky = eastSky
 	chunk.lightInfo.westSky = westSky
 
+	chunk.relightDepth = 0
 	chunk.needsRelight = false
 }
 

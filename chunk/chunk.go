@@ -39,6 +39,7 @@ type Chunk struct {
 		westSky  map[uint16]byte
 	}
 	needsRelight bool
+	relightDepth int
 	needsSave    bool
 }
 type SubChunk struct {
