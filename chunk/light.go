@@ -5,25 +5,6 @@ import (
 	"github.com/NetherrackDev/soulsand/blocks"
 )
 
-type lightInfo struct {
-	x     int
-	y     int
-	z     int
-	light byte
-	next  *lightInfo
-	root  *lightInfo
-}
-
-func (l *lightInfo) Append(l2 *lightInfo) *lightInfo {
-	if l != nil {
-		l.next = l2
-		l2.root = l.root
-	} else {
-		l2.root = l2
-	}
-	return l2
-}
-
 func (chunk *Chunk) Relight() {
 	//Clear lights & Sky lights
 
@@ -62,12 +43,7 @@ func (chunk *Chunk) Relight() {
 			heightI := int(height)
 			for y := heightI; y < 256; y++ {
 				if y <= maxI {
-					skyLightQueue = skyLightQueue.Append(&lightInfo{
-						x:     x,
-						y:     y,
-						z:     z,
-						light: 15,
-					})
+					skyLightQueue = skyLightQueue.Append(LightInfoGet(x, y, z, 15))
 					chunk.SetSkyLight(x, y, z, 0)
 				} else {
 					chunk.SetSkyLight(x, y, z, 15)
@@ -83,33 +59,25 @@ func (chunk *Chunk) Relight() {
 
 	for bp, light := range chunk.skyLights {
 		x, y, z := bp.Position()
-		skyLightQueue = skyLightQueue.Append(&lightInfo{
-			x:     x,
-			y:     y,
-			z:     z,
-			light: light,
-		})
+		skyLightQueue = skyLightQueue.Append(LightInfoGet(x, y, z, light))
 	}
 
 	for bp, light := range chunk.lights {
 		x, y, z := bp.Position()
-		blockLightQueue = blockLightQueue.Append(&lightInfo{
-			x:     x,
-			y:     y,
-			z:     z,
-			light: light,
-		})
+		blockLightQueue = blockLightQueue.Append(LightInfoGet(x, y, z, light))
 	}
 
 	if skyLightQueue != nil {
 		current := skyLightQueue.root
-		for ; current != nil; current = current.next {
+		var next *lightInfo
+		for ; current != nil; current = next {
 			info := current
-			info.root = nil
 			x := info.x
 			z := info.z
 			y := info.y
 			light := info.light
+			next = info.next
+			info.Free()
 
 			if chunk.SkyLight(x, y, z) >= light {
 				continue
@@ -129,12 +97,7 @@ func (chunk *Chunk) Relight() {
 					newerLight--
 				}
 				if int8(chunk.SkyLight(x, y-1, z)) < newerLight {
-					skyLightQueue = skyLightQueue.Append(&lightInfo{
-						x:     x,
-						y:     y - 1,
-						z:     z,
-						light: byte(newerLight),
-					})
+					skyLightQueue = skyLightQueue.Append(LightInfoGet(x, y-1, z, byte(newerLight)))
 				}
 			}
 			if y < 255 {
@@ -179,13 +142,15 @@ func (chunk *Chunk) Relight() {
 
 	if blockLightQueue != nil {
 		current := blockLightQueue.root
-		for ; current != nil; current = current.next {
+		var next *lightInfo
+		for ; current != nil; current = next {
 			info := current
-			info.root = nil
 			x := info.x
 			z := info.z
 			y := info.y
 			light := info.light
+			next = info.next
+			info.Free()
 
 			if chunk.BlockLight(x, y, z) >= light {
 				continue
@@ -436,12 +401,7 @@ func (chunk *Chunk) checkSkyLight(skyLightQueue *lightInfo, light int8, x, y, z,
 	// block := blocks.GetBlockById(chunk.Block(x+ox, y+oy, z+oz))
 	// newLight := int8(light) - int8(block.LightFiltered()) - 1
 	if int8(chunk.SkyLight(x+ox, y+oy, z+oz)) < light {
-		skyLightQueue = skyLightQueue.Append(&lightInfo{
-			x:     x + ox,
-			y:     y + oy,
-			z:     z + oz,
-			light: byte(light),
-		})
+		skyLightQueue = skyLightQueue.Append(LightInfoGet(x+ox, y+oy, z+oz, byte(light)))
 	}
 	return skyLightQueue
 }
@@ -450,12 +410,7 @@ func (chunk *Chunk) checkBlockLight(blockLightQueue *lightInfo, light int8, x, y
 	// block := blocks.GetBlockById(chunk.Block(x+ox, y+oy, z+oz))
 	// newLight := int8(light) - int8(block.LightFiltered()) - 1
 	if int8(chunk.BlockLight(x+ox, y+oy, z+oz)) < light {
-		blockLightQueue = blockLightQueue.Append(&lightInfo{
-			x:     x + ox,
-			y:     y + oy,
-			z:     z + oz,
-			light: byte(light),
-		})
+		blockLightQueue = blockLightQueue.Append(LightInfoGet(x+ox, y+oy, z+oz, byte(light)))
 	}
 	return blockLightQueue
 }
