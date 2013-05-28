@@ -395,6 +395,7 @@ func (chunk *Chunk) Relight() {
 
 	chunk.relightDepth = 0
 	chunk.needsRelight = false
+	chunk.needsSave = true
 }
 
 func (chunk *Chunk) checkSkyLight(skyLightQueue *lightInfo, light int8, x, y, z, ox, oy, oz int) *lightInfo {

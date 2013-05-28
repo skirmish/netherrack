@@ -43,11 +43,13 @@ type Chunk struct {
 	needsSave    bool
 }
 type SubChunk struct {
-	Type       []byte
-	MetaData   []byte
-	BlockLight []byte
-	SkyLight   []byte
-	blocks     uint
+	Type        []byte
+	MetaData    []byte
+	BlockLight  []byte
+	SkyLight    []byte
+	blocks      uint
+	blockLights uint
+	skyLights   uint
 }
 
 type blockPosition uint32
@@ -108,10 +110,17 @@ func (c *Chunk) AddChange(x, y, z int, block, meta byte) {
 
 func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 	c.needsRelight = true
-	c.needsSave = true
 	sec := y >> 4
-	ind := ((y & 15) << 8) | (z << 4) | x
 	section := c.SubChunks[sec]
+	if section == nil {
+		if blType != 0 {
+			section = CreateSubChunk()
+			c.SubChunks[sec] = section
+		} else {
+			return
+		}
+	}
+	ind := ((y & 15) << 8) | (z << 4) | x
 	if section.Type[ind] == 0 && blType != 0 {
 		section.blocks++
 		block := blocks.GetBlockById(blType)
@@ -137,6 +146,7 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 		}
 	} else if section.Type[ind] != 0 && blType == 0 {
 		section.blocks--
+		c.SetMeta(x, y, z, 0)
 		bp := createBlockPosition(x, y, z)
 		if _, ok := c.lights[bp]; ok {
 			delete(c.lights, bp)
@@ -155,18 +165,34 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 		}
 	}
 	section.Type[ind] = blType
+
+	if section.blocks == 0 && section.skyLights == 0 && section.blockLights == 0 {
+		c.SubChunks[sec] = nil
+	}
 }
 
 func (c *Chunk) Block(x, y, z int) byte {
 	sec := y >> 4
-	ind := ((y & 15) << 8) | (z << 4) | x
-	return c.SubChunks[sec].Type[ind]
+	if section := c.SubChunks[sec]; section != nil {
+		ind := ((y & 15) << 8) | (z << 4) | x
+		return section.Type[ind]
+	} else {
+		return 0
+	}
 }
 func (c *Chunk) SetMeta(x, y, z int, data byte) {
-	c.needsSave = true
+	c.needsRelight = true
 	sec := y >> 4
-	i := ((y & 15) << 8) | (z << 4) | x
 	section := c.SubChunks[sec]
+	if section == nil {
+		if data != 0 {
+			section = CreateSubChunk()
+			c.SubChunks[sec] = section
+		} else {
+			return
+		}
+	}
+	i := ((y & 15) << 8) | (z << 4) | x
 	if i&1 == 0 {
 		section.MetaData[i>>1] &= 0xF0
 		section.MetaData[i>>1] |= data & 0xF
@@ -174,70 +200,130 @@ func (c *Chunk) SetMeta(x, y, z int, data byte) {
 		section.MetaData[i>>1] &= 0xF
 		section.MetaData[i>>1] |= data << 4
 	}
+
+	if section.blocks == 0 && section.skyLights == 0 && section.blockLights == 0 {
+		c.SubChunks[sec] = nil
+	}
 }
 
 func (c *Chunk) Meta(x, y, z int) byte {
 	sec := y >> 4
-	i := ((y & 15) << 8) | (z << 4) | x
-	if i&1 == 0 {
-		return c.SubChunks[sec].MetaData[i>>1] & 0xF
+	if section := c.SubChunks[sec]; section != nil {
+		i := ((y & 15) << 8) | (z << 4) | x
+		if i&1 == 0 {
+			return section.MetaData[i>>1] & 0xF
+		}
+		return section.MetaData[i>>1] >> 4
+	} else {
+		return 0
 	}
-	return c.SubChunks[sec].MetaData[i>>1] >> 4
 }
 
-func (c *Chunk) SetBlockLight(x, y, z int, data byte) {
-	c.needsSave = true
+func (c *Chunk) SetBlockLight(x, y, z int, light byte) {
 	sec := y >> 4
 	section := c.SubChunks[sec]
+	if section == nil {
+		if light != 0 {
+			section = CreateSubChunk()
+			c.SubChunks[sec] = section
+		} else {
+			return
+		}
+	}
 	i := ((y & 15) << 8) | (z << 4) | x
 	idx := i >> 1
 	if i&1 == 0 {
+		orgLight := section.BlockLight[idx] & 0xF
+		if orgLight == 0 && light != 0 {
+			section.blockLights++
+		} else if orgLight != 0 && light == 0 {
+			section.blockLights--
+		}
 		section.BlockLight[idx] &= 0xF0
-		section.BlockLight[idx] |= data & 0xF
+		section.BlockLight[idx] |= light & 0xF
 	} else {
+		orgLight := section.BlockLight[idx] >> 4
+		if orgLight == 0 && light != 0 {
+			section.blockLights++
+		} else if orgLight != 0 && light == 0 {
+			section.blockLights--
+		}
 		section.BlockLight[idx] &= 0xF
-		section.BlockLight[idx] |= data << 4
+		section.BlockLight[idx] |= light << 4
+	}
+
+	if section.blocks == 0 && section.skyLights == 0 && section.blockLights == 0 {
+		c.SubChunks[sec] = nil
 	}
 }
 
 func (c *Chunk) BlockLight(x, y, z int) byte {
 	sec := y >> 4
-	section := c.SubChunks[sec]
-	i := ((y & 15) << 8) | (z << 4) | x
-	idx := i >> 1
-	if i&1 == 0 {
-		return section.BlockLight[idx] & 0xF
+	if section := c.SubChunks[sec]; section != nil {
+		i := ((y & 15) << 8) | (z << 4) | x
+		idx := i >> 1
+		if i&1 == 0 {
+			return section.BlockLight[idx] & 0xF
 
+		} else {
+			return section.BlockLight[idx] >> 4
+		}
 	} else {
-		return section.BlockLight[idx] >> 4
+		return 0
 	}
 }
 
-func (c *Chunk) SetSkyLight(x, y, z int, data byte) {
-	c.needsSave = true
+func (c *Chunk) SetSkyLight(x, y, z int, light byte) {
 	sec := y >> 4
 	section := c.SubChunks[sec]
+	if section == nil {
+		if light != 15 {
+			section = CreateSubChunk()
+			c.SubChunks[sec] = section
+		} else {
+			return
+		}
+	}
 	i := ((y & 15) << 8) | (z << 4) | x
 	idx := i >> 1
 	if i&1 == 0 {
+		orgLight := section.SkyLight[idx] & 0xF
+		if orgLight == 15 && light != 15 {
+			section.skyLights++
+		} else if orgLight != 15 && light == 15 {
+			section.skyLights--
+		}
 		section.SkyLight[idx] &= 0xF0
-		section.SkyLight[idx] |= data & 0xF
+		section.SkyLight[idx] |= light & 0xF
 	} else {
+		orgLight := section.SkyLight[idx] >> 4
+		if orgLight == 15 && light != 15 {
+			section.skyLights++
+		} else if orgLight != 15 && light == 15 {
+			section.skyLights--
+		}
 		section.SkyLight[idx] &= 0xF
-		section.SkyLight[idx] |= data << 4
+		section.SkyLight[idx] |= light << 4
+	}
+
+	if section.blocks == 0 && section.skyLights == 0 && section.blockLights == 0 {
+		c.SubChunks[sec] = nil
 	}
 }
 
 func (c *Chunk) SkyLight(x, y, z int) byte {
 	sec := y >> 4
-	section := c.SubChunks[sec]
-	i := ((y & 15) << 8) | (z << 4) | x
-	idx := i >> 1
-	if i&1 == 0 {
-		return section.SkyLight[idx] & 0xF
+	if section := c.SubChunks[sec]; section != nil {
+		i := ((y & 15) << 8) | (z << 4) | x
+		idx := i >> 1
+		if i&1 == 0 {
+			return section.SkyLight[idx] & 0xF
 
+		} else {
+			return section.SkyLight[idx] >> 4
+		}
 	} else {
-		return section.SkyLight[idx] >> 4
+		return 15
 	}
 }
 
@@ -299,9 +385,6 @@ func CreateChunk(x, z int32) *Chunk {
 	chunk.lightInfo.southSky = make(map[uint16]byte)
 	chunk.lightInfo.eastSky = make(map[uint16]byte)
 	chunk.lightInfo.westSky = make(map[uint16]byte)
-	for i := 0; i < 16; i++ {
-		chunk.SubChunks[i] = CreateSubChunk()
-	}
 	return chunk
 }
 
@@ -318,4 +401,13 @@ func CreateSubChunk() *SubChunk {
 type chunkMessageEvent interface {
 	Run(interface{})
 	GetEID() int32
+}
+
+var emptySection *SubChunk
+
+func init() {
+	emptySection = CreateSubChunk()
+	for i := 0; i < len(emptySection.SkyLight); i++ {
+		emptySection.SkyLight[i] = 0xFF
+	}
 }

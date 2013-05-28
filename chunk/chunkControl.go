@@ -152,24 +152,33 @@ func (chunk *Chunk) toCompressedBytes(full bool) [][]byte {
 		if chunk.SubChunks[i] != nil {
 			w.Write(chunk.SubChunks[i].Type)
 			mask |= 1 << uint(i)
+		} else if full {
+			w.Write(emptySection.Type)
+			mask |= 1 << uint(i)
 		}
 	}
 	//Metadata
 	for i := 0; i < 16; i++ {
 		if chunk.SubChunks[i] != nil {
 			w.Write(chunk.SubChunks[i].MetaData)
+		} else if full {
+			w.Write(emptySection.MetaData)
 		}
 	}
 	//BlockLight
 	for i := 0; i < 16; i++ {
 		if chunk.SubChunks[i] != nil {
 			w.Write(chunk.SubChunks[i].BlockLight)
+		} else if full {
+			w.Write(emptySection.BlockLight)
 		}
 	}
 	//Skylight
 	for i := 0; i < 16; i++ {
 		if chunk.SubChunks[i] != nil {
 			w.Write(chunk.SubChunks[i].SkyLight)
+		} else if full {
+			w.Write(emptySection.SkyLight)
 		}
 	}
 	//Biomes
