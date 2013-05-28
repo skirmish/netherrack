@@ -33,10 +33,10 @@ func (chunk *Chunk) tryLoad() byte {
 		return 2
 	}
 
-	if biomes, ok := level.GetByteArray("Biomes", nil); ok {
+	if biomes, ok := level.GetUByteArray("Biomes", nil); ok {
 		for x := 0; x < 16; x++ {
 			for z := 0; z < 16; z++ {
-				chunk.SetBiome(x, z, byte(biomes[x|z<<4]))
+				chunk.SetBiome(x, z, biomes[x|z<<4])
 			}
 		}
 	}
@@ -52,27 +52,19 @@ func (chunk *Chunk) tryLoad() byte {
 	for _, s := range sections {
 		section := s.(nbt.Type)
 		sectionY, _ := section.GetByte("Y", 0)
-		blocks, _ := section.GetByteArray("Blocks", nil)
-		data, _ := section.GetByteArray("Data", nil)
-		blockLight, _ := section.GetByteArray("BlockLight", nil)
-		skyLight, _ := section.GetByteArray("SkyLight", nil)
-		for y := 0; y < 16; y++ {
-			for z := 0; z < 16; z++ {
-				for x := 0; x < 16; x++ {
-					i := x | z<<4 | y<<8
-					chunk.SetBlock(x, int(sectionY)*16+y, z, byte(blocks[i]))
-					if i&1 == 0 {
-						chunk.SetMeta(x, int(sectionY)*16+y, z, byte(data[i>>1])&0xF)
-						chunk.SetBlockLight(x, int(sectionY)*16+y, z, byte(blockLight[i>>1])&0xF)
-						chunk.SetSkyLight(x, int(sectionY)*16+y, z, byte(skyLight[i>>1])&0xF)
-						continue
-					}
-					chunk.SetMeta(x, int(sectionY)*16+y, z, byte(data[i>>1]>>4))
-					chunk.SetBlockLight(x, int(sectionY)*16+y, z, byte(blockLight[i>>1])>>4)
-					chunk.SetSkyLight(x, int(sectionY)*16+y, z, byte(skyLight[i>>1])>>4)
-				}
-			}
+		blocks, _ := section.GetUByteArray("Blocks", nil)
+		data, _ := section.GetUByteArray("Data", nil)
+		blockLight, _ := section.GetUByteArray("BlockLight", nil)
+		skyLight, _ := section.GetUByteArray("SkyLight", nil)
+		chunkSection := chunk.SubChunks[sectionY]
+		if chunkSection == nil {
+			chunkSection = &SubChunk{}
+			chunk.SubChunks[sectionY] = chunkSection
 		}
+		chunkSection.Type = blocks
+		chunkSection.MetaData = data
+		chunkSection.BlockLight = blockLight
+		chunkSection.SkyLight = skyLight
 	}
 	chunk.needsRelight = false
 	chunk.needsSave = false
@@ -110,7 +102,7 @@ func (chunk *Chunk) loadNBT() (chunkNBT nbt.Type, err error) {
 		err = errors.New("Unsupported compression type")
 		return
 	}
-	chunkNBT, err = nbt.Parse(r)
+	chunkNBT, err = nbt.ParseBytes(r, true)
 	if err != nil {
 		return
 	}

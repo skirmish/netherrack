@@ -54,22 +54,10 @@ func (chunk *Chunk) Save() {
 			nbtSection := nbt.NewNBT()
 			nbtSection.Set("Y", int8(i))
 			sections = append(sections, nbtSection)
-			blocks := make([]int8, 16*16*16)
-			data := make([]int8, 16*16*16*0.5)
-			blockLight := make([]int8, 16*16*16*0.5)
-			skyLight := make([]int8, 16*16*16*0.5)
-			for i := 0; i < 16*16*16; i++ {
-				blocks[i] = int8(section.Type[i])
-			}
-			for i := 0; i < 16*16*16*0.5; i++ {
-				data[i] = int8(section.MetaData[i])
-				blockLight[i] = int8(section.BlockLight[i])
-				skyLight[i] = int8(section.SkyLight[i])
-			}
-			nbtSection.Set("Blocks", blocks)
-			nbtSection.Set("Data", data)
-			nbtSection.Set("BlockLight", blockLight)
-			nbtSection.Set("SkyLight", skyLight)
+			nbtSection.Set("Blocks", section.Type)
+			nbtSection.Set("Data", section.MetaData)
+			nbtSection.Set("BlockLight", section.BlockLight)
+			nbtSection.Set("SkyLight", section.SkyLight)
 		}
 	}
 	level.Set("Sections", sections)

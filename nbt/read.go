@@ -7,7 +7,7 @@ import (
 	"math"
 )
 
-func Parse(re io.Reader) (t Type, e error) {
+func ParseBytes(re io.Reader, bytes bool) (t Type, e error) {
 	defer func() {
 		if err := recover(); err != nil {
 			e = err.(error)
@@ -20,12 +20,16 @@ func Parse(re io.Reader) (t Type, e error) {
 		return nil, errors.New("Not an NBT file")
 	}
 	r.ReadString()
-	parseCompound(out, r)
+	parseCompound(out, r, bytes)
 	t = out
 	return
 }
 
-func parseCompound(out Type, r reader) {
+func Parse(re io.Reader) (t Type, e error) {
+	return ParseBytes(re, false)
+}
+
+func parseCompound(out Type, r reader, bytes bool) {
 compoundLoop:
 	for {
 		switch r.ReadByte() {
@@ -46,25 +50,34 @@ compoundLoop:
 		case 7:
 			name := r.ReadString()
 			size := int(r.ReadInt())
-			data := make([]int8, size)
-			dataBytes := make([]byte, size)
-			_, err := io.ReadFull(r.R, dataBytes)
-			if err != nil {
-				panic(err)
+			if bytes {
+				data := make([]byte, size)
+				_, err := io.ReadFull(r.R, data)
+				if err != nil {
+					panic(err)
+				}
+				out[name] = data
+			} else {
+				data := make([]int8, size)
+				dataBytes := make([]byte, size)
+				_, err := io.ReadFull(r.R, dataBytes)
+				if err != nil {
+					panic(err)
+				}
+				for i := 0; i < size; i++ {
+					data[i] = int8(dataBytes[i])
+				}
+				out[name] = data
 			}
-			for i := 0; i < size; i++ {
-				data[i] = int8(dataBytes[i])
-			}
-			out[name] = data
 		case 8:
 			out[r.ReadString()] = r.ReadString()
 		case 9:
 			name := r.ReadString()
-			out[name] = parseList(r)
+			out[name] = parseList(r, bytes)
 		case 10:
 			name := r.ReadString()
 			com := make(Type)
-			parseCompound(com, r)
+			parseCompound(com, r, bytes)
 			out[name] = com
 		case 11:
 			name := r.ReadString()
@@ -84,7 +97,7 @@ compoundLoop:
 	}
 }
 
-func parseList(r reader) []interface{} {
+func parseList(r reader, bytes bool) []interface{} {
 	typeID := r.ReadByte()
 	list := make([]interface{}, r.ReadInt())
 	switch typeID {
@@ -115,16 +128,25 @@ func parseList(r reader) []interface{} {
 	case 7:
 		for i, _ := range list {
 			size := int(r.ReadInt())
-			data := make([]int8, size)
-			dataBytes := make([]byte, size)
-			_, err := io.ReadFull(r.R, dataBytes)
-			if err != nil {
-				panic(err)
+			if bytes {
+				data := make([]int8, size)
+				dataBytes := make([]byte, size)
+				_, err := io.ReadFull(r.R, dataBytes)
+				if err != nil {
+					panic(err)
+				}
+				for i := 0; i < size; i++ {
+					data[i] = int8(dataBytes[i])
+				}
+				list[i] = data
+			} else {
+				data := make([]byte, size)
+				_, err := io.ReadFull(r.R, data)
+				if err != nil {
+					panic(err)
+				}
+				list[i] = data
 			}
-			for i := 0; i < size; i++ {
-				data[i] = int8(dataBytes[i])
-			}
-			list[i] = data
 		}
 	case 8:
 		for i, _ := range list {
@@ -132,12 +154,12 @@ func parseList(r reader) []interface{} {
 		}
 	case 9:
 		for i, _ := range list {
-			list[i] = parseList(r)
+			list[i] = parseList(r, bytes)
 		}
 	case 10:
 		for i, _ := range list {
 			com := make(Type)
-			parseCompound(com, r)
+			parseCompound(com, r, bytes)
 			list[i] = com
 		}
 	case 11:

@@ -13,7 +13,6 @@ func (t Type) WriteTo(w io.Writer, name string) {
 	w.Write(out)
 	w.Write([]byte(name))
 	t.writeTo(w)
-
 }
 
 func (t Type) writeTo(w io.Writer) {
@@ -83,6 +82,14 @@ func (t Type) writeTo(w io.Writer) {
 				out[4+i] = byte(v[i])
 			}
 			w.Write(out)
+		case []byte:
+			out := make([]byte, 1+2)
+			out[0] = 7
+			binary.BigEndian.PutUint16(out[1:], uint16(len(k)))
+			w.Write(out)
+			w.Write([]byte(k))
+			out = make([]byte, 4+len(v))
+			w.Write(v)
 		case string:
 			out := make([]byte, 1+2)
 			out[0] = 8

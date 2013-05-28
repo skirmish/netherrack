@@ -87,6 +87,16 @@ func (t Type) GetByteArray(name string, def []int8) (v []int8, ok bool) {
 	return
 }
 
+func (t Type) GetUByteArray(name string, def []byte) (v []byte, ok bool) {
+	val, ok := t[name]
+	if !ok {
+		v = def
+		return
+	}
+	v = val.([]byte)
+	return
+}
+
 func (t Type) GetString(name string, def string) (v string, ok bool) {
 	val, ok := t[name]
 	if !ok {
