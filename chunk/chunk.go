@@ -395,6 +395,7 @@ func CreateSubChunk() *SubChunk {
 		BlockLight: make([]byte, (16*16*16)/2),
 		SkyLight:   make([]byte, (16*16*16)/2),
 	}
+	copy(subChunk.SkyLight, emptySection.SkyLight)
 	return subChunk
 }
 
@@ -406,7 +407,12 @@ type chunkMessageEvent interface {
 var emptySection *SubChunk
 
 func init() {
-	emptySection = CreateSubChunk()
+	emptySection = &SubChunk{
+		Type:       make([]byte, 16*16*16),
+		MetaData:   make([]byte, (16*16*16)/2),
+		BlockLight: make([]byte, (16*16*16)/2),
+		SkyLight:   make([]byte, (16*16*16)/2),
+	}
 	for i := 0; i < len(emptySection.SkyLight); i++ {
 		emptySection.SkyLight[i] = 0xFF
 	}

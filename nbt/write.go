@@ -88,7 +88,9 @@ func (t Type) writeTo(w io.Writer) {
 			binary.BigEndian.PutUint16(out[1:], uint16(len(k)))
 			w.Write(out)
 			w.Write([]byte(k))
-			out = make([]byte, 4+len(v))
+			out = make([]byte, 4)
+			binary.BigEndian.PutUint32(out, uint32(len(v)))
+			w.Write(out)
 			w.Write(v)
 		case string:
 			out := make([]byte, 1+2)

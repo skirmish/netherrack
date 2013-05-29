@@ -5,6 +5,7 @@ import (
 	"compress/zlib"
 	"errors"
 	"github.com/NetherrackDev/netherrack/nbt"
+	"github.com/NetherrackDev/soulsand/blocks"
 	"io"
 	"log"
 	"os"
@@ -52,7 +53,7 @@ func (chunk *Chunk) tryLoad() byte {
 	for _, s := range sections {
 		section := s.(nbt.Type)
 		sectionY, _ := section.GetByte("Y", 0)
-		blocks, _ := section.GetUByteArray("Blocks", nil)
+		blockBytes, _ := section.GetUByteArray("Blocks", nil)
 		data, _ := section.GetUByteArray("Data", nil)
 		blockLight, _ := section.GetUByteArray("BlockLight", nil)
 		skyLight, _ := section.GetUByteArray("SkyLight", nil)
@@ -61,10 +62,43 @@ func (chunk *Chunk) tryLoad() byte {
 			chunkSection = &SubChunk{}
 			chunk.SubChunks[sectionY] = chunkSection
 		}
-		chunkSection.Type = blocks
+		chunkSection.Type = blockBytes
 		chunkSection.MetaData = data
 		chunkSection.BlockLight = blockLight
 		chunkSection.SkyLight = skyLight
+
+		//Update infomation on the chunk
+		for x := 0; x < 16; x++ {
+			for z := 0; z < 16; z++ {
+				for y := 0; y < 16; y++ {
+					i := (y << 8) | (z << 4) | x
+					block := blocks.GetBlockById(chunkSection.Type[i])
+					if light := block.LightLevel(); light > 0 {
+						bp := createBlockPosition(x, int(sectionY)*16+y, z)
+						chunk.lights[bp] = light
+					}
+					if block.Id() != 0 {
+						chunkSection.blocks++
+					}
+					idx := i >> 1
+					if i&1 == 0 {
+						if chunkSection.BlockLight[idx]&0xF > 0 {
+							chunkSection.blockLights++
+						}
+						if chunkSection.SkyLight[idx]&0xF > 0 {
+							chunkSection.skyLights++
+						}
+					} else {
+						if chunkSection.BlockLight[idx]>>4 > 0 {
+							chunkSection.blockLights++
+						}
+						if chunkSection.SkyLight[idx]>>4 > 0 {
+							chunkSection.skyLights++
+						}
+					}
+				}
+			}
+		}
 	}
 	chunk.needsRelight = false
 	chunk.needsSave = false
