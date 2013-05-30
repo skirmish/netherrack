@@ -242,12 +242,16 @@ func (chunk *Chunk) Relight() {
 				delete(otherChunk.lights, createBlockPosition(int(x), int(y), 15))
 			}
 			for pos, light := range newNorth {
-				if oLight := oldNorth[pos]; oLight != light {
+				x := int(pos & 0xF)
+				y := int(pos >> 4)
+				currentLight := otherChunk.BlockLight(x, y, 15)
+				oLight := oldNorth[pos]
+				if oLight != light && currentLight < light {
 					relight = true
 				}
-				x := pos & 0xF
-				y := pos >> 4
-				otherChunk.lights[createBlockPosition(int(x), int(y), 15)] = light
+				if currentLight < light || oLight == light {
+					otherChunk.lights[createBlockPosition(x, y, 15)] = light
+				}
 			}
 			for pos, _ := range oldNorthSky {
 				x := pos & 0xF
@@ -284,12 +288,16 @@ func (chunk *Chunk) Relight() {
 				delete(otherChunk.lights, createBlockPosition(int(x), int(y), 0))
 			}
 			for pos, light := range newSouth {
-				if oLight := oldSouth[pos]; oLight != light {
+				x := int(pos & 0xF)
+				y := int(pos >> 4)
+				currentLight := otherChunk.BlockLight(x, y, 0)
+				oLight := oldSouth[pos]
+				if oLight != light && currentLight < light {
 					relight = true
 				}
-				x := pos & 0xF
-				y := pos >> 4
-				otherChunk.lights[createBlockPosition(int(x), int(y), 0)] = light
+				if currentLight < light || oLight == light {
+					otherChunk.lights[createBlockPosition(x, y, 0)] = light
+				}
 			}
 			for pos, _ := range oldSouthSky {
 				x := pos & 0xF
@@ -326,12 +334,16 @@ func (chunk *Chunk) Relight() {
 				delete(otherChunk.lights, createBlockPosition(0, int(y), int(z)))
 			}
 			for pos, light := range newEast {
-				if oLight := oldEast[pos]; oLight != light {
+				z := int(pos & 0xF)
+				y := int(pos >> 4)
+				currentLight := otherChunk.BlockLight(0, y, z)
+				oLight := oldEast[pos]
+				if oLight != light && currentLight < light {
 					relight = true
 				}
-				z := pos & 0xF
-				y := pos >> 4
-				otherChunk.lights[createBlockPosition(0, int(y), int(z))] = light
+				if currentLight < light || oLight == light {
+					otherChunk.lights[createBlockPosition(0, y, z)] = light
+				}
 			}
 			for pos, _ := range oldEastSky {
 				x := pos & 0xF
@@ -368,12 +380,16 @@ func (chunk *Chunk) Relight() {
 				delete(otherChunk.lights, createBlockPosition(15, int(y), int(z)))
 			}
 			for pos, light := range newWest {
-				if oLight := oldWest[pos]; oLight != light {
+				z := int(pos & 0xF)
+				y := int(pos >> 4)
+				currentLight := otherChunk.BlockLight(15, y, z)
+				oLight := oldWest[pos]
+				if oLight != light && currentLight < light {
 					relight = true
 				}
-				z := pos & 0xF
-				y := pos >> 4
-				otherChunk.lights[createBlockPosition(15, int(y), int(z))] = light
+				if currentLight < light || oLight == light {
+					otherChunk.lights[createBlockPosition(15, y, z)] = light
+				}
 			}
 			for pos, _ := range oldWestSky {
 				x := pos & 0xF
