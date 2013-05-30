@@ -9,7 +9,7 @@ import (
 )
 
 func (chunk *Chunk) Save() {
-	return
+
 	region := chunk.World.getRegion(chunk.X>>5, chunk.Z>>5)
 	relX, relZ := chunk.X-(region.x<<5), chunk.Z-(region.z<<5)
 

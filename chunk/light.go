@@ -302,7 +302,7 @@ func (chunk *Chunk) Relight() {
 			for pos, _ := range oldSouthSky {
 				x := pos & 0xF
 				y := pos >> 4
-				delete(otherChunk.skyLights, createBlockPosition(int(x), int(y), 15))
+				delete(otherChunk.skyLights, createBlockPosition(int(x), int(y), 0))
 			}
 			for pos, light := range newSouthSky {
 				if oLight := oldSouthSky[pos]; oLight != light {
@@ -310,7 +310,7 @@ func (chunk *Chunk) Relight() {
 				}
 				x := pos & 0xF
 				y := pos >> 4
-				otherChunk.skyLights[createBlockPosition(int(x), int(y), 15)] = light
+				otherChunk.skyLights[createBlockPosition(int(x), int(y), 0)] = light
 			}
 			if relight {
 				otherChunk.needsRelight = true
@@ -346,17 +346,17 @@ func (chunk *Chunk) Relight() {
 				}
 			}
 			for pos, _ := range oldEastSky {
-				x := pos & 0xF
+				z := pos & 0xF
 				y := pos >> 4
-				delete(otherChunk.skyLights, createBlockPosition(int(x), int(y), 15))
+				delete(otherChunk.skyLights, createBlockPosition(0, int(y), int(z)))
 			}
 			for pos, light := range newEastSky {
 				if oLight := oldEastSky[pos]; oLight != light {
 					relight = true
 				}
-				x := pos & 0xF
+				z := pos & 0xF
 				y := pos >> 4
-				otherChunk.skyLights[createBlockPosition(int(x), int(y), 15)] = light
+				otherChunk.skyLights[createBlockPosition(0, int(y), int(z))] = light
 			}
 			if relight {
 				otherChunk.needsRelight = true
@@ -392,17 +392,17 @@ func (chunk *Chunk) Relight() {
 				}
 			}
 			for pos, _ := range oldWestSky {
-				x := pos & 0xF
+				z := pos & 0xF
 				y := pos >> 4
-				delete(otherChunk.skyLights, createBlockPosition(int(x), int(y), 15))
+				delete(otherChunk.skyLights, createBlockPosition(15, int(y), int(z)))
 			}
 			for pos, light := range newWestSky {
 				if oLight := oldWestSky[pos]; oLight != light {
 					relight = true
 				}
-				x := pos & 0xF
+				z := pos & 0xF
 				y := pos >> 4
-				otherChunk.skyLights[createBlockPosition(int(x), int(y), 15)] = light
+				otherChunk.skyLights[createBlockPosition(0, int(y), int(z))] = light
 			}
 			if relight {
 				otherChunk.needsRelight = true
