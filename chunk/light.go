@@ -79,13 +79,19 @@ func (chunk *Chunk) Relight() {
 			next = info.next
 			info.Free()
 
-			if chunk.SkyLight(x, y, z) >= light {
+			block := blocks.GetBlockById(chunk.Block(x, y, z))
+			newLight := int8(light) - int8(block.LightFiltered())
+			if newLight <= 0 {
 				continue
 			}
-			chunk.SetSkyLight(x, y, z, light)
 
-			block := blocks.GetBlockById(chunk.Block(x, y, z))
-			newLight := int8(light) - int8(block.LightFiltered()) - 1
+			if chunk.SkyLight(x, y, z) >= byte(newLight) {
+				continue
+			}
+
+			chunk.SetSkyLight(x, y, z, byte(newLight))
+
+			newLight = newLight - 1
 			if newLight <= 0 {
 				continue
 			}
@@ -152,14 +158,19 @@ func (chunk *Chunk) Relight() {
 			next = info.next
 			info.Free()
 
-			if chunk.BlockLight(x, y, z) >= light {
+			block := blocks.GetBlockById(chunk.Block(x, y, z))
+			newLight := int8(light) - int8(block.LightFiltered())
+			if newLight <= 0 {
 				continue
 			}
 
-			chunk.SetBlockLight(x, y, z, light)
+			if chunk.BlockLight(x, y, z) >= byte(newLight) {
+				continue
+			}
 
-			block := blocks.GetBlockById(chunk.Block(x, y, z))
-			newLight := int8(light) - int8(block.LightFiltered()) - 1
+			chunk.SetBlockLight(x, y, z, byte(newLight))
+
+			newLight = newLight - 1
 			if newLight <= 0 {
 				continue
 			}

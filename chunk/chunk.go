@@ -1,9 +1,8 @@
 package chunk
 
 import (
-	"github.com/NetherrackDev/soulsand/blocks"
-
 	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/blocks"
 )
 
 var (
