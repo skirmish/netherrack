@@ -1,444 +1,231 @@
 package chunk
 
 import (
-	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/blocks"
 )
 
-func (chunk *Chunk) Relight() {
-	//Clear lights & Sky lights
-
-	north := make(map[uint16]byte)
-	south := make(map[uint16]byte)
-	east := make(map[uint16]byte)
-	west := make(map[uint16]byte)
-
-	northSky := make(map[uint16]byte)
-	southSky := make(map[uint16]byte)
-	eastSky := make(map[uint16]byte)
-	westSky := make(map[uint16]byte)
-
-	var skyLightQueue *lightInfo
-	var blockLightQueue *lightInfo
-
-	for x := 0; x < 16; x++ {
-		for z := 0; z < 16; z++ {
-			height := chunk.heightMap[x|z<<4]
-			max := 256 - height
-
-			if nHeight := 256 - chunk.HeightX(x-1, z); nHeight < max {
-				max = nHeight
-			}
-			if nHeight := 256 - chunk.HeightX(x+1, z); nHeight < max {
-				max = nHeight
-			}
-			if nHeight := 256 - chunk.HeightX(x, z-1); nHeight < max {
-				max = nHeight
-			}
-			if nHeight := 256 - chunk.HeightX(x, z+1); nHeight < max {
-				max = nHeight
-			}
-
-			maxI := 256 - int(max)
-			heightI := int(height)
-			for y := heightI; y < 256; y++ {
-				if y <= maxI {
-					skyLightQueue = skyLightQueue.Append(LightInfoGet(x, y, z, 15))
-					chunk.SetSkyLight(x, y, z, 0)
-				} else {
-					chunk.SetSkyLight(x, y, z, 15)
-				}
-				chunk.SetBlockLight(x, y, z, 0)
-			}
-			for y := 0; y < heightI; y++ {
-				chunk.SetSkyLight(x, y, z, 0)
-				chunk.SetBlockLight(x, y, z, 0)
-			}
-		}
-	}
-
-	for bp, light := range chunk.skyLights {
-		x, y, z := bp.Position()
-		skyLightQueue = skyLightQueue.Append(LightInfoGet(x, y, z, light))
-	}
-
-	for bp, light := range chunk.lights {
-		x, y, z := bp.Position()
-		blockLightQueue = blockLightQueue.Append(LightInfoGet(x, y, z, light))
-	}
-
-	if skyLightQueue != nil {
-		current := skyLightQueue.root
-		var next *lightInfo
-		for ; current != nil; current = next {
-			info := current
-			x := info.x
-			z := info.z
-			y := info.y
-			light := info.light
-			next = info.next
-			info.Free()
-
-			block := blocks.GetBlockById(chunk.Block(x, y, z))
-			newLight := int8(light) - int8(block.LightFiltered())
-			if newLight <= 0 {
-				continue
-			}
-
-			if chunk.SkyLight(x, y, z) >= byte(newLight) {
-				continue
-			}
-
-			chunk.SetSkyLight(x, y, z, byte(newLight))
-
-			newLight = newLight - 1
-			if newLight <= 0 {
-				continue
-			}
-
-			if y > 0 && y < 255 {
-				block := blocks.GetBlockById(chunk.Block(x, y-1, z))
-				newerLight := int8(light) - int8(block.LightFiltered())
-				if (newerLight == 15 && block.StopsSkylight()) || chunk.SkyLight(x, y+1, z) != 15 {
-					newerLight--
-				}
-				if int8(chunk.SkyLight(x, y-1, z)) < newerLight {
-					skyLightQueue = skyLightQueue.Append(LightInfoGet(x, y-1, z, byte(newerLight)))
-				}
-			}
-			if y < 255 {
-				skyLightQueue = chunk.checkSkyLight(skyLightQueue, newLight, x, y, z, 0, 1, 0)
-			}
-
-			if x > 0 {
-				skyLightQueue = chunk.checkSkyLight(skyLightQueue, newLight, x, y, z, -1, 0, 0)
-			} else {
-				pos := uint16(z | y<<4)
-				if oLight := int8(westSky[pos]); oLight < newLight {
-					westSky[pos] = byte(newLight)
-				}
-			}
-			if x < 15 {
-				skyLightQueue = chunk.checkSkyLight(skyLightQueue, newLight, x, y, z, 1, 0, 0)
-			} else {
-				pos := uint16(z | y<<4)
-				if oLight := int8(eastSky[pos]); oLight < newLight {
-					eastSky[pos] = byte(newLight)
-				}
-			}
-
-			if z > 0 {
-				skyLightQueue = chunk.checkSkyLight(skyLightQueue, newLight, x, y, z, 0, 0, -1)
-			} else {
-				pos := uint16(x | y<<4)
-				if oLight := int8(northSky[pos]); oLight < newLight {
-					northSky[pos] = byte(newLight)
-				}
-			}
-			if z < 15 {
-				skyLightQueue = chunk.checkSkyLight(skyLightQueue, newLight, x, y, z, 0, 0, 1)
-			} else {
-				pos := uint16(x | y<<4)
-				if oLight := int8(southSky[pos]); oLight < newLight {
-					southSky[pos] = byte(newLight)
-				}
-			}
-		}
-	}
-
-	if blockLightQueue != nil {
-		current := blockLightQueue.root
-		var next *lightInfo
-		for ; current != nil; current = next {
-			info := current
-			x := info.x
-			z := info.z
-			y := info.y
-			light := info.light
-			next = info.next
-			info.Free()
-
-			block := blocks.GetBlockById(chunk.Block(x, y, z))
-			newLight := int8(light) - int8(block.LightFiltered())
-			if newLight <= 0 {
-				continue
-			}
-
-			if chunk.BlockLight(x, y, z) >= byte(newLight) {
-				continue
-			}
-
-			chunk.SetBlockLight(x, y, z, byte(newLight))
-
-			newLight = newLight - 1
-			if newLight <= 0 {
-				continue
-			}
-
-			if y > 0 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, 0, -1, 0)
-			}
-			if y < 255 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, 0, 1, 0)
-			}
-
-			if x > 0 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, -1, 0, 0)
-			} else {
-				pos := uint16(z | y<<4)
-				if oLight := int8(west[pos]); oLight < newLight {
-					west[pos] = byte(newLight)
-				}
-			}
-			if x < 15 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, 1, 0, 0)
-			} else {
-				pos := uint16(z | y<<4)
-				if oLight := int8(east[pos]); oLight < newLight {
-					east[pos] = byte(newLight)
-				}
-			}
-
-			if z > 0 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, 0, 0, -1)
-			} else {
-				pos := uint16(x | y<<4)
-				if oLight := int8(north[pos]); oLight < newLight {
-					north[pos] = byte(newLight)
-				}
-			}
-			if z < 15 {
-				blockLightQueue = chunk.checkBlockLight(blockLightQueue, newLight, x, y, z, 0, 0, 1)
-			} else {
-				pos := uint16(x | y<<4)
-				if oLight := int8(south[pos]); oLight < newLight {
-					south[pos] = byte(newLight)
-				}
-			}
-		}
-	}
-
-	depth := 0
-	if chunk.relightDepth == 0 {
-		depth = 2
-	} else if chunk.relightDepth == 2 {
-		depth = 1
-	}
-
-	if chunk.relightDepth != 1 && chunk.World.chunkLoaded(chunk.X, chunk.Z-1) { //North
-		oldNorth := chunk.lightInfo.north
-		newNorth := north //No need for locks as the map will never be changed past this point
-		oldNorthSky := chunk.lightInfo.northSky
-		newNorthSky := northSky
-		chunk.World.RunSync(int(chunk.X), int(chunk.Z-1), func(c soulsand.SyncChunk) {
-			otherChunk := c.(*Chunk)
-			if otherChunk.relightDepth < depth {
-				otherChunk.relightDepth = depth
-			}
-			relight := false
-			for pos, _ := range oldNorth {
-				x := pos & 0xF
-				y := pos >> 4
-				delete(otherChunk.lights, createBlockPosition(int(x), int(y), 15))
-			}
-			for pos, light := range newNorth {
-				x := int(pos & 0xF)
-				y := int(pos >> 4)
-				currentLight := otherChunk.BlockLight(x, y, 15)
-				oLight := oldNorth[pos]
-				if oLight != light && currentLight < light {
-					relight = true
-				}
-				if currentLight < light || oLight == light {
-					otherChunk.lights[createBlockPosition(x, y, 15)] = light
-				}
-			}
-			for pos, _ := range oldNorthSky {
-				x := pos & 0xF
-				y := pos >> 4
-				delete(otherChunk.skyLights, createBlockPosition(int(x), int(y), 15))
-			}
-			for pos, light := range newNorthSky {
-				if oLight := oldNorthSky[pos]; oLight != light {
-					relight = true
-				}
-				x := pos & 0xF
-				y := pos >> 4
-				otherChunk.skyLights[createBlockPosition(int(x), int(y), 15)] = light
-			}
-			if relight {
-				otherChunk.needsRelight = true
-			}
-		})
-	}
-	if chunk.relightDepth != 1 && chunk.World.chunkLoaded(chunk.X, chunk.Z+1) { //South
-		oldSouth := chunk.lightInfo.south
-		newSouth := south
-		oldSouthSky := chunk.lightInfo.southSky
-		newSouthSky := southSky
-		chunk.World.RunSync(int(chunk.X), int(chunk.Z+1), func(c soulsand.SyncChunk) {
-			otherChunk := c.(*Chunk)
-			if otherChunk.relightDepth < depth {
-				otherChunk.relightDepth = depth
-			}
-			relight := false
-			for pos, _ := range oldSouth {
-				x := pos & 0xF
-				y := pos >> 4
-				delete(otherChunk.lights, createBlockPosition(int(x), int(y), 0))
-			}
-			for pos, light := range newSouth {
-				x := int(pos & 0xF)
-				y := int(pos >> 4)
-				currentLight := otherChunk.BlockLight(x, y, 0)
-				oLight := oldSouth[pos]
-				if oLight != light && currentLight < light {
-					relight = true
-				}
-				if currentLight < light || oLight == light {
-					otherChunk.lights[createBlockPosition(x, y, 0)] = light
-				}
-			}
-			for pos, _ := range oldSouthSky {
-				x := pos & 0xF
-				y := pos >> 4
-				delete(otherChunk.skyLights, createBlockPosition(int(x), int(y), 0))
-			}
-			for pos, light := range newSouthSky {
-				if oLight := oldSouthSky[pos]; oLight != light {
-					relight = true
-				}
-				x := pos & 0xF
-				y := pos >> 4
-				otherChunk.skyLights[createBlockPosition(int(x), int(y), 0)] = light
-			}
-			if relight {
-				otherChunk.needsRelight = true
-			}
-		})
-	}
-	if chunk.relightDepth != 1 && chunk.World.chunkLoaded(chunk.X+1, chunk.Z) { //East
-		oldEast := chunk.lightInfo.east
-		newEast := east
-		oldEastSky := chunk.lightInfo.eastSky
-		newEastSky := eastSky
-		chunk.World.RunSync(int(chunk.X+1), int(chunk.Z), func(c soulsand.SyncChunk) {
-			otherChunk := c.(*Chunk)
-			if otherChunk.relightDepth < depth {
-				otherChunk.relightDepth = depth
-			}
-			relight := false
-			for pos, _ := range oldEast {
-				z := pos & 0xF
-				y := pos >> 4
-				delete(otherChunk.lights, createBlockPosition(0, int(y), int(z)))
-			}
-			for pos, light := range newEast {
-				z := int(pos & 0xF)
-				y := int(pos >> 4)
-				currentLight := otherChunk.BlockLight(0, y, z)
-				oLight := oldEast[pos]
-				if oLight != light && currentLight < light {
-					relight = true
-				}
-				if currentLight < light || oLight == light {
-					otherChunk.lights[createBlockPosition(0, y, z)] = light
-				}
-			}
-			for pos, _ := range oldEastSky {
-				z := pos & 0xF
-				y := pos >> 4
-				delete(otherChunk.skyLights, createBlockPosition(0, int(y), int(z)))
-			}
-			for pos, light := range newEastSky {
-				if oLight := oldEastSky[pos]; oLight != light {
-					relight = true
-				}
-				z := pos & 0xF
-				y := pos >> 4
-				otherChunk.skyLights[createBlockPosition(0, int(y), int(z))] = light
-			}
-			if relight {
-				otherChunk.needsRelight = true
-			}
-		})
-	}
-	if chunk.relightDepth != 1 && chunk.World.chunkLoaded(chunk.X-1, chunk.Z) { //West
-		oldWest := chunk.lightInfo.west
-		newWest := west
-		oldWestSky := chunk.lightInfo.westSky
-		newWestSky := westSky
-		chunk.World.RunSync(int(chunk.X-1), int(chunk.Z), func(c soulsand.SyncChunk) {
-			otherChunk := c.(*Chunk)
-			if otherChunk.relightDepth < depth {
-				otherChunk.relightDepth = depth
-			}
-			relight := false
-			for pos, _ := range oldWest {
-				z := pos & 0xF
-				y := pos >> 4
-				delete(otherChunk.lights, createBlockPosition(15, int(y), int(z)))
-			}
-			for pos, light := range newWest {
-				z := int(pos & 0xF)
-				y := int(pos >> 4)
-				currentLight := otherChunk.BlockLight(15, y, z)
-				oLight := oldWest[pos]
-				if oLight != light && currentLight < light {
-					relight = true
-				}
-				if currentLight < light || oLight == light {
-					otherChunk.lights[createBlockPosition(15, y, z)] = light
-				}
-			}
-			for pos, _ := range oldWestSky {
-				z := pos & 0xF
-				y := pos >> 4
-				delete(otherChunk.skyLights, createBlockPosition(15, int(y), int(z)))
-			}
-			for pos, light := range newWestSky {
-				if oLight := oldWestSky[pos]; oLight != light {
-					relight = true
-				}
-				z := pos & 0xF
-				y := pos >> 4
-				otherChunk.skyLights[createBlockPosition(0, int(y), int(z))] = light
-			}
-			if relight {
-				otherChunk.needsRelight = true
-			}
-		})
-	}
-
-	chunk.lightInfo.north = north
-	chunk.lightInfo.south = south
-	chunk.lightInfo.east = east
-	chunk.lightInfo.west = west
-
-	chunk.lightInfo.northSky = northSky
-	chunk.lightInfo.southSky = southSky
-	chunk.lightInfo.eastSky = eastSky
-	chunk.lightInfo.westSky = westSky
-
-	chunk.relightDepth = 0
-	chunk.needsRelight = false
-	chunk.needsSave = true
+type lightOperation interface {
+	Execute(*Chunk)
 }
 
-func (chunk *Chunk) checkSkyLight(skyLightQueue *lightInfo, light int8, x, y, z, ox, oy, oz int) *lightInfo {
-	// block := blocks.GetBlockById(chunk.Block(x+ox, y+oy, z+oz))
-	// newLight := int8(light) - int8(block.LightFiltered()) - 1
-	if int8(chunk.SkyLight(x+ox, y+oy, z+oz)) < light {
-		skyLightQueue = skyLightQueue.Append(LightInfoGet(x+ox, y+oy, z+oz, byte(light)))
+func getBlockLightLocal(chunk *Chunk, x, y, z int) byte {
+	if x < 0 || x > 15 || z < 0 || z > 15 || y < 0 || y > 255 {
+		return 0
 	}
-	return skyLightQueue
+	return chunk.BlockLight(x, y, z)
 }
 
-func (chunk *Chunk) checkBlockLight(blockLightQueue *lightInfo, light int8, x, y, z, ox, oy, oz int) *lightInfo {
-	// block := blocks.GetBlockById(chunk.Block(x+ox, y+oy, z+oz))
-	// newLight := int8(light) - int8(block.LightFiltered()) - 1
-	if int8(chunk.BlockLight(x+ox, y+oy, z+oz)) < light {
-		blockLightQueue = blockLightQueue.Append(LightInfoGet(x+ox, y+oy, z+oz, byte(light)))
+type blockLightAdd struct {
+	x, y, z byte
+	light   byte
+}
+
+func (bla blockLightAdd) Execute(chunk *Chunk) {
+	chunk.SetBlockLight(int(bla.x), int(bla.y), int(bla.z), bla.light)
+
+	chunk.pendingLightOperations.Push(blockLightUpdate{bla.x - 1, bla.y, bla.z})
+	chunk.pendingLightOperations.Push(blockLightUpdate{bla.x + 1, bla.y, bla.z})
+	chunk.pendingLightOperations.Push(blockLightUpdate{bla.x, bla.y - 1, bla.z})
+	chunk.pendingLightOperations.Push(blockLightUpdate{bla.x, bla.y + 1, bla.z})
+	chunk.pendingLightOperations.Push(blockLightUpdate{bla.x, bla.y, bla.z - 1})
+	chunk.pendingLightOperations.Push(blockLightUpdate{bla.x, bla.y, bla.z + 1})
+}
+
+type blockLightUpdate struct {
+	x, y, z byte
+}
+
+func (blu blockLightUpdate) Execute(chunk *Chunk) {
+	if blu.x < 0 || blu.x > 15 || blu.z < 0 || blu.z > 15 || blu.z < 0 || blu.z > 255 {
+		return
 	}
-	return blockLightQueue
+
+	canTravel := [6]bool{}
+
+	var newLight int8
+	x, y, z := int(blu.x), int(blu.y), int(blu.z)
+	if light := int8(getBlockLightLocal(chunk, x-1, y, z)); light > newLight {
+		newLight = light
+	} else {
+		canTravel[0] = true
+	}
+	if light := int8(getBlockLightLocal(chunk, x+1, y, z)); light > newLight {
+		newLight = light
+	} else {
+		canTravel[1] = true
+	}
+	if light := int8(getBlockLightLocal(chunk, x, y-1, z)); light > newLight {
+		newLight = light
+	} else {
+		canTravel[2] = true
+	}
+	if light := int8(getBlockLightLocal(chunk, x, y+1, z)); light > newLight {
+		newLight = light
+	} else {
+		canTravel[3] = true
+	}
+	if light := int8(getBlockLightLocal(chunk, x, y, z-1)); light > newLight {
+		newLight = light
+	} else {
+		canTravel[4] = true
+	}
+	if light := int8(getBlockLightLocal(chunk, x, y, z+1)); light > newLight {
+		newLight = light
+	} else {
+		canTravel[5] = true
+	}
+
+	block := blocks.GetBlockById(chunk.Block(x, y, z))
+
+	newLight -= 1 + int8(block.LightFiltered())
+	if newLight < 0 {
+		return
+	}
+
+	if light := chunk.BlockLight(x, y, z); light >= byte(newLight) {
+		return
+	}
+
+	chunk.SetBlockLight(x, y, z, byte(newLight))
+
+	if canTravel[0] {
+		chunk.pendingLightOperations.Push(blockLightUpdate{blu.x - 1, blu.y, blu.z})
+	}
+	if canTravel[1] {
+		chunk.pendingLightOperations.Push(blockLightUpdate{blu.x + 1, blu.y, blu.z})
+	}
+	if canTravel[2] {
+		chunk.pendingLightOperations.Push(blockLightUpdate{blu.x, blu.y - 1, blu.z})
+	}
+	if canTravel[3] {
+		chunk.pendingLightOperations.Push(blockLightUpdate{blu.x, blu.y + 1, blu.z})
+	}
+	if canTravel[4] {
+		chunk.pendingLightOperations.Push(blockLightUpdate{blu.x, blu.y, blu.z - 1})
+	}
+	if canTravel[5] {
+		chunk.pendingLightOperations.Push(blockLightUpdate{blu.x, blu.y, blu.z + 1})
+	}
+}
+
+type blockLightRemove struct {
+	x, y, z byte
+}
+
+func (blr blockLightRemove) Execute(chunk *Chunk) {
+	chunk.SetBlockLight(int(blr.x), int(blr.y), int(blr.z), 0)
+
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blr.x - 1, blr.y, blr.z})
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blr.x + 1, blr.y, blr.z})
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blr.x, blr.y - 1, blr.z})
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blr.x, blr.y + 1, blr.z})
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blr.x, blr.y, blr.z - 1})
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blr.x, blr.y, blr.z + 1})
+}
+
+type blockLightRemoveUpdate struct {
+	x, y, z byte
+}
+
+func (blu blockLightRemoveUpdate) Execute(chunk *Chunk) {
+	if blu.x < 0 || blu.x > 15 || blu.z < 0 || blu.z > 15 || blu.z < 0 || blu.z > 255 {
+		return
+	}
+
+	canTravel := [6]bool{}
+
+	var newLight int8
+	x, y, z := int(blu.x), int(blu.y), int(blu.z)
+
+	if light := int8(getBlockLightLocal(chunk, x-1, y, z)); light >= newLight {
+		newLight = light
+		canTravel[0] = true
+	}
+	if light := int8(getBlockLightLocal(chunk, x+1, y, z)); light >= newLight {
+		newLight = light
+		canTravel[1] = true
+	}
+	if light := int8(getBlockLightLocal(chunk, x, y-1, z)); light >= newLight {
+		newLight = light
+		canTravel[2] = true
+	}
+	if light := int8(getBlockLightLocal(chunk, x, y+1, z)); light >= newLight {
+		newLight = light
+		canTravel[3] = true
+	}
+	if light := int8(getBlockLightLocal(chunk, x, y, z-1)); light >= newLight {
+		newLight = light
+		canTravel[4] = true
+	}
+	if light := int8(getBlockLightLocal(chunk, x, y, z+1)); light >= newLight {
+		newLight = light
+		canTravel[5] = true
+	}
+	orgZero := true
+	if newLight != 0 {
+		orgZero = false
+		block := blocks.GetBlockById(chunk.Block(x, y, z))
+		if block.LightLevel() > 0 {
+			//chunk.pendingLightOperations.Push(blockLightAdd{blu.x, blu.y, blu.z, block.LightLevel()})
+			chunk.brokenLights.Add(blockLightAdd{blu.x, blu.y, blu.z, block.LightLevel()})
+		}
+		newLight -= 1 + int8(block.LightFiltered())
+	}
+	if newLight < 0 {
+		return
+	}
+
+	if light := chunk.BlockLight(x, y, z); light < byte(newLight) {
+		return
+	}
+
+	chunk.SetBlockLight(x, y, z, byte(newLight))
+
+	if orgZero {
+		return
+	}
+
+	if canTravel[0] {
+		chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blu.x - 1, blu.y, blu.z})
+	}
+	if canTravel[1] {
+		chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blu.x + 1, blu.y, blu.z})
+	}
+	if canTravel[2] {
+		chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blu.x, blu.y - 1, blu.z})
+	}
+	if canTravel[3] {
+		chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blu.x, blu.y + 1, blu.z})
+	}
+	if canTravel[4] {
+		chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blu.x, blu.y, blu.z - 1})
+	}
+	if canTravel[5] {
+		chunk.pendingLightOperations.Push(blockLightRemoveUpdate{blu.x, blu.y, blu.z + 1})
+	}
+}
+
+type blockRemove struct {
+	x, y, z byte
+}
+
+func (br blockRemove) Execute(chunk *Chunk) {
+	//TODO: Skylight stuff
+	chunk.pendingLightOperations.Push(blockLightUpdate{br.x, br.y, br.z})
+}
+
+type blockAdd struct {
+	x, y, z byte
+}
+
+func (ba blockAdd) Execute(chunk *Chunk) {
+	//TODO: Skylight stuff
+	chunk.SetBlockLight(int(ba.x), int(ba.y), int(ba.z), 0)
+
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{ba.x - 1, ba.y, ba.z})
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{ba.x + 1, ba.y, ba.z})
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{ba.x, ba.y - 1, ba.z})
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{ba.x, ba.y + 1, ba.z})
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{ba.x, ba.y, ba.z - 1})
+	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{ba.x, ba.y, ba.z + 1})
 }

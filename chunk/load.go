@@ -5,7 +5,6 @@ import (
 	"compress/zlib"
 	"errors"
 	"github.com/NetherrackDev/netherrack/nbt"
-	"github.com/NetherrackDev/soulsand/blocks"
 	"io"
 	"log"
 	"os"
@@ -72,12 +71,7 @@ func (chunk *Chunk) tryLoad() byte {
 			for z := 0; z < 16; z++ {
 				for y := 0; y < 16; y++ {
 					i := (y << 8) | (z << 4) | x
-					block := blocks.GetBlockById(chunkSection.Type[i])
-					if light := block.LightLevel(); light > 0 {
-						bp := createBlockPosition(x, int(sectionY)*16+y, z)
-						chunk.lights[bp] = light
-					}
-					if block.Id() != 0 {
+					if chunkSection.Type[i] != 0 {
 						chunkSection.blocks++
 					}
 					idx := i >> 1
@@ -100,7 +94,6 @@ func (chunk *Chunk) tryLoad() byte {
 			}
 		}
 	}
-	chunk.needsRelight = false
 	chunk.needsSave = false
 	return 1
 }

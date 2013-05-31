@@ -25,9 +25,6 @@ func chunkController(chunk *Chunk) {
 		reset := true
 		select {
 		case cr := <-chunk.requests:
-			if chunk.needsRelight {
-				chunk.Relight()
-			}
 			out := chunk.toCompressedBytes(true)
 			select {
 			case cr.Ret <- out:
@@ -113,6 +110,7 @@ func chunkController(chunk *Chunk) {
 					posChan <- nil
 				}
 			}
+		//TODO: Disable this case if nothing is happening in this chunk
 		case <-tick.C:
 			reset = false
 			if len(chunk.blockQueue) != 0 {
@@ -129,8 +127,16 @@ func chunkController(chunk *Chunk) {
 				}
 				chunk.blockQueue = chunk.blockQueue[0:0]
 			}
-			if chunk.needsRelight {
-				chunk.Relight()
+			needsSave := !chunk.pendingLightOperations.IsEmpty()
+			for !chunk.pendingLightOperations.IsEmpty() {
+				op := chunk.pendingLightOperations.Pop().(lightOperation)
+				op.Execute(chunk)
+			}
+			for !chunk.brokenLights.IsEmpty() {
+				chunk.pendingLightOperations.Push(chunk.brokenLights.Remove())
+			}
+			if needsSave && chunk.pendingLightOperations.IsEmpty() {
+				chunk.needsSave = true
 			}
 		}
 		if reset {

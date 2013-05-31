@@ -18,7 +18,6 @@ import (
 	"net"
 	"runtime"
 	"runtime/debug"
-	"testing"
 	"time"
 )
 
@@ -81,33 +80,10 @@ func init() {
 		caller.SendMessageSync(fmt.Sprintf("Alloc: %dkb", stats.Alloc/1024))
 		caller.SendMessageSync(fmt.Sprintf("TotalAlloc: %dkb", stats.TotalAlloc/1024))
 	})
-	command.Add("relight", func(caller soulsand.CommandSender) {
+	command.Add("chunk resend", func(caller soulsand.CommandSender) {
 		if player, ok := caller.(*Player); ok {
-			player.World.RunSync(int(player.Chunk.X), int(player.Chunk.Z), func(chunk soulsand.SyncChunk) {
-				start := time.Now().UnixNano()
-				chunk.Relight()
-				end := time.Now().UnixNano()
-				player.SendMessage(fmt.Sprintf("Time taken: %.3fms", float64(end-start)/1000000.0))
-				player.RunSync(func(soulsand.SyncEntity) {
-					player.World.GetChunkData(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
-				})
-			})
-		} else {
-			caller.SendMessageSync("This can only be used by a player")
-		}
-	})
-	command.Add("bench light", func(caller soulsand.CommandSender) {
-		if player, ok := caller.(*Player); ok {
-			player.World.RunSync(int(player.Chunk.X), int(player.Chunk.Z), func(chunk soulsand.SyncChunk) {
-				res := testing.Benchmark(func(b *testing.B) {
-					for i := 0; i < b.N; i++ {
-						chunk.Relight()
-					}
-				})
-				player.SendMessage(soulsand.ColourCyan + "Benchmark complete")
-				player.SendMessage(soulsand.ColourBrightGreen + fmt.Sprintf("AllocsPerOp: %d", res.AllocsPerOp()))
-				player.SendMessage(soulsand.ColourBrightGreen + fmt.Sprintf("AllocedBytesPerOp: %d", res.AllocedBytesPerOp()))
-				player.SendMessage(soulsand.ColourBrightGreen + fmt.Sprintf("MsPerOp: %.2f", float64(res.NsPerOp())/1000000.0))
+			player.RunSync(func(soulsand.SyncEntity) {
+				player.World.GetChunkData(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
 			})
 		} else {
 			caller.SendMessageSync("This can only be used by a player")

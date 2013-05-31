@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"github.com/NetherrackDev/netherrack/util"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/blocks"
 )
@@ -10,36 +11,24 @@ var (
 )
 
 type Chunk struct {
-	World          *World
-	X, Z           int32
-	SubChunks      []*SubChunk
-	biome          []byte
-	Players        map[string]soulsand.Player
-	Entitys        map[int32]soulsand.Entity
-	requests       chan *ChunkRequest
-	watcherJoin    chan *chunkWatcherRequest
-	watcherLeave   chan *chunkWatcherRequest
-	entityJoin     chan *chunkEntityRequest
-	entityLeave    chan *chunkEntityRequest
-	messageChannel chan *chunkMessage
-	eventChannel   chan func(soulsand.SyncChunk)
-	blockQueue     []blockChange
-	heightMap      []int32
-	lights         map[blockPosition]byte
-	skyLights      map[blockPosition]byte
-	lightInfo      struct {
-		north    map[uint16]byte
-		south    map[uint16]byte
-		east     map[uint16]byte
-		west     map[uint16]byte
-		northSky map[uint16]byte
-		southSky map[uint16]byte
-		eastSky  map[uint16]byte
-		westSky  map[uint16]byte
-	}
-	needsRelight bool
-	relightDepth int
-	needsSave    bool
+	World                  *World
+	X, Z                   int32
+	SubChunks              []*SubChunk
+	biome                  []byte
+	Players                map[string]soulsand.Player
+	Entitys                map[int32]soulsand.Entity
+	requests               chan *ChunkRequest
+	watcherJoin            chan *chunkWatcherRequest
+	watcherLeave           chan *chunkWatcherRequest
+	entityJoin             chan *chunkEntityRequest
+	entityLeave            chan *chunkEntityRequest
+	messageChannel         chan *chunkMessage
+	eventChannel           chan func(soulsand.SyncChunk)
+	blockQueue             []blockChange
+	heightMap              []int32
+	needsSave              bool
+	pendingLightOperations util.Stack
+	brokenLights           util.Queue
 }
 type SubChunk struct {
 	Type        []byte
@@ -108,7 +97,6 @@ func (c *Chunk) AddChange(x, y, z int, block, meta byte) {
 }
 
 func (c *Chunk) SetBlock(x, y, z int, blType byte) {
-	c.needsRelight = true
 	sec := y >> 4
 	section := c.SubChunks[sec]
 	if section == nil {
@@ -123,12 +111,6 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 	if section.Type[ind] == 0 && blType != 0 {
 		section.blocks++
 		block := blocks.GetBlockById(blType)
-		bp := createBlockPosition(x, y, z)
-		if light := block.LightLevel(); light != 0 {
-			c.lights[bp] = light
-		} else if _, ok := c.lights[bp]; ok {
-			delete(c.lights, bp)
-		}
 		if y+1 > int(c.heightMap[x|z<<4]) && (block.LightFiltered() != 0 || block.StopsSkylight()) {
 			c.heightMap[x|z<<4] = int32(y) + 1
 		} else if y+1 == int(c.heightMap[x|z<<4]) {
@@ -146,10 +128,6 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 	} else if section.Type[ind] != 0 && blType == 0 {
 		section.blocks--
 		c.SetMeta(x, y, z, 0)
-		bp := createBlockPosition(x, y, z)
-		if _, ok := c.lights[bp]; ok {
-			delete(c.lights, bp)
-		}
 		if y+1 == int(c.heightMap[x|z<<4]) {
 			var ty int
 			for ty = y - 1; ty >= 0; ty-- {
@@ -163,7 +141,22 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 			}
 		}
 	}
-	section.Type[ind] = blType
+	if section.Type[ind] != blType {
+		oldBlock := blocks.GetBlockById(section.Type[ind])
+		block := blocks.GetBlockById(blType)
+		bx, by, bz := byte(x), byte(y), byte(z)
+		if light := oldBlock.LightLevel(); light != 0 {
+			c.pendingLightOperations.Push(blockLightRemove{bx, by, bz})
+		} else {
+			c.pendingLightOperations.Push(blockRemove{bx, by, bz})
+		}
+		if light := block.LightLevel(); light != 0 {
+			c.pendingLightOperations.Push(blockLightAdd{bx, by, bz, light})
+		} else {
+			c.pendingLightOperations.Push(blockAdd{bx, by, bz})
+		}
+		section.Type[ind] = blType
+	}
 
 	if section.blocks == 0 && section.skyLights == 0 && section.blockLights == 0 {
 		c.SubChunks[sec] = nil
@@ -180,7 +173,6 @@ func (c *Chunk) Block(x, y, z int) byte {
 	}
 }
 func (c *Chunk) SetMeta(x, y, z int, data byte) {
-	c.needsRelight = true
 	sec := y >> 4
 	section := c.SubChunks[sec]
 	if section == nil {
@@ -358,32 +350,24 @@ func (c *Chunk) HeightX(x, z int) int32 {
 
 func CreateChunk(x, z int32) *Chunk {
 	chunk := &Chunk{
-		X:              x,
-		Z:              z,
-		SubChunks:      make([]*SubChunk, 16),
-		biome:          make([]byte, 16*16),
-		Players:        make(map[string]soulsand.Player),
-		Entitys:        make(map[int32]soulsand.Entity),
-		requests:       make(chan *ChunkRequest, 500),
-		watcherJoin:    make(chan *chunkWatcherRequest, 200),
-		watcherLeave:   make(chan *chunkWatcherRequest, 200),
-		entityJoin:     make(chan *chunkEntityRequest, 200),
-		entityLeave:    make(chan *chunkEntityRequest, 200),
-		messageChannel: make(chan *chunkMessage, 1000),
-		eventChannel:   make(chan func(soulsand.SyncChunk), 500),
-		blockQueue:     make([]blockChange, 0, 3),
-		heightMap:      make([]int32, 16*16),
-		lights:         make(map[blockPosition]byte),
-		skyLights:      make(map[blockPosition]byte),
+		X:                      x,
+		Z:                      z,
+		SubChunks:              make([]*SubChunk, 16),
+		biome:                  make([]byte, 16*16),
+		Players:                make(map[string]soulsand.Player),
+		Entitys:                make(map[int32]soulsand.Entity),
+		requests:               make(chan *ChunkRequest, 500),
+		watcherJoin:            make(chan *chunkWatcherRequest, 200),
+		watcherLeave:           make(chan *chunkWatcherRequest, 200),
+		entityJoin:             make(chan *chunkEntityRequest, 200),
+		entityLeave:            make(chan *chunkEntityRequest, 200),
+		messageChannel:         make(chan *chunkMessage, 1000),
+		eventChannel:           make(chan func(soulsand.SyncChunk), 500),
+		blockQueue:             make([]blockChange, 0, 3),
+		heightMap:              make([]int32, 16*16),
+		pendingLightOperations: util.NewStack(2000),
+		brokenLights:           util.NewQueue(),
 	}
-	chunk.lightInfo.north = make(map[uint16]byte)
-	chunk.lightInfo.south = make(map[uint16]byte)
-	chunk.lightInfo.east = make(map[uint16]byte)
-	chunk.lightInfo.west = make(map[uint16]byte)
-	chunk.lightInfo.northSky = make(map[uint16]byte)
-	chunk.lightInfo.southSky = make(map[uint16]byte)
-	chunk.lightInfo.eastSky = make(map[uint16]byte)
-	chunk.lightInfo.westSky = make(map[uint16]byte)
 	return chunk
 }
 
