@@ -87,6 +87,20 @@ func GetPlayer(name string) soulsand.Player {
 	return <-res
 }
 
+func GetPlayers() []soulsand.Player {
+	res := make(chan []soulsand.Player)
+	channel <- func() {
+		out := make([]soulsand.Player, len(playersByName))
+		i := 0
+		for _, player := range playersByName {
+			out[i] = player
+			i++
+		}
+		res <- out
+	}
+	return <-res
+}
+
 func GetFreeEntityID(e soulsand.Entity) int32 {
 	res := make(chan int32, 1)
 	channel <- func() {

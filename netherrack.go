@@ -121,6 +121,10 @@ func (server *Server) GetPlayer(name string) soulsand.Player {
 	return system.GetPlayer(name)
 }
 
+func (server *Server) GetPlayers() []soulsand.Player {
+	return system.GetPlayers()
+}
+
 func (server *Server) SetMessageOfTheDay(message string) {
 	server.event <- func() {
 		server.ListPing.MessageOfTheDay = message

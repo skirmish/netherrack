@@ -289,7 +289,13 @@ type blockAdd struct {
 
 func (ba blockAdd) Execute(chunk *Chunk) {
 	//TODO: Skylight stuff
-	chunk.SetBlockLight(int(ba.x), int(ba.y), int(ba.z), 0)
+	x, y, z := int(ba.x), int(ba.y), int(ba.z)
+	block := blocks.GetBlockById(chunk.Block(x, y, z))
+	light := int8(chunk.BlockLight(x, y, z)) - int8(block.LightFiltered())
+	if light < 0 {
+		light = 0
+	}
+	chunk.SetBlockLight(x, y, z, 0)
 
 	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{ba.x - 1, ba.y, ba.z})
 	chunk.pendingLightOperations.Push(blockLightRemoveUpdate{ba.x + 1, ba.y, ba.z})
