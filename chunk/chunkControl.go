@@ -44,6 +44,12 @@ func chunkController(chunk *Chunk) {
 					break reqs
 				}
 			}
+		case req := <-chunk.lightChannel:
+			if req.blockLight {
+				req.ret <- chunk.BlockLight(int(req.x), int(req.y), int(req.z))
+			} else {
+				req.ret <- chunk.SkyLight(int(req.x), int(req.y), int(req.z))
+			}
 		case cwr := <-chunk.watcherJoin:
 			chunk.Players[cwr.P.Name()] = cwr.P
 			for _, e := range chunk.Entitys {
@@ -103,7 +109,8 @@ func chunkController(chunk *Chunk) {
 					len(chunk.entityLeave) == 0 &&
 					len(chunk.messageChannel) == 0 &&
 					len(chunk.requests) == 0 &&
-					len(chunk.watcherLeave) == 0 {
+					len(chunk.watcherLeave) == 0 &&
+					len(chunk.lightChannel) == 0 {
 					posChan <- &ChunkPosition{chunk.X, chunk.Z}
 					runtime.Goexit()
 				} else {

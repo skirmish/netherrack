@@ -45,7 +45,7 @@ func NewWorld(name string) *World {
 		chunkLeaveWatcherChannel: make(chan *chunkWatcherRequest, 500),
 		chunkMessageChannel:      make(chan *chunkMessage, 5000),
 		chunkKillChannel:         make(chan chan *ChunkPosition),
-		chunkEventChannel:        make(chan chunkEvent, 5000),
+		chunkEventChannel:        make(chan chunkEvent, 50000),
 		worldEventChannel:        make(chan func(soulsand.World), 200),
 		players:                  make(map[string]soulsand.Player),
 		chunks:                   make(map[ChunkPosition]*Chunk),
@@ -281,6 +281,14 @@ func (world *World) getChunk(cp ChunkPosition) *Chunk {
 		world.chunks[cp] = ch
 	}
 	return ch
+}
+
+func (world *World) grabChunk(x, z int32) *Chunk {
+	ret := make(chan *Chunk, 1)
+	world.worldEventChannel <- func(soulsand.World) {
+		ret <- world.getChunk(ChunkPosition{x, z})
+	}
+	return <-ret
 }
 
 func (world *World) chunkExists(x, z int32) bool {

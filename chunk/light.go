@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/blocks"
 )
 
@@ -10,14 +11,43 @@ type lightOperation interface {
 
 func getBlockLightLocal(chunk *Chunk, x, y, z int) byte {
 	if x < 0 || x > 15 || z < 0 || z > 15 || y < 0 || y > 255 {
+		if x < 0 || x > 15 || z < 0 || z > 15 {
+			cx, cz := ((chunk.X<<4)+int32(x))>>4, ((chunk.Z<<4)+int32(z))>>4
+			if chunk.World.chunkLoaded(cx, cz) {
+				otherChunk := chunk.World.grabChunk(cx, cz)
+				ret := make(chan byte, 1)
+				otherChunk.lightChannel <- chunkLightRequest{
+					byte(chunk.X<<4 + int32(x) - cx<<4), byte(y), byte(chunk.Z<<4 + int32(z) - cz<<4),
+					true,
+					ret,
+				}
+				for {
+					select {
+					case light := <-ret:
+						return light
+					case req := <-chunk.lightChannel:
+						if req.blockLight {
+							req.ret <- chunk.BlockLight(int(req.x), int(req.y), int(req.z))
+						} else {
+							req.ret <- chunk.SkyLight(int(req.x), int(req.y), int(req.z))
+						}
+					case f := <-chunk.eventChannel:
+						f(chunk)
+					}
+				}
+			}
+			return 0
+		}
 		return 0
 	}
 	return chunk.BlockLight(x, y, z)
 }
 
 type blockLightAdd struct {
-	x, y, z byte
-	light   byte
+	x     int8
+	y     byte
+	z     int8
+	light byte
 }
 
 func (bla blockLightAdd) Execute(chunk *Chunk) {
@@ -32,11 +62,28 @@ func (bla blockLightAdd) Execute(chunk *Chunk) {
 }
 
 type blockLightUpdate struct {
-	x, y, z byte
+	x int8
+	y byte
+	z int8
 }
 
 func (blu blockLightUpdate) Execute(chunk *Chunk) {
-	if blu.x < 0 || blu.x > 15 || blu.z < 0 || blu.z > 15 || blu.z < 0 || blu.z > 255 {
+	if blu.y < 0 || blu.y > 255 {
+		return
+	}
+	if blu.x < 0 || blu.x > 15 || blu.z < 0 || blu.z > 15 {
+		x, z := int(blu.x), int(blu.z)
+		cx, cz := ((chunk.X<<4)+int32(x))>>4, ((chunk.Z<<4)+int32(z))>>4
+		if chunk.World.chunkLoaded(cx, cz) {
+			chunk.World.RunSync(int(cx), int(cz), func(oc soulsand.SyncChunk) {
+				otherChunk := oc.(*Chunk)
+				blu.x = int8(chunk.X<<4 + int32(x) - cx<<4)
+				blu.z = int8(chunk.Z<<4 + int32(z) - cz<<4)
+				//otherChunk.pendingLightOperations.Push(blu)
+				blu.Execute(otherChunk)
+			})
+			return
+		}
 		return
 	}
 
@@ -109,7 +156,9 @@ func (blu blockLightUpdate) Execute(chunk *Chunk) {
 }
 
 type blockLightRemove struct {
-	x, y, z byte
+	x int8
+	y byte
+	z int8
 }
 
 func (blr blockLightRemove) Execute(chunk *Chunk) {
@@ -124,11 +173,27 @@ func (blr blockLightRemove) Execute(chunk *Chunk) {
 }
 
 type blockLightRemoveUpdate struct {
-	x, y, z byte
+	x int8
+	y byte
+	z int8
 }
 
 func (blu blockLightRemoveUpdate) Execute(chunk *Chunk) {
-	if blu.x < 0 || blu.x > 15 || blu.z < 0 || blu.z > 15 || blu.z < 0 || blu.z > 255 {
+	if blu.y < 0 || blu.y > 255 {
+		return
+	}
+	if blu.x < 0 || blu.x > 15 || blu.z < 0 || blu.z > 15 {
+		x, z := int(blu.x), int(blu.z)
+		cx, cz := ((chunk.X<<4)+int32(x))>>4, ((chunk.Z<<4)+int32(z))>>4
+		if chunk.World.chunkLoaded(cx, cz) {
+			chunk.World.RunSync(int(cx), int(cz), func(oc soulsand.SyncChunk) {
+				otherChunk := oc.(*Chunk)
+				blu.x = int8(chunk.X<<4 + int32(x) - cx<<4)
+				blu.z = int8(chunk.Z<<4 + int32(z) - cz<<4)
+				//otherChunk.pendingLightOperations.Push(blu)
+				blu.Execute(otherChunk)
+			})
+		}
 		return
 	}
 
@@ -175,7 +240,7 @@ func (blu blockLightRemoveUpdate) Execute(chunk *Chunk) {
 		return
 	}
 
-	if light := chunk.BlockLight(x, y, z); light < byte(newLight) {
+	if light := chunk.BlockLight(x, y, z); light <= byte(newLight) {
 		return
 	}
 
@@ -206,7 +271,9 @@ func (blu blockLightRemoveUpdate) Execute(chunk *Chunk) {
 }
 
 type blockRemove struct {
-	x, y, z byte
+	x int8
+	y byte
+	z int8
 }
 
 func (br blockRemove) Execute(chunk *Chunk) {
@@ -215,7 +282,9 @@ func (br blockRemove) Execute(chunk *Chunk) {
 }
 
 type blockAdd struct {
-	x, y, z byte
+	x int8
+	y byte
+	z int8
 }
 
 func (ba blockAdd) Execute(chunk *Chunk) {

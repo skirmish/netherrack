@@ -24,6 +24,7 @@ type Chunk struct {
 	entityLeave            chan *chunkEntityRequest
 	messageChannel         chan *chunkMessage
 	eventChannel           chan func(soulsand.SyncChunk)
+	lightChannel           chan chunkLightRequest
 	blockQueue             []blockChange
 	heightMap              []int32
 	needsSave              bool
@@ -35,22 +36,15 @@ type SubChunk struct {
 	MetaData    []byte
 	BlockLight  []byte
 	SkyLight    []byte
-	blocks      uint
-	blockLights uint
-	skyLights   uint
+	blocks      int32
+	blockLights int32
+	skyLights   int32
 }
 
-type blockPosition uint32
-
-func createBlockPosition(x, y, z int) blockPosition {
-	return blockPosition(uint32(x) | uint32(z)<<4 | uint32(y)<<8)
-}
-
-func (bp blockPosition) Position() (x, y, z int) {
-	x = int(bp & 0xF)
-	z = int((bp >> 4) & 0xF)
-	y = int((bp >> 8) & 0xFF)
-	return
+type chunkLightRequest struct {
+	x, y, z    byte
+	blockLight bool
+	ret        chan byte
 }
 
 type ChunkPosition struct {
@@ -144,7 +138,7 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 	if section.Type[ind] != blType {
 		oldBlock := blocks.GetBlockById(section.Type[ind])
 		block := blocks.GetBlockById(blType)
-		bx, by, bz := byte(x), byte(y), byte(z)
+		bx, by, bz := int8(x), byte(y), int8(z)
 		if light := oldBlock.LightLevel(); light != 0 {
 			c.pendingLightOperations.Push(blockLightRemove{bx, by, bz})
 		} else {
@@ -362,7 +356,8 @@ func CreateChunk(x, z int32) *Chunk {
 		entityJoin:             make(chan *chunkEntityRequest, 200),
 		entityLeave:            make(chan *chunkEntityRequest, 200),
 		messageChannel:         make(chan *chunkMessage, 1000),
-		eventChannel:           make(chan func(soulsand.SyncChunk), 500),
+		eventChannel:           make(chan func(soulsand.SyncChunk), 5000),
+		lightChannel:           make(chan chunkLightRequest, 8),
 		blockQueue:             make([]blockChange, 0, 3),
 		heightMap:              make([]int32, 16*16),
 		pendingLightOperations: util.NewStack(2000),
