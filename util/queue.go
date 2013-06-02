@@ -15,7 +15,7 @@ type queue struct {
 
 type node struct {
 	value interface{}
-	next  *node
+	link  *node
 }
 
 func NewQueue() Queue {
@@ -28,14 +28,14 @@ func (q *queue) Add(value interface{}) {
 		q.next = n
 	}
 	if q.head != nil {
-		q.head.next = n
+		q.head.link = n
 	}
 	q.head = n
 }
 
 func (q *queue) Remove() interface{} {
 	val := q.next
-	q.next = q.next.next
+	q.next = q.next.link
 	if q.next == nil {
 		q.head = nil
 	}
