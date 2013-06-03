@@ -194,9 +194,9 @@ func (chunk *Chunk) toCompressedBytes(full bool) [][]byte {
 						idx := i2 >> 1
 						var light byte
 						if i2&1 == 0 {
-							light = chunk.SubChunks[i].BlockLight[idx] & 0xF
+							light = chunk.SubChunks[i].SkyLight[idx] & 0xF
 						} else {
-							light = chunk.SubChunks[i].BlockLight[idx] >> 4
+							light = chunk.SubChunks[i].SkyLight[idx] >> 4
 						}
 						if light != 0 {
 							b[i2] = lightBlockMap[light]

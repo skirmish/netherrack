@@ -21,20 +21,20 @@ func (dg defaultGenerator) Generate(x, z int, chunk soulsand.SyncChunk) {
 }
 
 func (defaultGenerator) GenerateBlock(x, z int, chunk soulsand.SyncChunk, block byte) {
-	for y := 0; y < 256; y++ {
-		for x := 0; x < 16; x++ {
-			for z := 0; z < 16; z++ {
-				if y <= 64 {
-					chunk.SetBlock(x, y, z, block)
-					if x == 0 || x == 15 || z == 0 || z == 15 {
-						chunk.SetMeta(x, y, z, 1)
-					} else {
-						chunk.SetMeta(x, y, z, byte((y>>4)+4))
-					}
+
+	for x := 0; x < 16; x++ {
+		for z := 0; z < 16; z++ {
+			for y := 64; y >= 0; y-- {
+				chunk.SetBlock(x, y, z, block)
+				if x == 0 || x == 15 || z == 0 || z == 15 {
+					chunk.SetMeta(x, y, z, 1)
+				} else {
+					chunk.SetMeta(x, y, z, byte((y>>4)+4))
 				}
 			}
 		}
 	}
+
 	for x := 0; x < 16; x++ {
 		for z := 0; z < 16; z++ {
 			chunk.SetBiome(x, z, 1)

@@ -141,12 +141,12 @@ func (c *Chunk) SetBlock(x, y, z int, blType byte) {
 		bx, by, bz := int8(x), byte(y), int8(z)
 		if light := oldBlock.LightLevel(); light != 0 {
 			c.pendingLightOperations.Push(blockLightRemove{bx, by, bz})
-		} else {
+		} else if oldBlock.Id() != 0 {
 			c.pendingLightOperations.Push(blockRemove{bx, by, bz})
 		}
 		if light := block.LightLevel(); light != 0 {
 			c.pendingLightOperations.Push(blockLightAdd{bx, by, bz, light})
-		} else {
+		} else if blType != 0 {
 			c.pendingLightOperations.Push(blockAdd{bx, by, bz})
 		}
 		section.Type[ind] = blType
@@ -325,23 +325,6 @@ func (c *Chunk) Height(x, z int) int32 {
 	return c.heightMap[x|z<<4]
 }
 
-func (c *Chunk) HeightX(x, z int) int32 {
-	if x >= 0 && x < 16 && z >= 0 && z < 16 {
-		return c.Height(x, z)
-	}
-	/*x, z = (int(c.X)<<4)+x, (int(c.Z)<<4)+z
-	cx, cz := x>>4, z>>4
-	if c.World.chunkLoaded(int32(cx), int32(cz)) {
-		ret := make(chan int32, 1)
-		c.World.RunSync(cx, cz, func(otherC soulsand.SyncChunk) {
-			ret <- otherC.(*Chunk).Height(x-(cx<<4), z-(cz<<4))
-		})
-		return <-ret
-	} else {*/
-	return 255
-	/*}*/
-}
-
 func CreateChunk(x, z int32) *Chunk {
 	chunk := &Chunk{
 		X:                      x,
@@ -360,7 +343,7 @@ func CreateChunk(x, z int32) *Chunk {
 		lightChannel:           make(chan chunkLightRequest, 8),
 		blockQueue:             make([]blockChange, 0, 3),
 		heightMap:              make([]int32, 16*16),
-		pendingLightOperations: util.NewStack(2000),
+		pendingLightOperations: util.NewStack(),
 		brokenLights:           util.NewQueue(),
 	}
 	return chunk
