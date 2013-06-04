@@ -25,6 +25,19 @@ func chunkController(chunk *Chunk) {
 		reset := true
 		select {
 		case cr := <-chunk.requests:
+			//Finish lighting the chunk
+			needsSave := !chunk.pendingLightOperations.IsEmpty()
+			for !chunk.pendingLightOperations.IsEmpty() {
+				op := chunk.pendingLightOperations.Pop().(lightOperation)
+				op.Execute(chunk)
+			}
+			for !chunk.brokenLights.IsEmpty() {
+				chunk.pendingLightOperations.Push(chunk.brokenLights.Remove())
+			}
+			if needsSave && chunk.pendingLightOperations.IsEmpty() {
+				chunk.needsSave = true
+			}
+			//Grab the compressed bytes
 			out := chunk.toCompressedBytes(true)
 			select {
 			case cr.Ret <- out:
