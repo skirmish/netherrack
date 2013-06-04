@@ -196,29 +196,7 @@ func (chunk *Chunk) toCompressedBytes(full bool) [][]byte {
 	//Blocks
 	for i := 0; i < 16; i++ {
 		if chunk.SubChunks[i] != nil {
-			//w.Write(chunk.SubChunks[i].Type)
-			//DEBUG
-			b := make([]byte, 16*16*16)
-			copy(b, chunk.SubChunks[i].Type)
-			for x := 0; x < 16; x++ {
-				for z := 0; z < 16; z++ {
-					for y := 0; y < 16; y++ {
-						i2 := (y << 8) | (z << 4) | x
-						idx := i2 >> 1
-						var light byte
-						if i2&1 == 0 {
-							light = chunk.SubChunks[i].SkyLight[idx] & 0xF
-						} else {
-							light = chunk.SubChunks[i].SkyLight[idx] >> 4
-						}
-						if light != 0 {
-							b[i2] = lightBlockMap[light]
-						}
-					}
-				}
-			}
-			w.Write(b)
-			//DEBUG
+			w.Write(chunk.SubChunks[i].Type)
 			mask |= 1 << uint(i)
 		} else if full {
 			w.Write(emptySection.Type)
