@@ -107,7 +107,8 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		}
 		if item := player.inventory.GetHotbarSlot(player.CurrentSlot); item != nil && item.GetID() < 256 {
 			id := byte(item.GetID())
-			player.World.SetBlock(x, y, z, id, 0)
+			data := byte(item.GetData())
+			player.World.SetBlock(x, y, z, id, data)
 			player.PlaySound(float64(x)+0.5, float64(y)+0.5, float64(z)+0.5, blocks.GetBlockById(id).PlacementSound(), 1, 50)
 		}
 	},
