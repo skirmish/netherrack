@@ -2,6 +2,7 @@ package entity
 
 import (
 	"errors"
+	"github.com/NetherrackDev/netherrack/internal"
 	"github.com/NetherrackDev/soulsand"
 )
 
@@ -19,6 +20,26 @@ func (e *Entity) LookSync() (float32, float32) {
 
 func (e *Entity) SetLookSync(yaw, pitch float32) {
 	e.position.Yaw, e.position.Pitch = yaw, pitch
+}
+
+func (e *Entity) VelocitySync() (float64, float64, float64) {
+	return e.velocity.X, e.velocity.Y, e.velocity.Z
+}
+
+func (e *Entity) SetVelocitySync(x, y, z float64) {
+	e.velocity.X, e.velocity.Y, e.velocity.Z = x, y, z
+}
+
+func (e *Entity) WorldSync() soulsand.World {
+	return e.world
+}
+
+func (e *Entity) WorldInternal() internal.World {
+	return e.world
+}
+
+func (e *Entity) SetWorldSync(world soulsand.World) {
+	e.world = world.(internal.World)
 }
 
 func (e *Entity) RunSync(f func(soulsand.SyncEntity)) error {

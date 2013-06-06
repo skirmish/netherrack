@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/NetherrackDev/netherrack/entity/metadata"
+	"github.com/NetherrackDev/netherrack/event"
 	"github.com/NetherrackDev/netherrack/internal"
 	"github.com/NetherrackDev/netherrack/system"
 	"github.com/NetherrackDev/soulsand"
@@ -12,10 +13,12 @@ var _ soulsand.Entity = &Entity{}
 var _ soulsand.SyncEntity = &Entity{}
 
 type Entity struct {
+	event.Source
+
 	EID         int32
 	CurrentTick uint64
 
-	World internal.World
+	world internal.World
 	Chunk struct {
 		X, Z   int32
 		LX, LZ int32
@@ -40,6 +43,8 @@ type Entity struct {
 }
 
 type Spawnable interface {
+	soulsand.Entity
+	soulsand.SyncEntity
 	CreateSpawn() func(soulsand.SyncEntity)
 	CreateDespawn() func(soulsand.SyncEntity)
 }
@@ -87,19 +92,19 @@ func (e *Entity) SendMoveUpdate() (movedChunk bool) {
 	e.position.LastZ = e.position.Z
 
 	if dx >= 4 || dy >= 4 || dz >= 4 || e.CurrentTick%100 == 0 {
-		e.World.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityTeleport(e.ID(), e.position.X, e.position.Y, e.position.Z, e.position.Yaw, e.position.Pitch))
+		e.world.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityTeleport(e.ID(), e.position.X, e.position.Y, e.position.Z, e.position.Yaw, e.position.Pitch))
 	} else {
-		e.World.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityRelativeLookMove(e.ID(), int8(dx), int8(dy), int8(dz), int8(int((e.position.Yaw/180.0)*128)), int8((e.position.Pitch/180.0)*128)))
+		e.world.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityRelativeLookMove(e.ID(), int8(dx), int8(dy), int8(dz), int8(int((e.position.Yaw/180.0)*128)), int8((e.position.Pitch/180.0)*128)))
 	}
 
 	e.Chunk.X = int32(e.position.X) >> 4
 	e.Chunk.Z = int32(e.position.Z) >> 4
 
 	if e.Chunk.X != e.Chunk.LX || e.Chunk.Z != e.Chunk.LZ {
-		e.World.LeaveChunk(e.Chunk.LX, e.Chunk.LZ, e)
-		e.World.JoinChunk(e.Chunk.X, e.Chunk.Z, e)
-		e.World.SendChunkMessage(e.Chunk.LX, e.Chunk.LZ, e.ID(), entityTryDespawn(e.Chunk.X, e.Chunk.Z, e.CreateDespawn()))
-		e.World.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityTrySpawn(e.Chunk.LX, e.Chunk.LZ, e.CreateSpawn()))
+		e.world.LeaveChunk(e.Chunk.LX, e.Chunk.LZ, e.Spawnable)
+		e.world.JoinChunk(e.Chunk.X, e.Chunk.Z, e.Spawnable)
+		e.world.SendChunkMessage(e.Chunk.LX, e.Chunk.LZ, e.ID(), entityTryDespawn(e.Chunk.X, e.Chunk.Z, e.CreateDespawn()))
+		e.world.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityTrySpawn(e.Chunk.LX, e.Chunk.LZ, e.CreateSpawn()))
 		e.Chunk.LX = e.Chunk.X
 		e.Chunk.LZ = e.Chunk.Z
 		movedChunk = true

@@ -28,7 +28,7 @@ func (e *Entity) SetPosition(x, y, z float64) error {
 	return e.RunSync(func(entity soulsand.SyncEntity) {
 		e.position.X, e.position.Y, e.position.Z = x, y, z
 		e.position.LastX, e.position.LastY, e.position.LastZ = x, y, z
-		e.World.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityTeleport(e.ID(), e.position.X, e.position.Y, e.position.Z, e.position.Yaw, e.position.Pitch))
+		e.world.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityTeleport(e.ID(), e.position.X, e.position.Y, e.position.Z, e.position.Yaw, e.position.Pitch))
 		if player, ok := entity.(interface {
 			UpdatePosition()
 		}); ok {
@@ -63,4 +63,20 @@ func (e *Entity) Velocity() (float64, float64, float64, error) {
 		return out[0], out[1], out[2], err
 	}
 	return 0, 0, 0, err
+}
+
+func (e *Entity) SetWorld(world soulsand.World) error {
+	return e.RunSync(func(soulsand.SyncEntity) {
+		e.SetWorldSync(world)
+	})
+}
+
+func (e *Entity) World() (soulsand.World, error) {
+	val, err := e.CallSync(func(et soulsand.SyncEntity, ret chan interface{}) {
+		ret <- e.WorldSync()
+	})
+	if err != nil {
+		return nil, err
+	}
+	return val.(soulsand.World), nil
 }

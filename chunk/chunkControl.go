@@ -16,7 +16,7 @@ func chunkController(chunk *Chunk) {
 		chunk.World.getRegion(chunk.X>>5, chunk.Z>>5).removeChunk()
 	}()
 	chunk.generate()
-	tOut := time.NewTimer(30 * time.Second)
+	tOut := time.NewTimer(1 * time.Second)
 	defer tOut.Stop()
 	tick := time.NewTicker(time.Second / 10)
 	defer tick.Stop()
@@ -100,12 +100,14 @@ func chunkController(chunk *Chunk) {
 		case cer := <-chunk.entityLeave:
 			delete(chunk.Entitys, cer.E.ID())
 		case msg := <-chunk.messageChannel:
+			reset = false
 			for _, p := range chunk.Players {
 				if p.ID() != msg.ID {
 					p.RunSync(msg.Msg)
 				}
 			}
 		case f := <-chunk.eventChannel:
+			reset = false
 			f(chunk)
 		case <-tOut.C:
 			if len(chunk.Players) == 0 {
@@ -113,21 +115,21 @@ func chunkController(chunk *Chunk) {
 				if chunk.needsSave {
 					chunk.Save()
 				}
-				//Did someone join during save
+				//Did someone join during save?
 				posChan := make(chan *ChunkPosition)
 				chunk.World.chunkKillChannel <- posChan
 				if len(chunk.watcherJoin) == 0 &&
-					len(chunk.eventChannel) == 0 &&
 					len(chunk.entityJoin) == 0 &&
 					len(chunk.entityLeave) == 0 &&
-					len(chunk.messageChannel) == 0 &&
 					len(chunk.requests) == 0 &&
-					len(chunk.watcherLeave) == 0 &&
-					len(chunk.lightChannel) == 0 {
+					len(chunk.watcherLeave) == 0 {
+					for _, e := range chunk.Entitys {
+						e.(interface {
+							Pause()
+						}).Pause()
+					}
 					posChan <- &ChunkPosition{chunk.X, chunk.Z}
 					runtime.Goexit()
-				} else {
-					posChan <- nil
 				}
 			}
 		//TODO: Disable this case if nothing is happening in this chunk
@@ -160,7 +162,9 @@ func chunkController(chunk *Chunk) {
 			}
 		}
 		if reset {
-			tOut.Reset(1 * time.Second)
+			if !tOut.Reset(1 * time.Second) {
+				tOut = time.NewTimer(1 * time.Second)
+			}
 		}
 	}
 }

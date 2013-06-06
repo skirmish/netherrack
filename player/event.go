@@ -19,7 +19,7 @@ func (p *Player) CreateSpawn() func(soulsand.SyncEntity) {
 			int32(x*32),
 			int32(y*32),
 			int32(z*32),
-			int8(int((yaw/180.0)*128)),
+			int8((yaw/180.0)*128),
 			int8((pitch/180.0)*128),
 			0,
 			metadata)

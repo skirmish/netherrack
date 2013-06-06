@@ -23,7 +23,6 @@ import (
 
 type Player struct {
 	entity.Entity
-	event.Source
 
 	connection *protocol.Conn
 	name       string
@@ -60,7 +59,7 @@ type Player struct {
 func init() {
 	command.Add("time set [int]", func(caller soulsand.CommandSender, time int) {
 		if player, ok := caller.(*Player); ok {
-			player.World.SetTime(int64(time))
+			player.WorldInternal().SetTime(int64(time))
 		} else {
 			caller.SendMessageSync("This can only be used by a player")
 		}
@@ -83,7 +82,7 @@ func init() {
 	command.Add("chunk resend", func(caller soulsand.CommandSender) {
 		if player, ok := caller.(*Player); ok {
 			player.RunSync(func(soulsand.SyncEntity) {
-				player.World.GetChunkData(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
+				player.WorldInternal().GetChunkData(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
 			})
 		} else {
 			caller.SendMessageSync("This can only be used by a player")
@@ -121,12 +120,12 @@ func HandlePlayer(conn net.Conn) {
 	player.Entity.Init(player)
 	defer player.Entity.Finalise()
 	defer player.closeConnection()
-	player.World = server.GetWorld("main").(internal.World)
-	player.World.AddPlayer(player)
+	player.SetWorldSync(server.GetWorld("main").(internal.World))
+	player.WorldInternal().AddPlayer(player)
 	defer player.leaveWorld()
 	player.gamemode = server.GetDefaultGamemode()
 
-	spawnX, spawnY, spawnZ := player.World.GetSpawn()
+	spawnX, spawnY, spawnZ := player.WorldInternal().GetSpawn()
 
 	player.SetPositionSync(float64(spawnX), float64(spawnY), float64(spawnZ))
 	x, _, z := player.PositionSync()
@@ -160,7 +159,7 @@ func HandlePlayer(conn net.Conn) {
 
 	defer player.cleanChunks()
 
-	player.World.JoinChunk(player.Chunk.X, player.Chunk.Z, player)
+	player.WorldInternal().JoinChunk(player.Chunk.X, player.Chunk.Z, player)
 	player.spawn()
 	defer player.despawn()
 
@@ -210,15 +209,15 @@ func (player *Player) loop() {
 }
 
 func (p *Player) leaveWorld() {
-	p.World.RemovePlayer(p)
+	p.WorldInternal().RemovePlayer(p)
 }
 
 func (player *Player) cleanChunks() {
-	player.World.LeaveChunk(player.Chunk.X, player.Chunk.Z, player)
+	player.WorldInternal().LeaveChunk(player.Chunk.X, player.Chunk.Z, player)
 	vd := int32(player.settings.viewDistance)
 	for x := player.Chunk.X - vd; x < player.Chunk.X+vd+1; x++ {
 		for z := player.Chunk.Z - vd; z < player.Chunk.Z+vd+1; z++ {
-			player.World.LeaveChunkAsWatcher(x, z, player)
+			player.WorldInternal().LeaveChunkAsWatcher(x, z, player)
 		}
 	}
 	log.Println("Player disconnected")
@@ -235,7 +234,7 @@ func (p *Player) SendMoveUpdate() {
 		for x := lx - vd; x < lx+vd+1; x++ {
 			for z := lz - vd; z < lz+vd+1; z++ {
 				if x < p.Chunk.X-vd || x >= p.Chunk.X+vd+1 || z < p.Chunk.Z-vd || z >= p.Chunk.Z+vd+1 {
-					p.World.LeaveChunkAsWatcher(x, z, p)
+					p.WorldInternal().LeaveChunkAsWatcher(x, z, p)
 					p.connection.WriteChunkDataUnload(x, z)
 				}
 			}
@@ -243,8 +242,8 @@ func (p *Player) SendMoveUpdate() {
 		for x := p.Chunk.X - vd; x < p.Chunk.X+vd+1; x++ {
 			for z := p.Chunk.Z - vd; z < p.Chunk.Z+vd+1; z++ {
 				if x < lx-vd || x >= lx+vd+1 || z < lz-vd || z >= lz+vd+1 {
-					p.World.GetChunkData(x, z, p.ChunkChannel, p.EntityDead)
-					p.World.JoinChunkAsWatcher(x, z, p)
+					p.WorldInternal().GetChunkData(x, z, p.ChunkChannel, p.EntityDead)
+					p.WorldInternal().JoinChunkAsWatcher(x, z, p)
 				}
 			}
 		}
@@ -256,24 +255,24 @@ func (p *Player) chunkReload(old int) {
 		for x := p.Chunk.X - int32(old); x < p.Chunk.X+int32(old)+1; x++ {
 			for z := p.Chunk.Z - int32(old); z < p.Chunk.Z+int32(old)+1; z++ {
 				p.connection.WriteChunkDataUnload(x, z)
-				p.World.LeaveChunkAsWatcher(x, z, p)
+				p.WorldInternal().LeaveChunkAsWatcher(x, z, p)
 			}
 		}
 	}
 	for x := p.Chunk.X - int32(p.settings.viewDistance); x < p.Chunk.X+int32(p.settings.viewDistance)+1; x++ {
 		for z := p.Chunk.Z - int32(p.settings.viewDistance); z < p.Chunk.Z+int32(p.settings.viewDistance)+1; z++ {
-			p.World.GetChunkData(x, z, p.ChunkChannel, p.EntityDead)
-			p.World.JoinChunkAsWatcher(x, z, p)
+			p.WorldInternal().GetChunkData(x, z, p.ChunkChannel, p.EntityDead)
+			p.WorldInternal().JoinChunkAsWatcher(x, z, p)
 		}
 	}
 }
 
 func (p *Player) spawn() {
-	p.World.SendChunkMessage(p.Chunk.X, p.Chunk.Z, p.ID(), p.CreateSpawn())
+	p.WorldInternal().SendChunkMessage(p.Chunk.X, p.Chunk.Z, p.ID(), p.CreateSpawn())
 }
 
 func (p *Player) despawn() {
-	p.World.SendChunkMessage(p.Chunk.X, p.Chunk.Z, p.ID(), p.CreateDespawn())
+	p.WorldInternal().SendChunkMessage(p.Chunk.X, p.Chunk.Z, p.ID(), p.CreateDespawn())
 }
 
 func (p *Player) dataWatcher() {

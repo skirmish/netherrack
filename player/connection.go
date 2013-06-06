@@ -66,7 +66,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		y := int(by)
 		z := int(bz)
 
-		player.World.RunSync(x>>4, z>>4, func(ch soulsand.SyncChunk) {
+		player.WorldInternal().RunSync(x>>4, z>>4, func(ch soulsand.SyncChunk) {
 			chunk := ch.(interface {
 				GetPlayerMap() map[string]soulsand.Player
 			})
@@ -81,7 +81,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 				}
 			}
 		})
-		player.World.SetBlock(x, y, z, 0, 0)
+		player.WorldInternal().SetBlock(x, y, z, 0, 0)
 	},
 	0x0F: func(c *protocol.Conn, player *Player) { //Player Block Placement
 		bx, by, bz, direction, _, _, _ := c.ReadPlayerBlockPlacement()
@@ -108,7 +108,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		if item := player.inventory.GetHotbarSlot(player.CurrentSlot); item != nil && item.GetID() < 256 {
 			id := byte(item.GetID())
 			data := byte(item.GetData())
-			player.World.SetBlock(x, y, z, id, data)
+			player.WorldInternal().SetBlock(x, y, z, id, data)
 			player.PlaySound(float64(x)+0.5, float64(y)+0.5, float64(z)+0.5, blocks.GetBlockById(id).PlacementSound(), 1, 50)
 		}
 	},

@@ -29,7 +29,7 @@ func init() {
 	locale.Load("data/lang")
 	server := &Server{}
 	server.init()
-	soulsand.SetServer(server, &provider{})
+	soulsand.SetServer(server, provider{})
 
 	command.Add("safestop", func(sender soulsand.CommandSender) {
 		sender.SendMessageSync("Waiting for worlds to empty")
