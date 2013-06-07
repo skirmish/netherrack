@@ -4,8 +4,8 @@ import (
 	"github.com/NetherrackDev/netherrack/entity"
 	"github.com/NetherrackDev/netherrack/entity/metadata"
 	"github.com/NetherrackDev/netherrack/internal"
+	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/soulsand"
-	"log"
 	"runtime"
 	"time"
 )

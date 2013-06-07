@@ -3,6 +3,7 @@ package netherrack
 import (
 	"github.com/NetherrackDev/netherrack/chunk"
 	"github.com/NetherrackDev/netherrack/event"
+	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/network"
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/system"
@@ -10,7 +11,6 @@ import (
 	"github.com/NetherrackDev/soulsand/command"
 	"github.com/NetherrackDev/soulsand/gamemode"
 	"github.com/NetherrackDev/soulsand/locale"
-	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -24,7 +24,7 @@ import (
 var _ soulsand.Server = &Server{}
 
 func init() {
-	log.SetFlags(log.Lshortfile | log.Ltime)
+	//log.SetFlags(log.Lshortfile | log.Ltime)
 	setDefaultLocaleStrings()
 	locale.Load("data/lang")
 	server := &Server{}

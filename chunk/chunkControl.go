@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"compress/zlib"
 	"github.com/NetherrackDev/netherrack/entity"
+	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/blocks"
-	"log"
 	"runtime"
 	"time"
 )

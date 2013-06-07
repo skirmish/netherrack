@@ -3,9 +3,9 @@ package system
 import (
 	"fmt"
 	"github.com/NetherrackDev/netherrack/event"
+	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/locale"
-	"log"
 )
 
 func init() {
@@ -38,7 +38,7 @@ func GetEntityCount() int {
 
 func Broadcast(message string) {
 	channel <- func() {
-		log.Println(message)
+		log.MCPrintln(message)
 		for _, p := range playersByName {
 			p.SendMessage(message)
 		}

@@ -4,9 +4,9 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"errors"
+	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/nbt"
 	"io"
-	"log"
 	"os"
 )
 
