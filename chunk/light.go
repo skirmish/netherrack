@@ -27,6 +27,9 @@ func getLightLocal(chunk *Chunk, x, y, z int, sky bool) (light byte) {
 			cx, cz := ((chunk.X<<4)+int32(x))>>4, ((chunk.Z<<4)+int32(z))>>4
 			if chunk.World.chunkLoaded(cx, cz) {
 				otherChunk := chunk.World.grabChunk(cx, cz)
+				if otherChunk == nil {
+					return
+				}
 				ret := make(chan byte, 1)
 				select {
 				case otherChunk.lightChannel <- chunkLightRequest{

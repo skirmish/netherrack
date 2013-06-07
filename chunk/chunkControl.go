@@ -130,6 +130,8 @@ func chunkController(chunk *Chunk) {
 					}
 					posChan <- &ChunkPosition{chunk.X, chunk.Z}
 					runtime.Goexit()
+				} else {
+					posChan <- nil
 				}
 			}
 		//TODO: Disable this case if nothing is happening in this chunk
@@ -150,12 +152,23 @@ func chunkController(chunk *Chunk) {
 				chunk.blockQueue = chunk.blockQueue[0:0]
 			}
 			needsSave := !chunk.pendingLightOperations.IsEmpty()
+			count := 0
 			for !chunk.pendingLightOperations.IsEmpty() {
 				op := chunk.pendingLightOperations.Pop().(lightOperation)
 				op.Execute(chunk)
+				count++
+				if count == 500 {
+					runtime.Gosched()
+					count = 0
+				}
 			}
 			for !chunk.brokenLights.IsEmpty() {
 				chunk.pendingLightOperations.Push(chunk.brokenLights.Remove())
+				count++
+				if count == 500 {
+					runtime.Gosched()
+					count = 0
+				}
 			}
 			if needsSave && chunk.pendingLightOperations.IsEmpty() {
 				chunk.needsSave = true

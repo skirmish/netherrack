@@ -285,8 +285,12 @@ func (world *World) getChunk(cp ChunkPosition) *Chunk {
 
 func (world *World) grabChunk(x, z int32) *Chunk {
 	ret := make(chan *Chunk, 1)
-	world.worldEventChannel <- func(soulsand.World) {
+	select {
+	case world.worldEventChannel <- func(soulsand.World) {
 		ret <- world.getChunk(ChunkPosition{x, z})
+	}:
+	default:
+		return nil //Server is too busy
 	}
 	return <-ret
 }
@@ -305,9 +309,13 @@ func (world *World) chunkExists(x, z int32) bool {
 
 func (world *World) chunkLoaded(x, z int32) bool {
 	ret := make(chan bool, 1)
-	world.worldEventChannel <- func(soulsand.World) {
+	select {
+	case world.worldEventChannel <- func(soulsand.World) {
 		_, ok := world.chunks[ChunkPosition{x, z}]
 		ret <- ok
+	}:
+	default:
+		return false //Server is too busy
 	}
 	return <-ret
 }
