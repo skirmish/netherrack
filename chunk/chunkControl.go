@@ -124,9 +124,12 @@ func chunkController(chunk *Chunk) {
 					len(chunk.requests) == 0 &&
 					len(chunk.watcherLeave) == 0 {
 					for _, e := range chunk.Entitys {
-						e.(interface {
+						pausable, ok := e.(interface {
 							Pause()
-						}).Pause()
+						})
+						if ok {
+							pausable.Pause()
+						}
 					}
 					posChan <- &ChunkPosition{chunk.X, chunk.Z}
 					runtime.Goexit()

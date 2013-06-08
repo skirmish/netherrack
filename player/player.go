@@ -81,9 +81,14 @@ func init() {
 	})
 	command.Add("chunk resend", func(caller soulsand.CommandSender) {
 		if player, ok := caller.(*Player); ok {
-			player.RunSync(func(soulsand.SyncEntity) {
-				player.WorldInternal().GetChunkData(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
-			})
+			player.WorldInternal().GetChunkData(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
+		} else {
+			caller.SendMessageSync("This can only be used by a player")
+		}
+	})
+	command.Add("test [float]", func(caller soulsand.CommandSender, speed float64) {
+		if player, ok := caller.(*Player); ok {
+			player.connection.WritePlayerAbilities(8+4+2+1, 0.05, float32(speed))
 		} else {
 			caller.SendMessageSync("This can only be used by a player")
 		}
@@ -150,6 +155,7 @@ func HandlePlayer(conn net.Conn) {
 	x, y, z := player.PositionSync()
 	yaw, pitch := player.LookSync()
 	player.connection.WritePlayerPositionLook(x, y, z, y+1.6, yaw, pitch, false)
+	player.connection.WritePlayerAbilities(8+4+2+1, 0.05, 0.1)
 
 	log.Printf("Player \"%s\" logged in with %d", player.name, player.EID)
 
