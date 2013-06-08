@@ -184,7 +184,7 @@ func (player *Player) loop() {
 		case f := <-player.EventChannel:
 			f(player)
 		case <-timer.C:
-			player.CurrentTick++
+			player.Tick()
 			if player.CurrentTick%100 == 0 {
 				player.currentTickID = int32(player.CurrentTick)
 				player.connection.WriteKeepAlive(player.currentTickID)

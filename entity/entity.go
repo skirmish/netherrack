@@ -35,7 +35,7 @@ type Entity struct {
 
 	EventChannel chan func(soulsand.SyncEntity)
 	EntityDead   chan struct{}
-	Spawnable
+	Owner        Spawnable
 
 	metadata metadata.Type
 
@@ -43,7 +43,6 @@ type Entity struct {
 }
 
 type Spawnable interface {
-	soulsand.Entity
 	soulsand.SyncEntity
 	CreateSpawn() func(soulsand.SyncEntity)
 	CreateDespawn() func(soulsand.SyncEntity)
@@ -52,7 +51,7 @@ type Spawnable interface {
 func (e *Entity) Init(s Spawnable) {
 	e.EventChannel = make(chan func(soulsand.SyncEntity), 500)
 	e.EntityDead = make(chan struct{}, 1)
-	e.Spawnable = s
+	e.Owner = s
 	e.isActive = true
 	e.EID = system.GetFreeEntityID(e)
 	e.metadata = metadata.Type{
@@ -65,11 +64,16 @@ func (e *Entity) Finalise() {
 	e.kill()
 }
 
+func (e *Entity) Tick() {
+	e.CurrentTick++
+	e.Fire(event.NewEntityTick(e.Owner, e.CurrentTick))
+}
+
 func (e *Entity) kill() {
 	if !e.isActive {
 		return
 	}
-	e.Spawnable = nil
+	e.Owner = nil
 	e.isActive = false
 	system.FreeEntityID(e)
 }
@@ -101,15 +105,23 @@ func (e *Entity) SendMoveUpdate() (movedChunk bool) {
 	e.Chunk.Z = int32(e.position.Z) >> 4
 
 	if e.Chunk.X != e.Chunk.LX || e.Chunk.Z != e.Chunk.LZ {
-		e.world.LeaveChunk(e.Chunk.LX, e.Chunk.LZ, e.Spawnable)
-		e.world.JoinChunk(e.Chunk.X, e.Chunk.Z, e.Spawnable)
-		e.world.SendChunkMessage(e.Chunk.LX, e.Chunk.LZ, e.ID(), entityTryDespawn(e.Chunk.X, e.Chunk.Z, e.CreateDespawn()))
-		e.world.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityTrySpawn(e.Chunk.LX, e.Chunk.LZ, e.CreateSpawn()))
+		e.world.LeaveChunk(e.Chunk.LX, e.Chunk.LZ, e.Owner.(soulsand.Entity))
+		e.world.JoinChunk(e.Chunk.X, e.Chunk.Z, e.Owner.(soulsand.Entity))
+		e.world.SendChunkMessage(e.Chunk.LX, e.Chunk.LZ, e.ID(), entityTryDespawn(e.Chunk.X, e.Chunk.Z, e.Owner.CreateDespawn()))
+		e.world.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityTrySpawn(e.Chunk.LX, e.Chunk.LZ, e.Owner.CreateSpawn()))
 		e.Chunk.LX = e.Chunk.X
 		e.Chunk.LZ = e.Chunk.Z
 		movedChunk = true
 	}
 	return
+}
+
+func (e *Entity) CreateSpawn() func(soulsand.SyncEntity) {
+	return e.Owner.CreateSpawn()
+}
+
+func (e *Entity) CreateDespawn() func(soulsand.SyncEntity) {
+	return e.Owner.CreateDespawn()
 }
 
 func entityTrySpawn(cx, cz int32, f func(soulsand.SyncEntity)) func(soulsand.SyncEntity) {

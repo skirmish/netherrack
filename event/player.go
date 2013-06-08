@@ -17,7 +17,6 @@ type PlayerMessage struct {
 
 func NewMessage(player soulsand.SyncPlayer, message string) (string, *PlayerMessage) {
 	return "EventPlayerMessage", &PlayerMessage{
-		Event:   Event{},
 		player:  player,
 		message: message,
 	}
@@ -44,7 +43,6 @@ type PlayerJoin struct {
 
 func NewJoin(player soulsand.SyncPlayer, reason string) (string, *PlayerJoin) {
 	return "EventPlayerJoin", &PlayerJoin{
-		Event:  Event{},
 		player: player,
 		Reason: reason,
 	}
@@ -67,7 +65,6 @@ type PlayerLeave struct {
 
 func NewLeave(player soulsand.SyncPlayer) (string, *PlayerLeave) {
 	return "EventPlayerLeave", &PlayerLeave{
-		Event:  Event{},
 		player: player,
 	}
 }

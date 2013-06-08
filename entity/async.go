@@ -80,3 +80,22 @@ func (e *Entity) World() (soulsand.World, error) {
 	}
 	return val.(soulsand.World), nil
 }
+
+func (e *Entity) SetLook(yaw, pitch float32) error {
+	return e.RunSync(func(soulsand.SyncEntity) {
+		e.SetLookSync(yaw, pitch)
+	})
+}
+
+func (e *Entity) Look() (float32, float32, error) {
+	val, err := e.CallSync(func(et soulsand.SyncEntity, ret chan interface{}) {
+		y, p := e.LookSync()
+		res := []float32{y, p}
+		ret <- res
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+	res := val.([]float32)
+	return res[0], res[1], nil
+}

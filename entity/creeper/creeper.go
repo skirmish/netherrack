@@ -57,7 +57,7 @@ func (creeper *Type) loop() {
 		case f := <-creeper.EventChannel:
 			f(creeper)
 		case <-timer.C:
-			creeper.CurrentTick++
+			creeper.Tick()
 			creeper.SendMoveUpdate()
 		}
 	}
