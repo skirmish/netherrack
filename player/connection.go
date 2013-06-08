@@ -122,6 +122,9 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 	0x13: func(c *protocol.Conn, player *Player) { //Entity Action
 		c.ReadEntityAction()
 	},
+	0x1B: func(c *protocol.Conn, player *Player) { //Steer Vehicle (0x1B)
+		c.ReadSteerVehicle()
+	},
 	0x65: func(c *protocol.Conn, player *Player) { //Close Window
 		id := c.ReadCloseWindow()
 		if id == 5 && player.openInventory != nil {

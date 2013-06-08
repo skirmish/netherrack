@@ -51,6 +51,7 @@ func (c *Conn) ReadHandshake() (protoVersion byte, username, host string, port i
 //Chat Message (0x03)
 
 func (c *Conn) WriteChatMessage(message string) {
+	return
 	messageRunes := []rune(message)
 	out := NewByteWriter(1 + 2 + len(messageRunes)*2)
 	out.WriteUByte(0x03)
@@ -132,10 +133,10 @@ func (c *Conn) ReadUseEntity() (user, target int32, mouseButton bool) {
 
 //Update Health (0x08)
 
-func (c *Conn) WriteUpdateHealth(health, food int16, foodSatiration float32) {
-	out := NewByteWriter(1 + 2 + 2 + 4)
+func (c *Conn) WriteUpdateHealth(health float32, food int16, foodSatiration float32) {
+	out := NewByteWriter(1 + 4 + 2 + 4)
 	out.WriteUByte(0x08)
-	out.WriteShort(health)
+	out.WriteFloat(health)
 	out.WriteShort(food)
 	out.WriteFloat(foodSatiration)
 	c.Write(out.Bytes())
@@ -280,6 +281,7 @@ func (c *Conn) ReadAnimation() (eId int32, animation int8) {
 func (c *Conn) ReadEntityAction() (eId int32, actionID int8) {
 	eId = c.readInt()
 	actionID = c.readByte()
+	_ = c.readInt()
 	return
 }
 
@@ -382,6 +384,16 @@ func (c *Conn) WriteSpawnExperienceOrb(eId, x, y, z int32, count int16) {
 	out.WriteInt(z)
 	out.WriteShort(count)
 	c.Write(out.Bytes())
+}
+
+//Steer Vehicle (0x1B)
+
+func (c *Conn) ReadSteerVehicle() (sideways, forward float32, jump, unmount bool) {
+	sideways = c.readFloat()
+	forward = c.readFloat()
+	jump = c.readBool()
+	unmount = c.readBool()
+	return
 }
 
 //Entity Velocity (0x1C)
@@ -490,11 +502,12 @@ func (c *Conn) WriteEntityStatus(eId int32, entityStatus int8) {
 
 //Attach Entity (0x27)
 
-func (c *Conn) WriteAttachEntity(eId, vId int32) {
-	out := NewByteWriter(1 + 4 + 4)
+func (c *Conn) WriteAttachEntity(eId, vId int32, leash bool) {
+	out := NewByteWriter(1 + 4 + 4 + 1)
 	out.WriteUByte(0x27)
 	out.WriteInt(eId)
 	out.WriteInt(vId)
+	out.WriteBool(leash)
 	c.Write(out.Bytes())
 }
 
@@ -539,6 +552,23 @@ func (c *Conn) WriteSetExperience(experienceBar float32, level, totalExperience 
 	out.WriteShort(level)
 	out.WriteShort(totalExperience)
 	c.Write(out.Bytes())
+}
+
+//Entity Properties (0x2C)
+
+func (c *Conn) WriteEntityProperties(eId int32, na map[string]int64) {
+	out := NewByteWriter(1 + 4 + 4)
+	out.WriteUByte(0x2C)
+	out.WriteInt(eId)
+	out.WriteInt(int32(len(na)))
+	c.Write(out.Bytes())
+	for key, value := range na {
+		keyRunes := []rune(key)
+		out := NewByteWriter(2 + len(keyRunes)*2 + 8)
+		out.WriteString(keyRunes)
+		out.WriteLong(value)
+		c.Write(out.Bytes())
+	}
 }
 
 //Chunk Data (0x33)
@@ -996,19 +1026,19 @@ func (c *Conn) WritePlayerListItem(playerName string, online bool, ping int16) {
 
 //Player Abilities (0xCA)
 
-func (c *Conn) WritePlayerAbilities(flags, flyingSpeed, walkingSpeed int8) {
-	out := NewByteWriter(1 + 1 + 1 + 1)
+func (c *Conn) WritePlayerAbilities(flags int8, flyingSpeed, walkingSpeed float32) {
+	out := NewByteWriter(1 + 1 + 4 + 4)
 	out.WriteUByte(0xCA)
 	out.WriteByte(flags)
-	out.WriteByte(flyingSpeed)
-	out.WriteByte(walkingSpeed)
+	out.WriteFloat(flyingSpeed)
+	out.WriteFloat(walkingSpeed)
 	c.Write(out.Bytes())
 }
 
-func (c *Conn) ReadPlayerAbilities() (flags, flyingSpeed, walkingSpeed int8) {
+func (c *Conn) ReadPlayerAbilities() (flags int8, flyingSpeed, walkingSpeed float32) {
 	flags = c.readByte()
-	flyingSpeed = c.readByte()
-	walkingSpeed = c.readByte()
+	flyingSpeed = c.readFloat()
+	walkingSpeed = c.readFloat()
 	return
 }
 
