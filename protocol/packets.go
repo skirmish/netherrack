@@ -564,7 +564,7 @@ func (c *Conn) WriteSetExperience(experienceBar float32, level, totalExperience 
 
 //Entity Properties (0x2C)
 
-func (c *Conn) WriteEntityProperties(eId int32, na map[string]int64) {
+func (c *Conn) WriteEntityProperties(eId int32, na map[string]float64) {
 	out := NewByteWriter(1 + 4 + 4)
 	out.WriteUByte(0x2C)
 	out.WriteInt(eId)
@@ -574,7 +574,7 @@ func (c *Conn) WriteEntityProperties(eId int32, na map[string]int64) {
 		keyRunes := []rune(key)
 		out := NewByteWriter(2 + len(keyRunes)*2 + 8)
 		out.WriteString(keyRunes)
-		out.WriteLong(value)
+		out.WriteDouble(value)
 		c.Write(out.Bytes())
 	}
 }
