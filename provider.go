@@ -4,7 +4,9 @@ import (
 	"github.com/NetherrackDev/netherrack/entity/creeper"
 	"github.com/NetherrackDev/netherrack/inventory"
 	"github.com/NetherrackDev/netherrack/items"
+	"github.com/NetherrackDev/netherrack/metadata"
 	"github.com/NetherrackDev/soulsand"
+	"reflect"
 )
 
 type provider struct{}
@@ -31,4 +33,8 @@ func (p provider) CreateItemStack(id, data int16, count byte) soulsand.ItemStack
 
 func (p provider) NewEntityCreeper(x, y, z float64, world soulsand.World) soulsand.EntityCreeper {
 	return creeper.New(x, y, z, world)
+}
+
+func (p provider) RegisterType(t reflect.Type) {
+	metadata.RegisterType(t)
 }

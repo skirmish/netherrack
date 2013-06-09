@@ -1,6 +1,7 @@
 package items
 
 import (
+	"github.com/NetherrackDev/netherrack/metadata"
 	"github.com/NetherrackDev/netherrack/nbt"
 	"github.com/NetherrackDev/soulsand"
 	"sync"
@@ -11,21 +12,19 @@ var _ soulsand.ItemStack = &ItemStack{}
 
 func CreateItemStack(id, data int16, count byte) *ItemStack {
 	return &ItemStack{
-		ID:       id,
-		Damage:   data,
-		Count:    count,
-		metadata: make(map[string]interface{}),
+		ID:     id,
+		Damage: data,
+		Count:  count,
 	}
 }
 
 type ItemStack struct {
-	Lock     sync.RWMutex
-	ID       int16
-	Count    byte
-	Damage   int16
-	Tag      nbt.Type
-	metaLock sync.RWMutex
-	metadata map[string]interface{}
+	Lock   sync.RWMutex
+	ID     int16
+	Count  byte
+	Damage int16
+	Tag    nbt.Type
+	metadata.Storage
 }
 
 func (i *ItemStack) GetID() int16 {
@@ -96,22 +95,4 @@ func (i *ItemStack) AddLore(line string) {
 	lore, _ := display.GetList("Lore", true)
 	lore = append(lore, line)
 	display.Set("Lore", lore)
-}
-
-func (i *ItemStack) SetMetadata(key string, value interface{}) {
-	i.metaLock.Lock()
-	defer i.metaLock.Unlock()
-	i.metadata[key] = value
-}
-
-func (i *ItemStack) GetMetadata(key string) interface{} {
-	i.metaLock.RLock()
-	defer i.metaLock.RUnlock()
-	return i.metadata[key]
-}
-
-func (i *ItemStack) RemoveMetadata(key string) {
-	i.metaLock.Lock()
-	defer i.metaLock.Unlock()
-	delete(i.metadata, key)
 }

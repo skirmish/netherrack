@@ -4,6 +4,7 @@ import (
 	"github.com/NetherrackDev/netherrack/entity/metadata"
 	"github.com/NetherrackDev/netherrack/event"
 	"github.com/NetherrackDev/netherrack/internal"
+	meta "github.com/NetherrackDev/netherrack/metadata"
 	"github.com/NetherrackDev/netherrack/system"
 	"github.com/NetherrackDev/soulsand"
 )
@@ -14,6 +15,7 @@ var _ soulsand.SyncEntity = &Entity{}
 
 type Entity struct {
 	event.Source
+	meta.Storage
 
 	EID         int32
 	CurrentTick uint64

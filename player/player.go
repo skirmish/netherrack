@@ -86,13 +86,6 @@ func init() {
 			caller.SendMessageSync("This can only be used by a player")
 		}
 	})
-	command.Add("test [float]", func(caller soulsand.CommandSender, speed float64) {
-		if player, ok := caller.(*Player); ok {
-			player.connection.WritePlayerAbilities(8+4+2+1, 0.05, float32(speed))
-		} else {
-			caller.SendMessageSync("This can only be used by a player")
-		}
-	})
 }
 
 //Checks to make sure it matches the API
