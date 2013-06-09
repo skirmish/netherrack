@@ -120,7 +120,13 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		c.ReadAnimation()
 	},
 	0x13: func(c *protocol.Conn, player *Player) { //Entity Action
-		c.ReadEntityAction()
+		_, action := c.ReadEntityAction()
+		switch action {
+		case 4: //Start sprinting
+			player.connection.WriteEntityProperties(player.ID(), map[string]float64{"generic.movementSpeed": 0.13})
+		case 5: //Stop sprinting
+			player.connection.WriteEntityProperties(player.ID(), map[string]float64{"generic.movementSpeed": 0.1})
+		}
 	},
 	0x1B: func(c *protocol.Conn, player *Player) { //Steer Vehicle (0x1B)
 		c.ReadSteerVehicle()
