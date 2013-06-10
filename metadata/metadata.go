@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"fmt"
-	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/nbt"
 	"github.com/NetherrackDev/soulsand"
 	"reflect"
@@ -35,9 +34,6 @@ func (s *Storage) SetMetadata(key string, value interface{}) {
 		s.data = map[string]interface{}{}
 	}
 	s.data[key] = value
-	go func() {
-		log.Println(s.ToNBT())
-	}()
 }
 
 func (s *Storage) GetMetadata(key string) interface{} {
