@@ -75,7 +75,6 @@ func (e *Entity) kill() {
 	if !e.isActive {
 		return
 	}
-	e.Owner = nil
 	e.isActive = false
 	system.FreeEntityID(e)
 }
