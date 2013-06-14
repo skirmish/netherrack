@@ -111,19 +111,19 @@ func HandlePlayer(conn net.Conn) {
 
 	player.connection, player.name = protocol.NewConnection(conn)
 
-	if server.GetPlayer(player.name) != nil {
+	if server.Player(player.name) != nil {
 		player.connection.WriteDisconnect(locale.Get(player.LocaleSync(), "disconnect.reason.loggedin"))
 		runtime.Goexit()
 	}
 	player.Entity.Init(player)
 	defer player.Entity.Finalise()
 	defer player.closeConnection()
-	player.SetWorldSync(server.GetWorld("main").(internal.World))
+	player.SetWorldSync(server.World("main").(internal.World))
 	player.WorldInternal().AddPlayer(player)
 	defer player.leaveWorld()
-	player.gamemode = server.GetDefaultGamemode()
+	player.gamemode = server.DefaultGamemode()
 
-	spawnX, spawnY, spawnZ := player.WorldInternal().GetSpawn()
+	spawnX, spawnY, spawnZ := player.WorldInternal().Spawn()
 
 	player.SetPositionSync(float64(spawnX), float64(spawnY), float64(spawnZ))
 	x, _, z := player.PositionSync()

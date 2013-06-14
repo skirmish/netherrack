@@ -40,7 +40,7 @@ func handleInitialConnection(conn net.Conn) {
 	}
 	if firstByte[0] == 0xFE { //listPing
 		conn.Read(make([]byte, 1))
-		listData := soulsand.GetServer().GetListPingData()
+		listData := soulsand.GetServer().ListPingData()
 		motd := []rune(listData[0])
 		versionNo := []rune(listData[1])
 		version := []rune(listData[2])

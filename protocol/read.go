@@ -97,12 +97,12 @@ func (c *Conn) readString() string {
 func (c *Conn) readSlot() (itemstack soulsand.ItemStack) {
 	itemstackRaw := &items.ItemStack{}
 	itemstack = itemstackRaw
-	itemstackRaw.ID = c.readShort()
-	if itemstackRaw.ID == -1 {
+	itemstackRaw.SetID(c.readShort())
+	if itemstackRaw.ID() == -1 {
 		return
 	}
-	itemstackRaw.Count = c.readUByte()
-	itemstackRaw.Damage = c.readShort()
+	itemstackRaw.SetCount(c.readUByte())
+	itemstackRaw.SetData(c.readShort())
 	if l := c.readShort(); l != -1 {
 		data := make([]byte, l)
 		c.Read(data)

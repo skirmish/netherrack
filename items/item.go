@@ -12,55 +12,55 @@ var _ soulsand.ItemStack = &ItemStack{}
 
 func CreateItemStack(id, data int16, count byte) *ItemStack {
 	return &ItemStack{
-		ID:     id,
-		Damage: data,
-		Count:  count,
+		id:     id,
+		damage: data,
+		count:  count,
 	}
 }
 
 type ItemStack struct {
 	Lock   sync.RWMutex
-	ID     int16
-	Count  byte
-	Damage int16
+	id     int16
+	count  byte
+	damage int16
 	Tag    nbt.Type
 	metadata.Storage
 }
 
-func (i *ItemStack) GetID() int16 {
+func (i *ItemStack) ID() int16 {
 	i.Lock.RLock()
 	defer i.Lock.RUnlock()
-	return i.ID
+	return i.id
 }
 
 func (i *ItemStack) SetID(id int16) {
 	i.Lock.Lock()
 	defer i.Lock.Unlock()
-	i.ID = id
+	i.id = id
 }
 
-func (i *ItemStack) GetData() int16 {
+func (i *ItemStack) Data() int16 {
 	i.Lock.RLock()
 	defer i.Lock.RUnlock()
-	return i.Damage
+	return i.damage
 }
 
 func (i *ItemStack) SetData(data int16) {
 	i.Lock.Lock()
 	defer i.Lock.Unlock()
-	i.Damage = data
+	i.damage = data
 }
 
-func (i *ItemStack) GetCount() byte {
+func (i *ItemStack) Count() byte {
 	i.Lock.RLock()
 	defer i.Lock.RUnlock()
-	return i.Count
+	return i.count
 }
 
 func (i *ItemStack) SetCount(count byte) {
 	i.Lock.Lock()
 	defer i.Lock.Unlock()
-	i.Count = count
+	i.count = count
 }
 
 func (i *ItemStack) SetDisplayName(name string) {

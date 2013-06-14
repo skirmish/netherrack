@@ -76,9 +76,9 @@ func (server *Server) Start(ip string, port int) {
 
 	command.Parse()
 
-	server.ProtoVersion = 69
+	server.ProtoVersion = 70
 	protocol.PROTOVERSION = byte(server.ProtoVersion)
-	server.ListPing.Version = "13w24a"
+	server.ListPing.Version = "13w24b"
 
 	server.event = make(chan func(), 1000)
 
@@ -95,7 +95,7 @@ func (server *Server) watcher() {
 	}
 }
 
-func (server *Server) GetDefaultGamemode() gamemode.Type {
+func (server *Server) DefaultGamemode() gamemode.Type {
 	res := make(chan gamemode.Type, 1)
 	server.event <- func() {
 		res <- server.Config.Gamemode
@@ -109,19 +109,19 @@ func (server *Server) SetDefaultGamemode(mode gamemode.Type) {
 	}
 }
 
-func (server *Server) GetEntityCount() int {
+func (server *Server) EntityCount() int {
 	return system.GetEntityCount()
 }
 
-func (server *Server) GetWorld(name string) soulsand.World {
+func (server *Server) World(name string) soulsand.World {
 	return chunk.GetWorld(name)
 }
 
-func (server *Server) GetPlayer(name string) soulsand.Player {
+func (server *Server) Player(name string) soulsand.Player {
 	return system.GetPlayer(name)
 }
 
-func (server *Server) GetPlayers() []soulsand.Player {
+func (server *Server) Players() []soulsand.Player {
 	return system.GetPlayers()
 }
 
@@ -137,7 +137,7 @@ func (server *Server) SetMaxPlayers(max int) {
 	}
 }
 
-func (server *Server) GetListPingData() []string {
+func (server *Server) ListPingData() []string {
 	res := make(chan []string, 1)
 	server.event <- func() {
 		res <- []string{
@@ -158,6 +158,6 @@ func (server *Server) SetFlag(flag uint64, value bool) {
 	}
 }
 
-func (server *Server) GetFlag(flag uint64) bool {
+func (server *Server) Flag(flag uint64) bool {
 	return server.flags&flag != 0
 }

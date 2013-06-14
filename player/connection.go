@@ -30,7 +30,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		} else {
 			eventType, ev := event.NewMessage(player, msg)
 			if !player.Fire(eventType, ev) {
-				system.Broadcast(ev.GetMessage())
+				system.Broadcast(ev.Message())
 			}
 		}
 	},
@@ -105,9 +105,9 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		case 5:
 			x++
 		}
-		if item := player.inventory.GetHotbarSlot(player.CurrentSlot); item != nil && item.GetID() < 256 {
-			id := byte(item.GetID())
-			data := byte(item.GetData())
+		if item := player.inventory.GetHotbarSlot(player.CurrentSlot); item != nil && item.ID() < 256 {
+			id := byte(item.ID())
+			data := byte(item.Data())
 			player.WorldInternal().SetBlock(x, y, z, id, data)
 			player.PlaySound(float64(x)+0.5, float64(y)+0.5, float64(z)+0.5, blocks.GetBlockById(id).PlacementSound(), 1, 50)
 		}

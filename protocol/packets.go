@@ -88,7 +88,7 @@ func (c *Conn) WriteEntityEquipment(eId int32, slot int16, itemstack soulsand.It
 	slotData := itemstack.(*items.ItemStack)
 	slotData.Lock.RLock()
 	defer slotData.Lock.RUnlock()
-	if slotData.ID == -1 {
+	if slotData.ID() == -1 {
 		out = NewByteWriter(1 + 4 + 2 + 2)
 	} else {
 		out = NewByteWriter(1 + 4 + 2 + 2 + 1 + 2 + 2)
@@ -107,14 +107,14 @@ func (c *Conn) WriteEntityEquipment(eId int32, slot int16, itemstack soulsand.It
 	out.WriteUByte(0x05)
 	out.WriteInt(eId)
 	out.WriteShort(slot)
-	out.WriteShort(slotData.ID)
-	if slotData.ID != -1 {
-		out.WriteUByte(slotData.Count)
-		out.WriteShort(slotData.Damage)
+	out.WriteShort(slotData.ID())
+	if slotData.ID() != -1 {
+		out.WriteUByte(slotData.Count())
+		out.WriteShort(slotData.Data())
 		out.WriteShort(dataLength)
 	}
 	c.Write(out.Bytes())
-	if slotData.Tag != nil && slotData.ID != -1 {
+	if slotData.Tag != nil && slotData.ID() != -1 {
 		c.Write(data)
 	}
 }
@@ -776,7 +776,7 @@ func (c *Conn) ReadClickWindow() (windowId int8, slot int16, button int8, action
 	return
 }
 
-var nilItem = &items.ItemStack{ID: -1}
+var nilItem = items.CreateItemStack(-1, 0, 0)
 
 //Set Slot (0x67)
 
@@ -790,7 +790,7 @@ func (c *Conn) WriteSetSlot(windowId int8, slot int16, itemstack soulsand.ItemSt
 	}
 	slotData.Lock.RLock()
 	defer slotData.Lock.RUnlock()
-	if slotData.ID == -1 {
+	if slotData.ID() == -1 {
 		out = NewByteWriter(1 + 1 + 2 + 2)
 	} else {
 		out = NewByteWriter(1 + 1 + 2 + 2 + 1 + 2 + 2)
@@ -809,10 +809,10 @@ func (c *Conn) WriteSetSlot(windowId int8, slot int16, itemstack soulsand.ItemSt
 	out.WriteUByte(0x67)
 	out.WriteByte(windowId)
 	out.WriteShort(slot)
-	out.WriteShort(slotData.ID)
-	if slotData.ID != -1 {
-		out.WriteUByte(slotData.Count)
-		out.WriteShort(slotData.Damage)
+	out.WriteShort(slotData.ID())
+	if slotData.ID() != -1 {
+		out.WriteUByte(slotData.Count())
+		out.WriteShort(slotData.Data())
 		out.WriteShort(dataLength)
 	}
 	c.Write(out.Bytes())
@@ -838,7 +838,7 @@ func (c *Conn) WriteSetWindowItems(windowId int8, itemstacks []soulsand.ItemStac
 		}
 		slotData.Lock.RLock()
 		defer slotData.Lock.RUnlock()
-		if slotData.ID == -1 {
+		if slotData.ID() == -1 {
 			out = NewByteWriter(2)
 		} else {
 			out = NewByteWriter(2 + 1 + 2 + 2)
@@ -854,10 +854,10 @@ func (c *Conn) WriteSetWindowItems(windowId int8, itemstacks []soulsand.ItemStac
 			data = buf.Bytes()
 			dataLength = int16(buf.Len())
 		}
-		out.WriteShort(slotData.ID)
-		if slotData.ID != -1 {
-			out.WriteUByte(slotData.Count)
-			out.WriteShort(slotData.Damage)
+		out.WriteShort(slotData.ID())
+		if slotData.ID() != -1 {
+			out.WriteUByte(slotData.Count())
+			out.WriteShort(slotData.Data())
 			out.WriteShort(dataLength)
 		}
 		c.Write(out.Bytes())
@@ -903,7 +903,7 @@ func (c *Conn) WriteCreativeInventoryAction(slot int16, itemstack soulsand.ItemS
 	slotData := itemstack.(*items.ItemStack)
 	slotData.Lock.RLock()
 	defer slotData.Lock.RUnlock()
-	if slotData.ID == -1 {
+	if slotData.ID() == -1 {
 		out = NewByteWriter(1 + 2 + 2)
 	} else {
 		out = NewByteWriter(1 + 2 + 2 + 1 + 2 + 2)
@@ -921,14 +921,14 @@ func (c *Conn) WriteCreativeInventoryAction(slot int16, itemstack soulsand.ItemS
 	}
 	out.WriteUByte(0x6B)
 	out.WriteShort(slot)
-	out.WriteShort(slotData.ID)
-	if slotData.ID != -1 {
-		out.WriteUByte(slotData.Count)
-		out.WriteShort(slotData.Damage)
+	out.WriteShort(slotData.ID())
+	if slotData.ID() != -1 {
+		out.WriteUByte(slotData.Count())
+		out.WriteShort(slotData.Data())
 		out.WriteShort(dataLength)
 	}
 	c.Write(out.Bytes())
-	if slotData.Tag != nil && slotData.ID != -1 {
+	if slotData.Tag != nil && slotData.ID() != -1 {
 		c.Write(data)
 	}
 }

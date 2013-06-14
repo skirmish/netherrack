@@ -66,7 +66,7 @@ func NewConnection(conn net.Conn) (*Conn, string) {
 		}
 		runtime.Goexit()
 	}
-	if server.GetFlag(soulsand.RANDOM_NAMES) {
+	if server.Flag(soulsand.RANDOM_NAMES) {
 		ext := fmt.Sprintf("%d", mrand.Int31n(9999))
 		if len(username)+len(ext) > 16 {
 			username = username[:16-len(ext)] + ext
@@ -125,7 +125,7 @@ func NewConnection(conn net.Conn) (*Conn, string) {
 	}
 	hashString := strings.TrimLeft(buf, "0")
 
-	if !server.GetFlag(soulsand.OFFLINE_MODE) {
+	if !server.Flag(soulsand.OFFLINE_MODE) {
 		response, err := http.Get(fmt.Sprintf("http://session.minecraft.net/game/checkserver.jsp?user=%s&serverId=%s", username, hashString))
 		if err != nil {
 			connection.WriteDisconnect("Failed to connect to minecraft auth servers")

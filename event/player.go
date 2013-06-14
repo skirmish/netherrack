@@ -26,11 +26,11 @@ func (m *PlayerMessage) SetMessage(msg string) {
 	m.message = msg
 }
 
-func (m *PlayerMessage) GetMessage() string {
+func (m *PlayerMessage) Message() string {
 	return m.message
 }
 
-func (m *PlayerMessage) GetPlayer() soulsand.SyncPlayer {
+func (m *PlayerMessage) Player() soulsand.SyncPlayer {
 	return m.player
 }
 
@@ -48,7 +48,7 @@ func NewJoin(player soulsand.SyncPlayer, reason string) (string, *PlayerJoin) {
 	}
 }
 
-func (j *PlayerJoin) GetPlayer() soulsand.SyncPlayer {
+func (j *PlayerJoin) Player() soulsand.SyncPlayer {
 	return j.player
 }
 
@@ -69,6 +69,6 @@ func NewLeave(player soulsand.SyncPlayer) (string, *PlayerLeave) {
 	}
 }
 
-func (l *PlayerLeave) GetPlayer() soulsand.SyncPlayer {
+func (l *PlayerLeave) Player() soulsand.SyncPlayer {
 	return l.player
 }

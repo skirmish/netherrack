@@ -117,7 +117,7 @@ func (world *World) chunkWatcher() {
 	}
 }
 
-func (world *World) GetSpawn() (x, y, z int) {
+func (world *World) Spawn() (x, y, z int) {
 	ret := make(chan struct{}, 1)
 	world.worldEventChannel <- func(soulsand.World) {
 		spawnX, _ := world.settings.GetInt("SpawnX", 0)
@@ -181,7 +181,7 @@ func (world *World) SetBlock(x, y, z int, block, meta byte) {
 	})
 }
 
-func (world *World) GetBlock(x, y, z int) []byte {
+func (world *World) Block(x, y, z int) []byte {
 	cx := x >> 4
 	cz := z >> 4
 	ret := make(chan []byte, 1)
@@ -192,7 +192,7 @@ func (world *World) GetBlock(x, y, z int) []byte {
 	return <-ret
 }
 
-func (world *World) GetBlocks(x, y, z, w, h, d int) *Blocks {
+func (world *World) Blocks(x, y, z, w, h, d int) *Blocks {
 	out := &Blocks{
 		make([]byte, w*h*d),
 		make([]byte, w*h*d),

@@ -36,7 +36,7 @@ func (s *Storage) SetMetadata(key string, value interface{}) {
 	s.data[key] = value
 }
 
-func (s *Storage) GetMetadata(key string) interface{} {
+func (s *Storage) Metadata(key string) interface{} {
 	s.RLock()
 	defer s.RUnlock()
 	return s.data[key]
