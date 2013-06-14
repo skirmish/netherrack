@@ -90,7 +90,7 @@ func (world *World) chunkWatcher() {
 			time++
 			world.settings.Set("Time", time)
 			dayTime, _ := world.settings.GetLong("DayTime", 0)
-			dayTime++
+			dayTime = (dayTime + 1) % 24000
 			world.settings.Set("DayTime", dayTime)
 			if time%20 == 0 {
 				world.updateTime()

@@ -76,9 +76,9 @@ func (server *Server) Start(ip string, port int) {
 
 	command.Parse()
 
-	server.ProtoVersion = 68
+	server.ProtoVersion = 69
 	protocol.PROTOVERSION = byte(server.ProtoVersion)
-	server.ListPing.Version = "13w23b"
+	server.ListPing.Version = "13w24a"
 
 	server.event = make(chan func(), 1000)
 

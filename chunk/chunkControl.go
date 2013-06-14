@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"github.com/NetherrackDev/netherrack/entity"
+	"github.com/NetherrackDev/netherrack/event"
 	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/blocks"
@@ -65,10 +66,23 @@ func chunkController(chunk *Chunk) {
 			}
 		case cwr := <-chunk.watcherJoin:
 			chunk.Players[cwr.P.Name()] = cwr.P
-			for _, e := range chunk.Entitys {
+			for _, te := range chunk.Entitys {
+				e := te
 				if e.ID() != cwr.P.ID() {
-					s := e.(entity.Spawnable)
-					cwr.P.RunSync(s.CreateSpawn())
+					res, err := e.CallSync(func(e soulsand.SyncEntity, ret chan interface{}) {
+						s := e.(entity.Spawnable)
+						ret <- s.CreateSpawn()
+					})
+					if err != nil {
+						return
+					}
+					f := res.(func(soulsand.SyncEntity))
+					cwr.P.RunSync(func(soulsand.SyncEntity) {
+						if !cwr.P.(event.Firer).Fire(event.NewEntitySpawnFor(e, cwr.P.(soulsand.SyncPlayer))) {
+							log.Println("Spawning player")
+							f(cwr.P.(soulsand.SyncEntity))
+						}
+					})
 				}
 			}
 		case cwr := <-chunk.watcherLeave:
@@ -78,10 +92,22 @@ func chunkController(chunk *Chunk) {
 				select {
 				case wr := <-chunk.watcherJoin:
 					chunk.Players[cwr.P.Name()] = wr.P
-					for _, e := range chunk.Entitys {
-						if e.ID() != wr.P.ID() {
-							s := e.(entity.Spawnable)
-							wr.P.RunSync(s.CreateSpawn())
+					for _, te := range chunk.Entitys {
+						e := te
+						if e.ID() != cwr.P.ID() {
+							res, err := e.CallSync(func(e soulsand.SyncEntity, ret chan interface{}) {
+								s := e.(entity.Spawnable)
+								ret <- s.CreateSpawn()
+							})
+							if err != nil {
+								return
+							}
+							f := res.(func(soulsand.SyncEntity))
+							cwr.P.RunSync(func(soulsand.SyncEntity) {
+								if !cwr.P.(event.Firer).Fire(event.NewEntitySpawnFor(e, cwr.P.(soulsand.SyncPlayer))) {
+									f(cwr.P.(soulsand.SyncEntity))
+								}
+							})
 						}
 					}
 				default:
@@ -89,10 +115,22 @@ func chunkController(chunk *Chunk) {
 				}
 			}
 			delete(chunk.Players, cwr.P.Name())
-			for _, e := range chunk.Entitys {
+			for _, te := range chunk.Entitys {
+				e := te
 				if e.ID() != cwr.P.ID() {
-					s := e.(entity.Spawnable)
-					cwr.P.RunSync(s.CreateDespawn())
+					res, err := e.CallSync(func(e soulsand.SyncEntity, ret chan interface{}) {
+						s := e.(entity.Spawnable)
+						ret <- s.CreateDespawn()
+					})
+					if err != nil {
+						return
+					}
+					f := res.(func(soulsand.SyncEntity))
+					cwr.P.RunSync(func(soulsand.SyncEntity) {
+						if !cwr.P.(event.Firer).Fire(event.NewEntityDespawnFor(e, cwr.P.(soulsand.SyncPlayer))) {
+							f(cwr.P.(soulsand.SyncEntity))
+						}
+					})
 				}
 			}
 		case cer := <-chunk.entityJoin:

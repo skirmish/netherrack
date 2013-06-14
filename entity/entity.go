@@ -109,8 +109,8 @@ func (e *Entity) SendMoveUpdate() (movedChunk bool) {
 	if e.Chunk.X != e.Chunk.LX || e.Chunk.Z != e.Chunk.LZ {
 		e.world.LeaveChunk(e.Chunk.LX, e.Chunk.LZ, e.Owner.(soulsand.Entity))
 		e.world.JoinChunk(e.Chunk.X, e.Chunk.Z, e.Owner.(soulsand.Entity))
-		e.world.SendChunkMessage(e.Chunk.LX, e.Chunk.LZ, e.ID(), entityTryDespawn(e.Chunk.X, e.Chunk.Z, e.Owner.CreateDespawn()))
-		e.world.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityTrySpawn(e.Chunk.LX, e.Chunk.LZ, e.Owner.CreateSpawn()))
+		e.world.SendChunkMessage(e.Chunk.LX, e.Chunk.LZ, e.ID(), e.entityTryDespawn(e.Chunk.X, e.Chunk.Z, e.Owner.CreateDespawn()))
+		e.world.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), e.entityTrySpawn(e.Chunk.LX, e.Chunk.LZ, e.Owner.CreateSpawn()))
 		e.Chunk.LX = e.Chunk.X
 		e.Chunk.LZ = e.Chunk.Z
 		movedChunk = true
@@ -126,32 +126,66 @@ func (e *Entity) CreateDespawn() func(soulsand.SyncEntity) {
 	return e.Owner.CreateDespawn()
 }
 
-func entityTrySpawn(cx, cz int32, f func(soulsand.SyncEntity)) func(soulsand.SyncEntity) {
+func (e *Entity) entityTrySpawn(cx, cz int32, f func(soulsand.SyncEntity)) func(soulsand.SyncEntity) {
 	return func(p soulsand.SyncEntity) {
 		player := p.(interface {
 			AsEntity() Entity
 			soulsand.SyncPlayer
+			event.Firer
 		})
 		entity := player.AsEntity()
 		vd := int32(player.ViewDistanceSync())
 		if cx < entity.Chunk.X-vd || cx >= entity.Chunk.X+vd+1 || cz < entity.Chunk.Z-vd || cz >= entity.Chunk.Z+vd+1 {
-			f(p)
+			if !player.Fire(event.NewEntitySpawnFor(e.Owner.(soulsand.Entity), player)) {
+				f(p)
+			}
 		}
 	}
 }
 
-func entityTryDespawn(cx, cz int32, f func(soulsand.SyncEntity)) func(soulsand.SyncEntity) {
+func (e *Entity) entityTryDespawn(cx, cz int32, f func(soulsand.SyncEntity)) func(soulsand.SyncEntity) {
 	return func(p soulsand.SyncEntity) {
 		player := p.(interface {
 			AsEntity() Entity
 			soulsand.SyncPlayer
+			event.Firer
 		})
 		entity := player.AsEntity()
 		vd := int32(player.ViewDistanceSync())
 		if cx < entity.Chunk.X-vd || cx >= entity.Chunk.X+vd+1 || cz < entity.Chunk.Z-vd || cz >= entity.Chunk.Z+vd+1 {
-			f(p)
+			if !player.Fire(event.NewEntityDespawnFor(e.Owner.(soulsand.Entity), player)) {
+				f(p)
+			}
 		}
 	}
+}
+
+func (e *Entity) Spawn() {
+	f := e.CreateSpawn()
+	e.WorldInternal().SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), func(e2 soulsand.SyncEntity) {
+		player := e2.(interface {
+			AsEntity() Entity
+			soulsand.SyncPlayer
+			event.Firer
+		})
+		if !player.Fire(event.NewEntitySpawnFor(e.Owner.(soulsand.Entity), player)) {
+			f(e)
+		}
+	})
+}
+
+func (e *Entity) Despawn() {
+	f := e.CreateDespawn()
+	e.WorldInternal().SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), func(e2 soulsand.SyncEntity) {
+		player := e2.(interface {
+			AsEntity() Entity
+			soulsand.SyncPlayer
+			event.Firer
+		})
+		if !player.Fire(event.NewEntityDespawnFor(e.Owner.(soulsand.Entity), player)) {
+			f(e)
+		}
+	})
 }
 
 func entityTeleport(id int32, x, y, z float64, yaw, pitch float32) func(soulsand.SyncEntity) {

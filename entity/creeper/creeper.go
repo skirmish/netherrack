@@ -31,14 +31,6 @@ func New(x, y, z float64, world soulsand.World) soulsand.EntityCreeper {
 	return creeper
 }
 
-func (creeper *Type) spawn() {
-	creeper.WorldInternal().SendChunkMessage(creeper.Chunk.X, creeper.Chunk.Z, creeper.ID(), creeper.CreateSpawn())
-}
-
-func (creeper *Type) despawn() {
-	creeper.WorldInternal().SendChunkMessage(creeper.Chunk.X, creeper.Chunk.Z, creeper.ID(), creeper.CreateDespawn())
-}
-
 func (creeper *Type) loop() {
 	creeper.Entity.Init(creeper)
 	defer creeper.Entity.Finalise()
@@ -47,8 +39,8 @@ func (creeper *Type) loop() {
 	creeper.WorldInternal().JoinChunk(creeper.Chunk.X, creeper.Chunk.Z, creeper)
 	defer creeper.leaveWorld()
 
-	creeper.spawn()
-	defer creeper.despawn()
+	creeper.Spawn()
+	defer creeper.Despawn()
 
 	timer := time.NewTicker(time.Second / 10)
 	defer timer.Stop()

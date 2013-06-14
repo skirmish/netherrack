@@ -19,6 +19,10 @@ type Source struct {
 	handlePos      int
 }
 
+type Firer interface {
+	Fire(eventType string, event internal.Event) bool
+}
+
 func (es *Source) Init() {
 	es.handlers = make(map[string]map[int]reflect.Value)
 	es.handlersIntMap = make(map[int]string)

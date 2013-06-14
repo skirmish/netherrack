@@ -160,8 +160,8 @@ func HandlePlayer(conn net.Conn) {
 	defer player.cleanChunks()
 
 	player.WorldInternal().JoinChunk(player.Chunk.X, player.Chunk.Z, player)
-	player.spawn()
-	defer player.despawn()
+	player.Spawn()
+	defer player.Despawn()
 
 	go player.dataWatcher()
 
@@ -265,14 +265,6 @@ func (p *Player) chunkReload(old int) {
 			p.WorldInternal().JoinChunkAsWatcher(x, z, p)
 		}
 	}
-}
-
-func (p *Player) spawn() {
-	p.WorldInternal().SendChunkMessage(p.Chunk.X, p.Chunk.Z, p.ID(), p.CreateSpawn())
-}
-
-func (p *Player) despawn() {
-	p.WorldInternal().SendChunkMessage(p.Chunk.X, p.Chunk.Z, p.ID(), p.CreateDespawn())
 }
 
 func (p *Player) dataWatcher() {
