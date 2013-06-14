@@ -8,6 +8,7 @@ var _ soulsand.EventPlayerMessage = &PlayerMessage{}
 var _ soulsand.EventPlayerJoin = &PlayerJoin{}
 var _ soulsand.EventPlayerLeave = &PlayerLeave{}
 var _ soulsand.EventPlayerLeftClick = &PlayerLeftClick{}
+var _ soulsand.EventPlayerBlockPlace = &PlayerBlockPlace{}
 
 type PlayerMessage struct {
 	Event
@@ -88,4 +89,38 @@ func NewPlayerLeftClick(player soulsand.SyncPlayer) (string, *PlayerLeftClick) {
 
 func (l *PlayerLeftClick) Player() soulsand.SyncPlayer {
 	return l.player
+}
+
+type PlayerBlockPlace struct {
+	Event
+
+	player  soulsand.SyncPlayer
+	x, y, z int
+	block   soulsand.ItemStack
+}
+
+func NewPlayerBlockPlace(player soulsand.SyncPlayer, x, y, z int, block soulsand.ItemStack) (string, *PlayerBlockPlace) {
+	return "EventPlayerBlockPlace", &PlayerBlockPlace{
+		player: player,
+		x:      x,
+		y:      y,
+		z:      z,
+		block:  block,
+	}
+}
+
+func (e *PlayerBlockPlace) Player() soulsand.SyncPlayer {
+	return e.player
+}
+
+func (e *PlayerBlockPlace) Position() (int, int, int) {
+	return e.x, e.y, e.z
+}
+
+func (e *PlayerBlockPlace) Block() soulsand.ItemStack {
+	return e.block
+}
+
+func (e *PlayerBlockPlace) SetBlock(block soulsand.ItemStack) {
+	e.block = block
 }

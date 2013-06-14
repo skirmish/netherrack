@@ -106,10 +106,20 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 			x++
 		}
 		if item := player.inventory.GetHotbarSlot(player.CurrentSlot); item != nil && item.ID() < 256 {
-			id := byte(item.ID())
-			data := byte(item.Data())
-			player.WorldInternal().SetBlock(x, y, z, id, data)
-			player.PlaySound(float64(x)+0.5, float64(y)+0.5, float64(z)+0.5, blocks.GetBlockById(id).PlacementSound(), 1, 50)
+			id, e := event.NewPlayerBlockPlace(player, x, y, z, item)
+			if !player.Fire(id, e) {
+				item = e.Block()
+				id := byte(item.ID())
+				data := byte(item.Data())
+				player.WorldInternal().SetBlock(x, y, z, id, data)
+				player.PlaySound(float64(x)+0.5, float64(y)+0.5, float64(z)+0.5, blocks.GetBlockById(id).PlacementSound(), 1, 50)
+			} else {
+				data := player.WorldSync().Block(x, y, z)
+				bId, bData := data[0], data[1]
+				player.connection.WriteBlockChange(bx, by, bz, int16(bId), bData)
+			}
+		} else {
+
 		}
 	},
 	0x10: func(c *protocol.Conn, player *Player) { //Held Item Change
