@@ -7,6 +7,7 @@ import (
 var _ soulsand.EventPlayerMessage = &PlayerMessage{}
 var _ soulsand.EventPlayerJoin = &PlayerJoin{}
 var _ soulsand.EventPlayerLeave = &PlayerLeave{}
+var _ soulsand.EventPlayerLeftClick = &PlayerLeftClick{}
 
 type PlayerMessage struct {
 	Event
@@ -70,5 +71,21 @@ func NewLeave(player soulsand.SyncPlayer) (string, *PlayerLeave) {
 }
 
 func (l *PlayerLeave) Player() soulsand.SyncPlayer {
+	return l.player
+}
+
+type PlayerLeftClick struct {
+	Event
+
+	player soulsand.SyncPlayer
+}
+
+func NewPlayerLeftClick(player soulsand.SyncPlayer) (string, *PlayerLeftClick) {
+	return "EventPlayerLeftClick", &PlayerLeftClick{
+		player: player,
+	}
+}
+
+func (l *PlayerLeftClick) Player() soulsand.SyncPlayer {
 	return l.player
 }

@@ -117,7 +117,10 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		player.CurrentSlot = int(slotID)
 	},
 	0x12: func(c *protocol.Conn, player *Player) { //Animation
-		c.ReadAnimation()
+		_, ani := c.ReadAnimation()
+		if ani == 1 {
+			player.Fire(event.NewPlayerLeftClick(player))
+		}
 	},
 	0x13: func(c *protocol.Conn, player *Player) { //Entity Action
 		_, action := c.ReadEntityAction()
