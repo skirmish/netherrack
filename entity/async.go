@@ -6,7 +6,7 @@ import (
 
 func (e *Entity) Remove() error {
 	return e.RunSync(func(soulsand.SyncEntity) {
-		e.kill()
+		e.RemoveSync()
 	})
 }
 

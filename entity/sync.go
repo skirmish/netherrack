@@ -42,6 +42,12 @@ func (e *Entity) SetWorldSync(world soulsand.World) {
 	e.world = world.(internal.World)
 }
 
+func (e *Entity) RemoveSync() {
+	if !e.WasKilled {
+		e.EntityDead <- struct{}{}
+	}
+}
+
 func (e *Entity) RunSync(f func(soulsand.SyncEntity)) error {
 	select {
 	case e.EventChannel <- f:

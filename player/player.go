@@ -204,6 +204,9 @@ func (player *Player) loop() {
 			player.readPacketChannel <- struct{}{}
 		case <-player.errorChannel:
 			runtime.Goexit()
+		case <-player.EntityDead:
+			player.WasKilled = true
+			player.EntityDead <- struct{}{}
 		}
 	}
 }

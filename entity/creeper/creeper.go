@@ -51,6 +51,9 @@ func (creeper *Type) loop() {
 		case <-timer.C:
 			creeper.Tick()
 			creeper.SendMoveUpdate()
+		case <-creeper.EntityDead:
+			creeper.WasKilled = true
+			creeper.EntityDead <- struct{}{}
 		}
 	}
 }

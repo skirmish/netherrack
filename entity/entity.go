@@ -41,7 +41,8 @@ type Entity struct {
 
 	metadata metadata.Type
 
-	isActive bool
+	WasKilled bool
+	isActive  bool
 }
 
 type Spawnable interface {
@@ -62,7 +63,9 @@ func (e *Entity) Init(s Spawnable) {
 }
 
 func (e *Entity) Finalise() {
-	e.EntityDead <- struct{}{}
+	if !e.WasKilled {
+		e.EntityDead <- struct{}{}
+	}
 	e.kill()
 }
 
@@ -161,6 +164,8 @@ func (e *Entity) entityTryDespawn(cx, cz int32, f func(soulsand.SyncEntity)) fun
 
 func (e *Entity) Spawn() {
 	if e.Fire(event.NewEntitySpawn(e)) {
+		e.RemoveSync()
+		e.Remove()
 		return
 	}
 	f := e.CreateSpawn()
