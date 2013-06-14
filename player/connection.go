@@ -119,7 +119,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 				player.connection.WriteBlockChange(bx, by, bz, int16(bId), bData)
 			}
 		} else {
-
+			player.Fire(event.NewPlayerRightClick(player))
 		}
 	},
 	0x10: func(c *protocol.Conn, player *Player) { //Held Item Change
