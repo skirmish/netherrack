@@ -7,6 +7,7 @@ import (
 var _ soulsand.EventEntityTick = &EntityTick{}
 var _ soulsand.EventEntitySpawnFor = &EntitySpawnFor{}
 var _ soulsand.EventEntityDespawnFor = &EntityDespawnFor{}
+var _ soulsand.EventEntitySpawn = &EntitySpawn{}
 
 type EntityTick struct {
 	Event
@@ -22,11 +23,11 @@ func NewEntityTick(entity soulsand.SyncEntity, tick uint64) (string, *EntityTick
 	}
 }
 
-func (et *EntityTick) GetEntity() soulsand.SyncEntity {
+func (et *EntityTick) Entity() soulsand.SyncEntity {
 	return et.entity
 }
 
-func (et *EntityTick) GetTick() uint64 {
+func (et *EntityTick) Tick() uint64 {
 	return et.tick
 }
 
@@ -44,11 +45,11 @@ func NewEntitySpawnFor(entity soulsand.Entity, player soulsand.SyncPlayer) (stri
 	}
 }
 
-func (esf *EntitySpawnFor) GetEntity() soulsand.Entity {
+func (esf *EntitySpawnFor) Entity() soulsand.Entity {
 	return esf.entity
 }
 
-func (esf *EntitySpawnFor) GetPlayer() soulsand.SyncPlayer {
+func (esf *EntitySpawnFor) Player() soulsand.SyncPlayer {
 	return esf.player
 }
 
@@ -66,10 +67,26 @@ func NewEntityDespawnFor(entity soulsand.Entity, player soulsand.SyncPlayer) (st
 	}
 }
 
-func (esf *EntityDespawnFor) GetEntity() soulsand.Entity {
+func (esf *EntityDespawnFor) Entity() soulsand.Entity {
 	return esf.entity
 }
 
-func (esf *EntityDespawnFor) GetPlayer() soulsand.SyncPlayer {
+func (esf *EntityDespawnFor) Player() soulsand.SyncPlayer {
 	return esf.player
+}
+
+type EntitySpawn struct {
+	Event
+
+	entity soulsand.SyncEntity
+}
+
+func NewEntitySpawn(entity soulsand.SyncEntity) (string, *EntitySpawn) {
+	return "EventEntitySpawn", &EntitySpawn{
+		entity: entity,
+	}
+}
+
+func (es *EntitySpawn) Entity() soulsand.SyncEntity {
+	return es.entity
 }
