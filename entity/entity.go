@@ -165,7 +165,6 @@ func (e *Entity) entityTryDespawn(cx, cz int32, f func(soulsand.SyncEntity)) fun
 func (e *Entity) Spawn() {
 	if e.Fire(event.NewEntitySpawn(e)) {
 		e.RemoveSync()
-		e.Remove()
 		return
 	}
 	f := e.CreateSpawn()
@@ -182,6 +181,7 @@ func (e *Entity) Spawn() {
 }
 
 func (e *Entity) Despawn() {
+	e.Fire(event.NewEntityDespawn(e))
 	f := e.CreateDespawn()
 	e.WorldInternal().SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), func(e2 soulsand.SyncEntity) {
 		player := e2.(interface {

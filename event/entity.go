@@ -8,6 +8,7 @@ var _ soulsand.EventEntityTick = &EntityTick{}
 var _ soulsand.EventEntitySpawnFor = &EntitySpawnFor{}
 var _ soulsand.EventEntityDespawnFor = &EntityDespawnFor{}
 var _ soulsand.EventEntitySpawn = &EntitySpawn{}
+var _ soulsand.EventEntityDespawn = &EntitySpawn{}
 
 type EntityTick struct {
 	Event
@@ -89,4 +90,20 @@ func NewEntitySpawn(entity soulsand.SyncEntity) (string, *EntitySpawn) {
 
 func (es *EntitySpawn) Entity() soulsand.SyncEntity {
 	return es.entity
+}
+
+type EntityDespawn struct {
+	Event
+
+	entity soulsand.SyncEntity
+}
+
+func NewEntityDespawn(entity soulsand.SyncEntity) (string, *EntityDespawn) {
+	return "EventEntityDespawn", &EntityDespawn{
+		entity: entity,
+	}
+}
+
+func (ed *EntityDespawn) Entity() soulsand.SyncEntity {
+	return ed.entity
 }
