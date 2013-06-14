@@ -141,3 +141,39 @@ func NewPlayerRightClick(player soulsand.SyncPlayer) (string, *PlayerRightClick)
 func (e *PlayerRightClick) Player() soulsand.SyncPlayer {
 	return e.player
 }
+
+type PlayerBlockBreak struct {
+	Event
+
+	player  soulsand.SyncPlayer
+	x, y, z int
+	face    int8
+	status  int8
+}
+
+func NewPlayerBlockBreak(player soulsand.SyncPlayer, x, y, z int, face, status int8) (string, *PlayerBlockBreak) {
+	return "EventPlayerBlockBreak", &PlayerBlockBreak{
+		player: player,
+		x:      x,
+		y:      y,
+		z:      z,
+		face:   face,
+		status: status,
+	}
+}
+
+func (e *PlayerBlockBreak) Player() soulsand.SyncPlayer {
+	return e.player
+}
+
+func (e *PlayerBlockBreak) Position() (int, int, int) {
+	return e.x, e.y, e.z
+}
+
+func (e *PlayerBlockBreak) Face() int8 {
+	return e.face
+}
+
+func (e *PlayerBlockBreak) Status() int8 {
+	return e.status
+}

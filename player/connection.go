@@ -58,30 +58,35 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		player.SetLookSync(yaw, pitch)
 	},
 	0x0E: func(c *protocol.Conn, player *Player) { //Player Digging
-		status, bx, by, bz, _ := c.ReadPlayerDigging()
+		status, bx, by, bz, face := c.ReadPlayerDigging()
 		if status != 2 && !(status == 0 && player.gamemode == gamemode.Creative) {
 			return
 		}
 		x := int(bx)
 		y := int(by)
 		z := int(bz)
-
-		player.WorldInternal().RunSync(x>>4, z>>4, func(ch soulsand.SyncChunk) {
-			chunk := ch.(interface {
-				GetPlayerMap() map[string]soulsand.Player
-			})
-			rx := x - ((x >> 4) << 4)
-			rz := z - ((z >> 4) << 4)
-			block := ch.Block(rx, y, rz)
-			meta := ch.Meta(rx, y, rz)
-			m := chunk.GetPlayerMap()
-			for _, p := range m {
-				if p.Name() != player.Name() {
-					p.PlayEffect(x, y, z, effect.BlockBreak, int(block)|(int(meta)<<12), true)
+		if !player.Fire(event.NewPlayerBlockBreak(player, x, y, z, face, status)) {
+			player.WorldInternal().RunSync(x>>4, z>>4, func(ch soulsand.SyncChunk) {
+				chunk := ch.(interface {
+					GetPlayerMap() map[string]soulsand.Player
+				})
+				rx := x - ((x >> 4) << 4)
+				rz := z - ((z >> 4) << 4)
+				block := ch.Block(rx, y, rz)
+				meta := ch.Meta(rx, y, rz)
+				m := chunk.GetPlayerMap()
+				for _, p := range m {
+					if p.Name() != player.Name() {
+						p.PlayEffect(x, y, z, effect.BlockBreak, int(block)|(int(meta)<<12), true)
+					}
 				}
-			}
-		})
-		player.WorldInternal().SetBlock(x, y, z, 0, 0)
+			})
+			player.WorldInternal().SetBlock(x, y, z, 0, 0)
+		} else {
+			data := player.WorldSync().Block(x, y, z)
+			bId, bData := data[0], data[1]
+			player.connection.WriteBlockChange(bx, by, bz, int16(bId), bData)
+		}
 	},
 	0x0F: func(c *protocol.Conn, player *Player) { //Player Block Placement
 		bx, by, bz, direction, _, _, _ := c.ReadPlayerBlockPlacement()
