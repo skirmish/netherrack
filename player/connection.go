@@ -2,7 +2,6 @@ package player
 
 import (
 	"github.com/NetherrackDev/netherrack/event"
-	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/system"
 	"github.com/NetherrackDev/soulsand"
@@ -10,6 +9,7 @@ import (
 	"github.com/NetherrackDev/soulsand/command"
 	"github.com/NetherrackDev/soulsand/effect"
 	"github.com/NetherrackDev/soulsand/gamemode"
+	"github.com/NetherrackDev/soulsand/log"
 	"runtime"
 )
 

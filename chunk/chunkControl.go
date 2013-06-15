@@ -5,9 +5,9 @@ import (
 	"compress/zlib"
 	"github.com/NetherrackDev/netherrack/entity"
 	"github.com/NetherrackDev/netherrack/event"
-	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/blocks"
+	"github.com/NetherrackDev/soulsand/log"
 	"runtime"
 	"time"
 )

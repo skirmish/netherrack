@@ -3,9 +3,9 @@ package network
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/player"
 	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/log"
 	"net"
 	"time"
 )

@@ -3,7 +3,6 @@ package netherrack
 import (
 	"github.com/NetherrackDev/netherrack/chunk"
 	"github.com/NetherrackDev/netherrack/event"
-	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/network"
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/system"
@@ -11,6 +10,7 @@ import (
 	"github.com/NetherrackDev/soulsand/command"
 	"github.com/NetherrackDev/soulsand/gamemode"
 	"github.com/NetherrackDev/soulsand/locale"
+	"github.com/NetherrackDev/soulsand/log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"

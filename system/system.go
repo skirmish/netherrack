@@ -3,7 +3,7 @@ package system
 import (
 	"fmt"
 	"github.com/NetherrackDev/netherrack/event"
-	"github.com/NetherrackDev/netherrack/log"
+	"github.com/NetherrackDev/soulsand/log"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/locale"
 )
