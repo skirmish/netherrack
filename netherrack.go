@@ -7,6 +7,7 @@ import (
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/system"
 	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/chat"
 	"github.com/NetherrackDev/soulsand/command"
 	"github.com/NetherrackDev/soulsand/gamemode"
 	"github.com/NetherrackDev/soulsand/locale"
@@ -32,13 +33,13 @@ func init() {
 	soulsand.SetServer(server, provider{})
 
 	command.Add("safestop", func(sender soulsand.CommandSender) {
-		sender.SendMessageSync("Waiting for worlds to empty")
+		sender.SendMessageSync(chat.New().Colour(chat.Aqua).Text("Waiting for worlds to empty"))
 		//TODO: Kick players and prevent them from joining
 		go func() {
 			for chunk.GetWorldCount() > 0 {
 				time.Sleep(time.Second)
 			}
-			sender.SendMessageSync("Killing server")
+			sender.SendMessageSync(chat.New().Text("Killing server"))
 			os.Exit(0)
 		}()
 	})

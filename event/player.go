@@ -2,6 +2,7 @@ package event
 
 import (
 	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/chat"
 )
 
 var _ soulsand.EventPlayerMessage = &PlayerMessage{}
@@ -14,8 +15,9 @@ var _ soulsand.EventPlayerRightClick = &PlayerRightClick{}
 type PlayerMessage struct {
 	Event
 
-	player  soulsand.SyncPlayer
-	message string
+	player      soulsand.SyncPlayer
+	message     string
+	chatMessage *chat.Message
 }
 
 func NewMessage(player soulsand.SyncPlayer, message string) (string, *PlayerMessage) {
@@ -25,11 +27,19 @@ func NewMessage(player soulsand.SyncPlayer, message string) (string, *PlayerMess
 	}
 }
 
-func (m *PlayerMessage) SetMessage(msg string) {
+func (m *PlayerMessage) SetMessage(msg *chat.Message) {
+	m.chatMessage = msg
+}
+
+func (m *PlayerMessage) Message() *chat.Message {
+	return m.chatMessage
+}
+
+func (m *PlayerMessage) SetMessageString(msg string) {
 	m.message = msg
 }
 
-func (m *PlayerMessage) Message() string {
+func (m *PlayerMessage) MessageString() string {
 	return m.message
 }
 

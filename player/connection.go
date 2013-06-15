@@ -6,6 +6,7 @@ import (
 	"github.com/NetherrackDev/netherrack/system"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/blocks"
+	"github.com/NetherrackDev/soulsand/chat"
 	"github.com/NetherrackDev/soulsand/command"
 	"github.com/NetherrackDev/soulsand/effect"
 	"github.com/NetherrackDev/soulsand/gamemode"
@@ -30,7 +31,11 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		} else {
 			eventType, ev := event.NewMessage(player, msg)
 			if !player.Fire(eventType, ev) {
-				system.Broadcast(ev.Message())
+				chatMsg := ev.Message()
+				if chatMsg == nil {
+					chatMsg = chat.New().Text(msg)
+				}
+				system.Broadcast(chatMsg)
 			}
 		}
 	},

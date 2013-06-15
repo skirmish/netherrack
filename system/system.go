@@ -3,8 +3,8 @@ package system
 import (
 	"fmt"
 	"github.com/NetherrackDev/netherrack/event"
-	"github.com/NetherrackDev/soulsand/log"
 	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/chat"
 	"github.com/NetherrackDev/soulsand/locale"
 )
 
@@ -36,9 +36,8 @@ func GetEntityCount() int {
 	return <-res
 }
 
-func Broadcast(message string) {
+func Broadcast(message *chat.Message) {
 	channel <- func() {
-		log.MCPrintln(message)
 		for _, p := range playersByName {
 			p.SendMessage(message)
 		}
@@ -58,7 +57,7 @@ func AddPlayer(p soulsand.Player) {
 				continue
 			}
 			message := fmt.Sprintf(locale.Get(playerLocale, "message.player.connect"), displayName)
-			player.SendMessage(message)
+			player.SendMessage(chat.New().Colour(chat.Yellow).Text(message))
 		}
 	}
 }
@@ -74,7 +73,7 @@ func RemovePlayer(p soulsand.Player) {
 				continue
 			}
 			message := fmt.Sprintf(locale.Get(playerLocale, "message.player.disconnect"), displayName)
-			player.SendMessage(message)
+			player.SendMessage(chat.New().Colour(chat.Yellow).Text(message))
 		}
 	}
 }

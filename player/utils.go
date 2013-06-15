@@ -2,6 +2,7 @@ package player
 
 import (
 	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/chat"
 	"github.com/NetherrackDev/soulsand/effect"
 	"github.com/NetherrackDev/soulsand/gamemode"
 	"github.com/NetherrackDev/soulsand/sound"
@@ -88,7 +89,7 @@ func (player *Player) SetDisplayName(name string) error {
 	})
 }
 
-func (player *Player) SendMessage(message string) error {
+func (player *Player) SendMessage(message *chat.Message) error {
 	return player.RunSync(func(soulsand.SyncEntity) {
 		player.SendMessageSync(message)
 	})

@@ -3,7 +3,6 @@ package protocol
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/json"
 	"github.com/NetherrackDev/netherrack/entity/metadata"
 	"github.com/NetherrackDev/netherrack/items"
 	"github.com/NetherrackDev/netherrack/nbt"
@@ -56,11 +55,7 @@ type chatMessage struct {
 }
 
 func (c *Conn) WriteChatMessage(message string) {
-	messageBytes, err := json.Marshal(chatMessage{message})
-	if err != nil {
-		return
-	}
-	messageRunes := []rune(string(messageBytes))
+	messageRunes := []rune(string(message))
 	out := NewByteWriter(1 + 2 + len(messageRunes)*2)
 	out.WriteUByte(0x03)
 	out.WriteString(messageRunes)

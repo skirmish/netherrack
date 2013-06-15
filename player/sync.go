@@ -4,6 +4,7 @@ import (
 	"github.com/NetherrackDev/netherrack/entity"
 	"github.com/NetherrackDev/netherrack/internal"
 	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/chat"
 	"github.com/NetherrackDev/soulsand/gamemode"
 	"math"
 )
@@ -28,8 +29,8 @@ func (player *Player) LocaleSync() string {
 	return player.settings.locale
 }
 
-func (player *Player) SendMessageSync(msg string) {
-	player.connection.WriteChatMessage(msg)
+func (player *Player) SendMessageSync(msg *chat.Message) {
+	player.connection.WriteChatMessage(msg.String())
 }
 
 func (player *Player) DisplayNameSync() string {

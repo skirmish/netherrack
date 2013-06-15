@@ -10,6 +10,7 @@ import (
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/system"
 	"github.com/NetherrackDev/soulsand"
+	"github.com/NetherrackDev/soulsand/chat"
 	"github.com/NetherrackDev/soulsand/command"
 	"github.com/NetherrackDev/soulsand/gamemode"
 	"github.com/NetherrackDev/soulsand/locale"
@@ -61,29 +62,32 @@ func init() {
 		if player, ok := caller.(*Player); ok {
 			player.WorldInternal().SetTime(int64(time))
 		} else {
-			caller.SendMessageSync("This can only be used by a player")
+			caller.SendMessageSync(chat.New().Colour(chat.Red).Text("This can only be used by a player"))
 		}
 	})
 	command.Add("say [string]", func(p soulsand.CommandSender, msg string) {
-		system.Broadcast(fmt.Sprintf("["+soulsand.ColourPurple+"Server"+soulsand.ChatReset+"]:"+soulsand.ColourPink+" %s", msg))
+		system.Broadcast(chat.New().Text("[").
+			Colour(chat.DarkPurple).Text("Server").
+			Text("]: ").
+			Colour(chat.LightPurple).Text(msg))
 	})
 	command.Add("gc", func(caller soulsand.CommandSender) {
 		runtime.GC()
 		debug.FreeOSMemory()
-		caller.SendMessageSync("GC Run")
+		caller.SendMessageSync(chat.New().Text("GC Ran"))
 	})
 	command.Add("stats", func(caller soulsand.CommandSender) {
 		var stats runtime.MemStats
 		runtime.ReadMemStats(&stats)
-		caller.SendMessageSync(fmt.Sprintf("Sys: %dkb", stats.Sys/1024))
-		caller.SendMessageSync(fmt.Sprintf("Alloc: %dkb", stats.Alloc/1024))
-		caller.SendMessageSync(fmt.Sprintf("TotalAlloc: %dkb", stats.TotalAlloc/1024))
+		caller.SendMessageSync(chat.New().Text(fmt.Sprintf("Sys: %dkb", stats.Sys/1024)))
+		caller.SendMessageSync(chat.New().Text(fmt.Sprintf("Alloc: %dkb", stats.Alloc/1024)))
+		caller.SendMessageSync(chat.New().Text(fmt.Sprintf("TotalAlloc: %dkb", stats.TotalAlloc/1024)))
 	})
 	command.Add("chunk resend", func(caller soulsand.CommandSender) {
 		if player, ok := caller.(*Player); ok {
 			player.WorldInternal().GetChunkData(player.Chunk.X, player.Chunk.Z, player.ChunkChannel, player.EntityDead)
 		} else {
-			caller.SendMessageSync("This can only be used by a player")
+			caller.SendMessageSync(chat.New().Colour(chat.Red).Text("This can only be used by a player"))
 		}
 	})
 }
