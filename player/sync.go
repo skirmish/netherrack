@@ -73,5 +73,9 @@ func (player *Player) OpenInventorySync(inv soulsand.Inventory) {
 	}
 	netherInv.AddWatcher(player)
 	player.openInventory = netherInv
-	player.connection.WriteOpenWindow(5, netherInv.GetWindowType(), title, int8(netherInv.GetSize()-27-9), useTitle)
+	player.connection.WriteOpenWindow(5, netherInv.GetWindowType(), title, int8(netherInv.GetSize()), useTitle)
+}
+
+func (player *Player) Inventory() soulsand.PlayerInventory {
+	return player.inventory
 }

@@ -58,7 +58,15 @@ func (inv *Type) AddWatcher(p soulsand.Player) {
 	defer inv.lock.RUnlock()
 	p.RunSync(func(se soulsand.SyncEntity) {
 		sp := se.(soulsand.SyncPlayer)
-		sp.Connection().WriteSetWindowItems(5, inv.items)
+		playerInv := sp.Inventory().(*PlayerInventory)
+		playerInv.lock.Lock()
+		defer playerInv.lock.Unlock()
+		inv.lock.RLock()
+		defer inv.lock.RUnlock()
+		items := make([]soulsand.ItemStack, len(inv.items)+playerInv.GetPlayerInventorySize()+playerInv.GetHotbarSize())
+		copy(items, inv.items)
+		copy(items[len(inv.items):], playerInv.items[9:])
+		sp.Connection().WriteSetWindowItems(5, items)
 	})
 }
 
