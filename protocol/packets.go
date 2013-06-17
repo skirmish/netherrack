@@ -1007,11 +1007,11 @@ func (c *Conn) WriteUpdateTileEntity(x int32, y int16, z int32, action int8, dat
 
 //Increment Statistic (0xC8)
 
-func (c *Conn) WriteIncrementStatistic(statisticID int32, amount int8) {
-	out := NewByteWriter(1 + 4 + 1)
+func (c *Conn) WriteIncrementStatistic(statisticID, amount int32) {
+	out := NewByteWriter(1 + 4 + 4)
 	out.WriteUByte(0xC8)
 	out.WriteInt(statisticID)
-	out.WriteByte(amount)
+	out.WriteInt(amount)
 	c.Write(out.Bytes())
 }
 
