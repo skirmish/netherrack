@@ -153,8 +153,6 @@ func HandlePlayer(conn net.Conn) {
 	yaw, pitch := player.LookSync()
 	player.connection.WritePlayerPositionLook(x, y, z, y+1.6, yaw, pitch, false)
 
-	player.connection.WriteEntityProperties(player.ID(), map[string]float64{"generic.movementSpeed": 0.1})
-
 	log.Printf("Player \"%s\" logged in with %d", player.name, player.EID)
 
 	system.AddPlayer(player)
