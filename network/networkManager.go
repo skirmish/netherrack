@@ -4,9 +4,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/NetherrackDev/netherrack/player"
+	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/log"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -28,59 +30,66 @@ func Listen(ip string, port int) {
 	}
 }
 
+type netherrackServer interface {
+	ListPingData() []string
+}
+
 //Work out if it is a listPing or a handshake
 func handleInitialConnection(conn net.Conn) {
 	defer conn.Close()
 	firstByte := make([]byte, 1)
-	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	conn.SetReadDeadline(time.Now().Add(15 * time.Second))
 	n, err := conn.Read(firstByte)
 	if n != 1 || err != nil {
 		log.Println(err)
 		return
 	}
 	if firstByte[0] == 0xFE { //listPing
-		conn.Read(make([]byte, 1))
-		listData := soulsand.GetServer().ListPingData()
-		motd := []rune(listData[0])
-		versionNo := []rune(listData[1])
-		version := []rune(listData[2])
-		currentPlayers := []rune(listData[3])
-		maxPlayers := []rune(listData[4])
-		strLen := 3 + len(versionNo) + 1 + len(version) + 1 + len(motd) + 1 + len(currentPlayers) + 1 + len(maxPlayers)
-		msg := make([]byte, 1+2+strLen*2)
-		msg[0] = 0xFF
-		binary.BigEndian.PutUint16(msg[1:3], uint16(strLen))
-		binary.BigEndian.PutUint16(msg[3:5], uint16(0xA7))
-		binary.BigEndian.PutUint16(msg[5:7], uint16(0x31))
+		connection := protocol.CreateConnection(conn)
+		connection.Read(make([]byte, 1))
 
-		pos := 9
-		for _, b := range versionNo {
-			binary.BigEndian.PutUint16(msg[pos:pos+2], uint16(b))
-			pos += 2
+		//1.6 added extra info to the list ping
+		extra := make([]byte, 1)
+		//Do this manually because connection.Read sets the deadline to 15 seconds but this data may not be there
+		conn.SetReadDeadline(time.Now().Add(150 * time.Nanosecond))
+		if _, err := conn.Read(extra); err == nil {
+			log.Println("Got extra data")
+			if extra[0] != 0xFA {
+				return
+			}
+			channel, data := connection.ReadPluginMessage()
+			if channel != "MC|PingHost" {
+				return
+			}
+			if len(data) < 3 {
+				return
+			}
+			protoVersion := data[0]
+			offset, host := readString(data[1:])
+			if len(data) < offset+1+4 {
+				log.Println(offset, len(data), host)
+				return
+			}
+			port := binary.BigEndian.Uint32(data[offset+1:])
+			_, _, _ = protoVersion, host, port //TODO: Something with the new infomation
 		}
-		pos += 2
-		for _, b := range version {
-			binary.BigEndian.PutUint16(msg[pos:pos+2], uint16(b))
-			pos += 2
-		}
-		pos += 2
-		for _, b := range motd {
-			binary.BigEndian.PutUint16(msg[pos:pos+2], uint16(b))
-			pos += 2
-		}
-		pos += 2
-		for _, b := range currentPlayers {
-			binary.BigEndian.PutUint16(msg[pos:pos+2], uint16(b))
-			pos += 2
-		}
-		pos += 2
-		for _, b := range maxPlayers {
-			binary.BigEndian.PutUint16(msg[pos:pos+2], uint16(b))
-			pos += 2
-		}
-		conn.Write(msg)
+
+		listData := soulsand.GetServer().(netherrackServer).ListPingData()
+		ping := "§1\x00" + strings.Join(listData, "\x00")
+		connection.WriteDisconnect(ping)
 	} else { //handshake
 		player.HandlePlayer(conn)
 	}
 	log.Println(conn.RemoteAddr().String() + " closed")
+}
+
+func readString(data []byte) (off int, str string) {
+	length := binary.BigEndian.Uint16(data)
+	off += 2 + int(length)*2
+	runes := make([]rune, length)
+	for i, _ := range runes {
+		runes[i] = rune(binary.BigEndian.Uint16(data[2+i*2:]))
+	}
+	str = string(runes)
+	return
 }

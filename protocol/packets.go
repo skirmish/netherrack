@@ -567,9 +567,10 @@ func (c *Conn) WriteEntityProperties(eId int32, na map[string]float64) {
 	c.Write(out.Bytes())
 	for key, value := range na {
 		keyRunes := []rune(key)
-		out := NewByteWriter(2 + len(keyRunes)*2 + 8)
+		out := NewByteWriter(2 + len(keyRunes)*2 + 8 + 2)
 		out.WriteString(keyRunes)
 		out.WriteDouble(value)
+		out.WriteShort(0) // Ignore for now
 		c.Write(out.Bytes())
 	}
 }
@@ -742,6 +743,9 @@ func (c *Conn) WriteOpenWindow(windowId, inventoryType int8, windowTitle string,
 	out.WriteString(windowTitleRunes)
 	out.WriteByte(numberOfSlots)
 	out.WriteBool(useTitle)
+	if inventoryType == 0xb {
+		panic("Type not supported")
+	}
 	c.Write(out.Bytes())
 }
 
@@ -1002,6 +1006,18 @@ func (c *Conn) WriteUpdateTileEntity(x int32, y int16, z int32, action int8, dat
 	for _, b := range bytes {
 		out.WriteUByte(b)
 	}
+	c.Write(out.Bytes())
+}
+
+//Unknown (0x85)
+
+func (c *Conn) Write0x85(a int8, b, cc, d int32) {
+	out := NewByteWriter(1 + 1 + 4 + 4 + 4)
+	out.WriteUByte(0x84)
+	out.WriteByte(a)
+	out.WriteInt(b)
+	out.WriteInt(cc)
+	out.WriteInt(d)
 	c.Write(out.Bytes())
 }
 

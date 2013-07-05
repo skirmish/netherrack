@@ -55,8 +55,12 @@ func init() {
 	}
 }
 
+func CreateConnection(conn net.Conn) *Conn {
+	return &Conn{conn: conn, output: conn, input: conn}
+}
+
 func NewConnection(conn net.Conn) (*Conn, string) {
-	connection := &Conn{conn: conn, output: conn, input: conn}
+	connection := CreateConnection(conn)
 	protoVersion, username, _, _ := connection.ReadHandshake()
 	if protoVersion != PROTOVERSION {
 		if protoVersion < PROTOVERSION {

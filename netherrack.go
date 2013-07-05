@@ -77,9 +77,9 @@ func (server *Server) Start(ip string, port int) {
 
 	command.Parse()
 
-	server.ProtoVersion = 71
+	server.ProtoVersion = 74
 	protocol.PROTOVERSION = byte(server.ProtoVersion)
-	server.ListPing.Version = "13w25a"
+	server.ListPing.Version = "1.6.2"
 
 	server.event = make(chan func(), 1000)
 
@@ -142,9 +142,9 @@ func (server *Server) ListPingData() []string {
 	res := make(chan []string, 1)
 	server.event <- func() {
 		res <- []string{
-			server.ListPing.MessageOfTheDay,
 			strconv.Itoa(server.ProtoVersion),
 			server.ListPing.Version,
+			server.ListPing.MessageOfTheDay,
 			strconv.Itoa(0),
 			strconv.Itoa(server.ListPing.MaxPlayers)}
 	}
