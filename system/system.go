@@ -1,11 +1,9 @@
 package system
 
 import (
-	"fmt"
 	"github.com/NetherrackDev/netherrack/event"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/chat"
-	"github.com/NetherrackDev/soulsand/locale"
 )
 
 func init() {
@@ -56,8 +54,10 @@ func AddPlayer(p soulsand.Player) {
 			if err != nil {
 				continue
 			}
-			message := fmt.Sprintf(locale.Get(playerLocale, "message.player.connect"), displayName)
-			player.SendMessage(chat.New().Colour(chat.Yellow).Text(message))
+			player.SendMessage(chat.New().Colour(chat.Yellow).
+				TranslateBegin(playerLocale, "message.player.connect").
+				Colour(chat.Yellow).Text(displayName).
+				TranslateEnd())
 		}
 	}
 }
@@ -72,8 +72,10 @@ func RemovePlayer(p soulsand.Player) {
 			if err != nil {
 				continue
 			}
-			message := fmt.Sprintf(locale.Get(playerLocale, "message.player.disconnect"), displayName)
-			player.SendMessage(chat.New().Colour(chat.Yellow).Text(message))
+			player.SendMessage(chat.New().Colour(chat.Yellow).
+				TranslateBegin(playerLocale, "message.player.disconnect").
+				Colour(chat.Yellow).Text(displayName).
+				TranslateEnd())
 		}
 	}
 }
