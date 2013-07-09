@@ -148,6 +148,19 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 					if (cy >= 8 && direction != 1) || direction == 0 {
 						data |= 0x8
 					}
+				case 50: //Torches
+					switch direction {
+					case 1:
+						data = 0
+					case 2:
+						data = 4
+					case 3:
+						data = 3
+					case 4:
+						data = 2
+					case 5:
+						data = 1
+					}
 				}
 				player.WorldInternal().SetBlock(x, y, z, id, data)
 				player.PlaySound(float64(x)+0.5, float64(y)+0.5, float64(z)+0.5, blocks.GetBlockById(id).PlacementSound(), 1, 50)
