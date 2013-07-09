@@ -135,7 +135,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 					}
 					dir := byte((yaw + 45) / 90)
 					switch dir {
-					case 0:
+					case 0, 4:
 						data |= 0x2
 					case 1:
 						data |= 0x1
@@ -169,7 +169,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 					}
 					dir := byte((yaw + 45) / 90)
 					switch dir {
-					case 0:
+					case 0, 4:
 						data = 0x2
 					case 1:
 						data = 0x3
@@ -177,6 +177,24 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 						data = 0x0
 					case 3:
 						data = 0x1
+
+					}
+				case 61, 62, 23, 158: //Other
+					tYaw, _ := player.LookSync()
+					yaw := math.Mod(float64(tYaw), 360)
+					if yaw < 0 {
+						yaw = 360 + yaw
+					}
+					dir := byte((yaw + 45) / 90)
+					switch dir {
+					case 0, 4:
+						data = 0x2
+					case 1:
+						data = 0x5
+					case 2:
+						data = 0x3
+					case 3:
+						data = 0x4
 
 					}
 				}
