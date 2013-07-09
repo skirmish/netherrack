@@ -11,6 +11,7 @@ import (
 	"github.com/NetherrackDev/soulsand/effect"
 	"github.com/NetherrackDev/soulsand/gamemode"
 	"github.com/NetherrackDev/soulsand/log"
+	"math"
 	"runtime"
 )
 
@@ -94,7 +95,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		}
 	},
 	0x0F: func(c *protocol.Conn, player *Player) { //Player Block Placement
-		bx, by, bz, direction, _, _, _ := c.ReadPlayerBlockPlacement()
+		bx, by, bz, direction, _, cy, _ := c.ReadPlayerBlockPlacement()
 		x := int(bx)
 		y := int(by)
 		z := int(bz)
@@ -121,6 +122,33 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 				item = e.Block()
 				id := byte(item.ID())
 				data := byte(item.Data())
+				switch id { //Special blocks
+				case 53, 67, 109, 114, 134, 135, 136, 156: //Stairs
+					data = 0
+					if (cy >= 8 && direction != 1) || direction == 0 {
+						data |= 0x4
+					}
+					tYaw, _ := player.LookSync()
+					yaw := math.Mod(float64(tYaw), 360)
+					if yaw < 0 {
+						yaw = 360 + yaw
+					}
+					dir := byte((yaw + 45) / 90)
+					switch dir {
+					case 0:
+						data |= 0x2
+					case 1:
+						data |= 0x1
+					case 2:
+						data |= 0x3
+					case 3:
+						data |= 0x0
+					}
+				case 44, 126: //Stairs
+					if (cy >= 8 && direction != 1) || direction == 0 {
+						data |= 0x8
+					}
+				}
 				player.WorldInternal().SetBlock(x, y, z, id, data)
 				player.PlaySound(float64(x)+0.5, float64(y)+0.5, float64(z)+0.5, blocks.GetBlockById(id).PlacementSound(), 1, 50)
 			} else {
