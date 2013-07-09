@@ -161,6 +161,24 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 					case 5:
 						data = 1
 					}
+				case 86, 91: //Pumpkins
+					tYaw, _ := player.LookSync()
+					yaw := math.Mod(float64(tYaw), 360)
+					if yaw < 0 {
+						yaw = 360 + yaw
+					}
+					dir := byte((yaw + 45) / 90)
+					switch dir {
+					case 0:
+						data = 0x2
+					case 1:
+						data = 0x3
+					case 2:
+						data = 0x0
+					case 3:
+						data = 0x1
+
+					}
 				}
 				player.WorldInternal().SetBlock(x, y, z, id, data)
 				player.PlaySound(float64(x)+0.5, float64(y)+0.5, float64(z)+0.5, blocks.GetBlockById(id).PlacementSound(), 1, 50)
