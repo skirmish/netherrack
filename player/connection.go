@@ -144,7 +144,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 					case 3:
 						data |= 0x0
 					}
-				case 44, 126: //Stairs
+				case 44, 126: //Slabs
 					if (cy >= 8 && direction != 1) || direction == 0 {
 						data |= 0x8
 					}
