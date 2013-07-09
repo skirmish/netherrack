@@ -4,6 +4,7 @@ import (
 	"github.com/NetherrackDev/netherrack/nbt"
 	"github.com/NetherrackDev/soulsand"
 	"github.com/NetherrackDev/soulsand/effect"
+	"github.com/NetherrackDev/soulsand/sound"
 	"runtime"
 	"sync"
 	"time"
@@ -165,6 +166,15 @@ func (world *World) PlayEffect(x, y, z int, eff effect.Type, data int, relative 
 		chunk := c.(*Chunk)
 		for _, p := range chunk.Players {
 			p.PlayEffect(x, y, z, eff, data, relative)
+		}
+	})
+}
+
+func (world *World) PlaySound(x, y, z float64, name sound.Type, volume float32, pitch int8) {
+	world.RunSync(int(x)>>4, int(z)>>4, func(c soulsand.SyncChunk) {
+		chunk := c.(*Chunk)
+		for _, p := range chunk.Players {
+			p.PlaySound(x, y, z, name, volume, pitch)
 		}
 	})
 }
