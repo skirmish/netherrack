@@ -95,9 +95,6 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		x := int(bx)
 		y := int(by)
 		z := int(bz)
-		if x == -1 && z == -1 && y == 255 {
-			return
-		}
 		switch direction {
 		case 0:
 			y--
@@ -112,8 +109,11 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		case 5:
 			x++
 		}
-		if item := player.inventory.HotbarSlot(player.CurrentSlot); item != nil && item.ID() < 256 {
+		if item := player.inventory.HotbarSlot(player.CurrentSlot); item != nil && x != -1 && y != 255 && z != -1 {
 			id, e := event.NewPlayerBlockPlace(player, x, y, z, item)
+			if item.ID() > 255 {
+				e.Cancel()
+			}
 			if !player.Fire(id, e) {
 				item = e.Block()
 				id := byte(item.ID())
@@ -199,7 +199,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 			} else {
 				data := player.WorldSync().Block(x, y, z)
 				bId, bData := data[0], data[1]
-				player.connection.WriteBlockChange(bx, by, bz, int16(bId), bData)
+				player.connection.WriteBlockChange(int32(x), byte(y), int32(z), int16(bId), bData)
 			}
 		} else {
 			player.Fire(event.NewPlayerRightClick(player))
