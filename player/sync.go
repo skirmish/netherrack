@@ -21,6 +21,10 @@ func (player *Player) Name() string {
 	return player.name
 }
 
+func (player *Player) HightlightedSlot() int {
+	return player.CurrentSlot
+}
+
 func (player *Player) ViewDistanceSync() int {
 	return player.settings.viewDistance
 }
