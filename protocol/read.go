@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/binary"
 	"github.com/NetherrackDev/netherrack/items"
 	"github.com/NetherrackDev/netherrack/nbt"
@@ -106,7 +107,11 @@ func (c *Conn) readSlot() (itemstack soulsand.ItemStack) {
 	if l := c.readShort(); l != -1 {
 		data := make([]byte, l)
 		c.Read(data)
-		tag, err := nbt.Parse(bytes.NewReader(data))
+		r, err := gzip.NewReader(bytes.NewReader(data))
+		if err != nil {
+			runtime.Goexit()
+		}
+		tag, err := nbt.Parse(r)
 		if err != nil {
 			runtime.Goexit()
 		}
