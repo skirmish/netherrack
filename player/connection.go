@@ -235,6 +235,9 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 	},
 	0x6B: func(c *protocol.Conn, player *Player) { //Creative Inventory Action
 		slot, item := c.ReadCreativeInventoryAction()
+		if slot == -1 {
+			return
+		}
 		player.inventory.SetSlot(int(slot), item)
 	},
 	0x6C: func(c *protocol.Conn, player *Player) { //Enchant Item
