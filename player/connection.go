@@ -111,7 +111,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		}
 		if item := player.inventory.HotbarSlot(player.CurrentSlot); item != nil && x != -1 && y != 255 && z != -1 {
 			id, e := event.NewPlayerBlockPlace(player, x, y, z, item)
-			if item.ID() > 255 {
+			if item.ID() > 255 || item.ID() == 0 {
 				e.Cancel()
 			}
 			if !player.Fire(id, e) {
@@ -237,6 +237,9 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		slot, item := c.ReadCreativeInventoryAction()
 		if slot == -1 {
 			return
+		}
+		if item.ID() == -1 {
+			item = nil
 		}
 		player.inventory.SetSlot(int(slot), item)
 	},

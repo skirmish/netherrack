@@ -42,6 +42,9 @@ func (chunk *Chunk) tryLoad() byte {
 	}
 
 	heightMap, _ := level.GetIntArray("HeightMap", nil)
+	if heightMap == nil {
+		heightMap = make([]int32, 16*16)
+	}
 	chunk.heightMap = heightMap
 
 	sections, ok := level.GetList("Sections", false)
