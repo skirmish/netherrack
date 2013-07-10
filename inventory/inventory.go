@@ -13,16 +13,16 @@ type Type struct {
 	lock        sync.RWMutex
 	items       []soulsand.ItemStack
 	Id          int8
-	Name        string
+	name        string
 	watcherLock sync.RWMutex
 	watchers    map[string]soulsand.Player
 }
 
-func (inv *Type) GetWindowType() int8 {
+func (inv *Type) WindowType() int8 {
 	return inv.Id
 }
 
-func (inv *Type) GetSlot(slot int) soulsand.ItemStack {
+func (inv *Type) Slot(slot int) soulsand.ItemStack {
 	inv.lock.RLock()
 	defer inv.lock.RUnlock()
 	return inv.items[slot]
@@ -42,12 +42,12 @@ func (inv *Type) SetSlot(slot int, item soulsand.ItemStack) {
 	}
 }
 
-func (inv *Type) GetSize() int {
+func (inv *Type) Size() int {
 	return len(inv.items)
 }
 
-func (inv *Type) GetName() string {
-	return inv.Name
+func (inv *Type) Name() string {
+	return inv.name
 }
 
 func (inv *Type) AddWatcher(p soulsand.Player) {
@@ -63,7 +63,7 @@ func (inv *Type) AddWatcher(p soulsand.Player) {
 		defer playerInv.lock.Unlock()
 		inv.lock.RLock()
 		defer inv.lock.RUnlock()
-		items := make([]soulsand.ItemStack, len(inv.items)+playerInv.GetPlayerInventorySize()+playerInv.GetHotbarSize())
+		items := make([]soulsand.ItemStack, len(inv.items)+playerInv.PlayerInventorySize()+playerInv.HotbarSize())
 		copy(items, inv.items)
 		copy(items[len(inv.items):], playerInv.items[9:])
 		sp.Connection().WriteSetWindowItems(5, items)

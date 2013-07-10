@@ -60,7 +60,7 @@ func (player *Player) AsEntity() entity.Entity {
 
 func (player *Player) OpenInventorySync(inv soulsand.Inventory) {
 	netherInv := inv.(internal.Inventory)
-	title := netherInv.GetName()
+	title := netherInv.Name()
 	useTitle := true
 	if len(title) == 0 {
 		title = ""
@@ -73,7 +73,7 @@ func (player *Player) OpenInventorySync(inv soulsand.Inventory) {
 	}
 	netherInv.AddWatcher(player)
 	player.openInventory = netherInv
-	player.connection.WriteOpenWindow(5, netherInv.GetWindowType(), title, int8(netherInv.GetSize()), useTitle)
+	player.connection.WriteOpenWindow(5, netherInv.WindowType(), title, int8(netherInv.Size()), useTitle)
 }
 
 func (player *Player) Inventory() soulsand.PlayerInventory {

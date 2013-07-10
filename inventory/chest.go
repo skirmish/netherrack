@@ -16,21 +16,21 @@ func CreateChestInventory(name string, size int) *ChestInventory {
 		Type: Type{
 			items:    make([]soulsand.ItemStack, size),
 			Id:       0,
-			Name:     name,
+			name:     name,
 			watchers: make(map[string]soulsand.Player),
 		},
 		chestSlots: size,
 	}
 }
 
-func (ci *ChestInventory) GetInventorySlot(slot int) soulsand.ItemStack {
-	return ci.GetSlot(slot)
+func (ci *ChestInventory) InventorySlot(slot int) soulsand.ItemStack {
+	return ci.Slot(slot)
 }
 
 func (ci *ChestInventory) SetInventorySlot(slot int, item soulsand.ItemStack) {
 	ci.SetSlot(slot, item)
 }
 
-func (ci *ChestInventory) GetInventorySize() int {
+func (ci *ChestInventory) InventorySize() int {
 	return ci.chestSlots
 }

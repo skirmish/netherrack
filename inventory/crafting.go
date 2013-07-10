@@ -20,16 +20,16 @@ func CreateCraftingInventory() *CraftingInventory {
 	}
 }
 
-func (ci *CraftingInventory) GetCraftingOutput() soulsand.ItemStack {
-	return ci.GetSlot(0)
+func (ci *CraftingInventory) CraftingOutput() soulsand.ItemStack {
+	return ci.Slot(0)
 }
 
 func (ci *CraftingInventory) SetCraftingOutput(item soulsand.ItemStack) {
 	ci.SetSlot(0, item)
 }
 
-func (ci *CraftingInventory) GetCraftingInput(x, y int) soulsand.ItemStack {
-	return ci.GetSlot(1 + x + y*3)
+func (ci *CraftingInventory) CraftingInput(x, y int) soulsand.ItemStack {
+	return ci.Slot(1 + x + y*3)
 }
 
 func (ci *CraftingInventory) SetCraftingInput(x, y int, item soulsand.ItemStack) {

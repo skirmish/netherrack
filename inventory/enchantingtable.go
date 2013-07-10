@@ -13,14 +13,14 @@ func CreateEnchantingTableInventory(name string) *EnchantingTableInventory {
 		Type: Type{
 			items:    make([]soulsand.ItemStack, 1),
 			Id:       4,
-			Name:     name,
+			name:     name,
 			watchers: make(map[string]soulsand.Player),
 		},
 	}
 }
 
-func (eti *EnchantingTableInventory) GetItem() soulsand.ItemStack {
-	return eti.GetSlot(0)
+func (eti *EnchantingTableInventory) Item() soulsand.ItemStack {
+	return eti.Slot(0)
 }
 
 func (eti *EnchantingTableInventory) SetItem(item soulsand.ItemStack) {
