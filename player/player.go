@@ -39,13 +39,16 @@ type Player struct {
 	inventory     *inventory.PlayerInventory
 	openInventory internal.Inventory
 
-	displayName       string
-	IgnoreMoveUpdates bool
+	displayName string
 
 	experienceBar float32
 	level         int16
 
 	gamemode gamemode.Type
+
+	positionData struct {
+		X, Y, Z float64
+	}
 
 	settings struct {
 		locale          string
@@ -234,6 +237,19 @@ func (player *Player) closeConnection() {
 
 func (p *Player) SendMoveUpdate() {
 	lx, lz := p.Chunk.LX, p.Chunk.LZ
+
+	x, y, z := p.PositionSync()
+	dx := p.positionData.X - x
+	dy := p.positionData.Y - y
+	dz := p.positionData.Z - z
+	dist := dx*dx + dy*dy + dz*dz
+	if dist >= 4*4 {
+		yaw, pitch := p.LookSync()
+		p.Connection().WritePlayerPositionLook(x, y, z, y+1.6, yaw, pitch, false)
+	} else {
+		p.SetPositionSync(p.positionData.X, p.positionData.Y, p.positionData.Z)
+	}
+
 	if p.Entity.SendMoveUpdate() {
 		vd := int32(p.settings.viewDistance)
 		for x := lx - vd; x < lx+vd+1; x++ {

@@ -48,9 +48,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 	},
 	0x0B: func(c *protocol.Conn, player *Player) { //Player Position
 		x, y, _, z, _ := c.ReadPlayerPosition()
-		if !player.IgnoreMoveUpdates {
-			player.SetPositionSync(x, y, z)
-		}
+		player.positionData.X, player.positionData.Y, player.positionData.Z = x, y, z
 	},
 	0x0C: func(c *protocol.Conn, player *Player) { //Player Look
 		yaw, pitch, _ := c.ReadPlayerLook()
@@ -58,9 +56,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 	},
 	0x0D: func(c *protocol.Conn, player *Player) { //Player Position and Look
 		x, y, _, z, yaw, pitch, _ := c.ReadPlayerPositionLook()
-		if !player.IgnoreMoveUpdates {
-			player.SetPositionSync(x, y, z)
-		}
+		player.positionData.X, player.positionData.Y, player.positionData.Z = x, y, z
 		player.SetLookSync(yaw, pitch)
 	},
 	0x0E: func(c *protocol.Conn, player *Player) { //Player Digging
