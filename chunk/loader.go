@@ -8,6 +8,8 @@ import (
 )
 
 func (world *World) loadLevel() {
+	world.Lock()
+	defer world.Unlock()
 	os.MkdirAll(filepath.Join("worlds", world.Name), os.ModeDir|os.ModePerm)
 
 	levelDataFile, err := os.Open(filepath.Join("worlds", world.Name, "level.dat"))
@@ -32,6 +34,12 @@ func (world *World) loadLevel() {
 }
 
 func (world *World) save() {
+	world.Lock()
+	defer world.Unlock()
+	world.saveNoLock()
+}
+
+func (world *World) saveNoLock() {
 	levelData := nbt.NewNBT()
 	levelData.Set("Data", world.settings)
 	levelDataFile, err := os.Create(filepath.Join("worlds", world.Name, "level.dat"))

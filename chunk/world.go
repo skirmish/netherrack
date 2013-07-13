@@ -18,40 +18,23 @@ func init() {
 }
 
 type World struct {
-	Name                     string
-	chunkChannel             chan *ChunkRequest
-	chunkJoinChannel         chan *chunkEntityRequest
-	chunkLeaveChannel        chan *chunkEntityRequest
-	chunkJoinWatcherChannel  chan *chunkWatcherRequest
-	chunkLeaveWatcherChannel chan *chunkWatcherRequest
-	chunkMessageChannel      chan *chunkMessage
-	chunkKillChannel         chan chan *ChunkPosition
-	chunkEventChannel        chan chunkEvent
-	worldEventChannel        chan func(soulsand.World)
-	chunks                   map[ChunkPosition]*Chunk
-	players                  map[string]soulsand.Player
-	settings                 nbt.Type
-	dataLock                 sync.RWMutex
-	regions                  map[uint64]*region
-	generator                soulsand.ChunkGenerator
+	sync.RWMutex
+	Name      string
+	chunks    map[ChunkPosition]*Chunk
+	players   map[string]soulsand.Player
+	settings  nbt.Type
+	dataLock  sync.RWMutex
+	regions   map[uint64]*region
+	generator soulsand.ChunkGenerator
 }
 
 func NewWorld(name string) *World {
 	world := &World{
-		Name:                     name,
-		chunkChannel:             make(chan *ChunkRequest, 500),
-		chunkJoinChannel:         make(chan *chunkEntityRequest, 500),
-		chunkLeaveChannel:        make(chan *chunkEntityRequest, 500),
-		chunkJoinWatcherChannel:  make(chan *chunkWatcherRequest, 500),
-		chunkLeaveWatcherChannel: make(chan *chunkWatcherRequest, 500),
-		chunkMessageChannel:      make(chan *chunkMessage, 5000),
-		chunkKillChannel:         make(chan chan *ChunkPosition),
-		chunkEventChannel:        make(chan chunkEvent, 50000),
-		worldEventChannel:        make(chan func(soulsand.World), 200),
-		players:                  make(map[string]soulsand.Player),
-		chunks:                   make(map[ChunkPosition]*Chunk),
-		regions:                  make(map[uint64]*region),
-		generator:                defaultGenerator(0),
+		Name:      name,
+		players:   make(map[string]soulsand.Player),
+		chunks:    make(map[ChunkPosition]*Chunk),
+		regions:   make(map[uint64]*region),
+		generator: defaultGenerator(0),
 	}
 	go world.chunkWatcher()
 	return world
@@ -63,72 +46,41 @@ func (world *World) chunkWatcher() {
 	ticker := time.NewTicker(time.Second / 20)
 	defer ticker.Stop()
 	for {
-		select {
-		case posChan := <-world.chunkKillChannel:
-			pos := <-posChan
-			if pos != nil {
-				delete(world.chunks, *pos)
-			}
-		case cr := <-world.chunkChannel:
-			cp := ChunkPosition{X: cr.X, Z: cr.Z}
-			world.getChunk(cp).requests <- cr
-		case msg := <-world.chunkJoinWatcherChannel:
-			world.getChunk(msg.Pos).watcherJoin <- msg
-		case msg := <-world.chunkLeaveWatcherChannel:
-			world.getChunk(msg.Pos).watcherLeave <- msg
-		case msg := <-world.chunkJoinChannel:
-			world.getChunk(msg.Pos).entityJoin <- msg
-		case msg := <-world.chunkLeaveChannel:
-			world.getChunk(msg.Pos).entityLeave <- msg
-		case msg := <-world.chunkMessageChannel:
-			world.getChunk(msg.Pos).messageChannel <- msg
-		case msg := <-world.chunkEventChannel:
-			world.getChunk(msg.Pos).eventChannel <- msg.F
-		case f := <-world.worldEventChannel:
-			f(world)
-		case <-ticker.C:
-			time, _ := world.settings.GetLong("Time", 0)
-			time++
-			world.settings.Set("Time", time)
-			dayTime, _ := world.settings.GetLong("DayTime", 0)
-			dayTime = (dayTime + 1) % 24000
-			world.settings.Set("DayTime", dayTime)
-			if time%20 == 0 {
-				world.updateTime()
-			}
-			if time%6000 == 0 {
-				world.save()
-			}
-			if len(world.players) == 0 && len(world.chunks) == 0 {
-				lock := make(chan bool)
-				worldEvent <- func() {
-					if <-lock {
-						delete(worlds, world.Name)
-					}
-				}
-				if len(world.chunkJoinWatcherChannel) == 0 {
-					lock <- true
-				} else {
-					lock <- false
-				}
-				runtime.Goexit()
-			}
-		}
+		<-ticker.C
+		world.tick()
+	}
+}
 
+func (world *World) tick() {
+	world.Lock()
+	defer world.Unlock()
+	time, _ := world.settings.GetLong("Time", 0)
+	time++
+	world.settings.Set("Time", time)
+	dayTime, _ := world.settings.GetLong("DayTime", 0)
+	dayTime = (dayTime + 1) % 24000
+	world.settings.Set("DayTime", dayTime)
+	if time%20 == 0 {
+		world.updateTime()
+	}
+	if time%6000 == 0 {
+		world.saveNoLock()
+	}
+	if len(world.players) == 0 && len(world.chunks) == 0 {
+		worldEvent <- func() {
+			delete(worlds, world.Name)
+		}
+		runtime.Goexit()
 	}
 }
 
 func (world *World) Spawn() (x, y, z int) {
-	ret := make(chan struct{}, 1)
-	world.worldEventChannel <- func(soulsand.World) {
-		spawnX, _ := world.settings.GetInt("SpawnX", 0)
-		spawnY, _ := world.settings.GetInt("SpawnY", 80)
-		spawnZ, _ := world.settings.GetInt("SpawnZ", 0)
-		x, y, z = int(spawnX), int(spawnY), int(spawnZ)
-		ret <- struct{}{}
-	}
-	<-ret
-	return
+	world.RLock()
+	defer world.RUnlock()
+	spawnX, _ := world.settings.GetInt("SpawnX", 0)
+	spawnY, _ := world.settings.GetInt("SpawnY", 80)
+	spawnZ, _ := world.settings.GetInt("SpawnZ", 0)
+	return int(spawnX), int(spawnY), int(spawnZ)
 }
 
 func (world *World) updateTime() {
@@ -143,22 +95,21 @@ func (world *World) updateTime() {
 }
 
 func (world *World) AddPlayer(player soulsand.Player) {
-	world.worldEventChannel <- func(soulsand.World) {
-		world.players[player.Name()] = player
-	}
+	world.Lock()
+	defer world.Unlock()
+	world.players[player.Name()] = player
 }
 
 func (world *World) RemovePlayer(player soulsand.Player) {
-	world.worldEventChannel <- func(soulsand.World) {
-		delete(world.players, player.Name())
-	}
+	world.Lock()
+	defer world.Unlock()
+	delete(world.players, player.Name())
 }
 
 func (world *World) RunSync(x, z int, f func(soulsand.SyncChunk)) {
-	world.chunkEventChannel <- chunkEvent{
-		Pos: ChunkPosition{int32(x), int32(z)},
-		F:   f,
-	}
+	world.RLock()
+	defer world.RUnlock()
+	world.getChunk(ChunkPosition{int32(x), int32(z)}).eventChannel <- f
 }
 
 func (world *World) PlayEffect(x, y, z int, eff effect.Type, data int, relative bool) {
@@ -231,7 +182,9 @@ func (world *World) Blocks(x, y, z, w, h, d int) *Blocks {
 }
 
 func (world *World) GetChunkData(x, z int32, ret chan [][]byte, stop chan struct{}) {
-	world.chunkChannel <- &ChunkRequest{
+	world.RLock()
+	defer world.RUnlock()
+	world.getChunk(ChunkPosition{int32(x), int32(z)}).requests <- &ChunkRequest{
 		X: x, Z: z,
 		Stop: stop,
 		Ret:  ret,
@@ -239,44 +192,61 @@ func (world *World) GetChunkData(x, z int32, ret chan [][]byte, stop chan struct
 }
 
 func (world *World) JoinChunkAsWatcher(x, z int32, pl soulsand.Player) {
-	world.chunkJoinWatcherChannel <- &chunkWatcherRequest{
-		Pos: ChunkPosition{
-			X: x, Z: z,
-		},
-		P: pl,
+	world.RLock()
+	defer world.RUnlock()
+	pos := ChunkPosition{
+		X: x, Z: z,
+	}
+	world.getChunk(pos).watcherJoin <- &chunkWatcherRequest{
+		Pos: pos,
+		P:   pl,
 	}
 }
 
 func (world *World) LeaveChunkAsWatcher(x, z int32, pl soulsand.Player) {
-	world.chunkLeaveWatcherChannel <- &chunkWatcherRequest{
-		Pos: ChunkPosition{
-			X: x, Z: z,
-		},
-		P: pl,
+	world.RLock()
+	defer world.RUnlock()
+	pos := ChunkPosition{
+		X: x, Z: z,
+	}
+	world.getChunk(pos).watcherLeave <- &chunkWatcherRequest{
+		Pos: pos,
+		P:   pl,
 	}
 }
 
 func (world *World) JoinChunk(x, z int32, e soulsand.Entity) {
-	world.chunkJoinChannel <- &chunkEntityRequest{
-		Pos: ChunkPosition{
-			X: x, Z: z,
-		},
-		E: e,
+	world.RLock()
+	defer world.RUnlock()
+	pos := ChunkPosition{
+		X: x, Z: z,
+	}
+	world.getChunk(pos).entityJoin <- &chunkEntityRequest{
+		Pos: pos,
+		E:   e,
 	}
 }
 
 func (world *World) LeaveChunk(x, z int32, e soulsand.Entity) {
-	world.chunkLeaveChannel <- &chunkEntityRequest{
-		Pos: ChunkPosition{
-			X: x, Z: z,
-		},
-		E: e,
+	world.RLock()
+	defer world.RUnlock()
+	pos := ChunkPosition{
+		X: x, Z: z,
+	}
+	world.getChunk(pos).entityLeave <- &chunkEntityRequest{
+		Pos: pos,
+		E:   e,
 	}
 }
 
 func (world *World) SendChunkMessage(x, z, id int32, msg func(soulsand.SyncEntity)) {
-	world.chunkMessageChannel <- &chunkMessage{
-		ChunkPosition{x, z},
+	world.RLock()
+	defer world.RUnlock()
+	pos := ChunkPosition{
+		X: x, Z: z,
+	}
+	world.getChunk(pos).messageChannel <- &chunkMessage{
+		pos,
 		msg,
 		id,
 	}
@@ -294,15 +264,9 @@ func (world *World) getChunk(cp ChunkPosition) *Chunk {
 }
 
 func (world *World) grabChunk(x, z int32) *Chunk {
-	ret := make(chan *Chunk, 1)
-	select {
-	case world.worldEventChannel <- func(soulsand.World) {
-		ret <- world.getChunk(ChunkPosition{x, z})
-	}:
-	default:
-		return nil //Server is too busy
-	}
-	return <-ret
+	world.RLock()
+	defer world.RUnlock()
+	return world.getChunk(ChunkPosition{x, z})
 }
 
 func (world *World) chunkExists(x, z int32) bool {
@@ -318,22 +282,22 @@ func (world *World) chunkExists(x, z int32) bool {
 }
 
 func (world *World) chunkLoaded(x, z int32) bool {
-	ret := make(chan bool, 1)
-	select {
-	case world.worldEventChannel <- func(soulsand.World) {
-		_, ok := world.chunks[ChunkPosition{x, z}]
-		ret <- ok
-	}:
-	default:
-		return false //Server is too busy
-	}
-	return <-ret
+	world.RLock()
+	defer world.RUnlock()
+	_, ok := world.chunks[ChunkPosition{x, z}]
+	return ok
 }
 
 func (world *World) SetTime(time int64) {
-	world.worldEventChannel <- func(soulsand.World) {
-		world.settings.Set("DayTime", time)
-	}
+	world.Lock()
+	defer world.Unlock()
+	world.settings.Set("DayTime", time)
+}
+
+func (world *World) killChunk(cp ChunkPosition) {
+	world.Lock()
+	defer world.Unlock()
+	delete(world.chunks, cp)
 }
 
 var (

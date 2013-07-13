@@ -154,8 +154,6 @@ func chunkController(chunk *Chunk) {
 					chunk.Save()
 				}
 				//Did someone join during save?
-				posChan := make(chan *ChunkPosition)
-				chunk.World.chunkKillChannel <- posChan
 				if len(chunk.watcherJoin) == 0 &&
 					len(chunk.entityJoin) == 0 &&
 					len(chunk.entityLeave) == 0 &&
@@ -169,10 +167,8 @@ func chunkController(chunk *Chunk) {
 							pausable.Pause()
 						}
 					}
-					posChan <- &ChunkPosition{chunk.X, chunk.Z}
+					chunk.World.killChunk(ChunkPosition{chunk.X, chunk.Z})
 					runtime.Goexit()
-				} else {
-					posChan <- nil
 				}
 			}
 		//TODO: Disable this case if nothing is happening in this chunk

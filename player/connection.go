@@ -95,25 +95,27 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		x := int(bx)
 		y := int(by)
 		z := int(bz)
-		switch direction {
-		case 0:
-			y--
-		case 1:
-			y++
-		case 2:
-			z--
-		case 3:
-			z++
-		case 4:
-			x--
-		case 5:
-			x++
-		}
 		if item := player.inventory.HotbarSlot(player.CurrentSlot); item != nil && x != -1 && y != 255 && z != -1 {
 			id, e := event.NewPlayerBlockPlace(player, x, y, z, item)
 			if item.ID() > 255 || item.ID() == 0 {
 				e.Cancel()
 			}
+
+			switch direction {
+			case 0:
+				y--
+			case 1:
+				y++
+			case 2:
+				z--
+			case 3:
+				z++
+			case 4:
+				x--
+			case 5:
+				x++
+			}
+
 			if !player.Fire(id, e) {
 				item = e.Block()
 				id := byte(item.ID())
