@@ -142,7 +142,7 @@ func (world *World) SetBlock(x, y, z int, block, meta byte) {
 	})
 }
 
-func (world *World) Block(x, y, z int) []byte {
+func (world *World) Block(x, y, z int) (block, meta byte) {
 	cx := x >> 4
 	cz := z >> 4
 	ret := make(chan []byte, 1)
@@ -150,7 +150,8 @@ func (world *World) Block(x, y, z int) []byte {
 		ret <- []byte{c.Block(x-cx*16, y, z-cz*16),
 			c.Meta(x-cx*16, y, z-cz*16)}
 	})
-	return <-ret
+	d := <-ret
+	return d[0], d[1]
 }
 
 func (world *World) Blocks(x, y, z, w, h, d int) *Blocks {

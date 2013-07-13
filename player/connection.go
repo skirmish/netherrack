@@ -85,8 +85,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 			})
 			player.WorldInternal().SetBlock(x, y, z, 0, 0)
 		} else {
-			data := player.WorldSync().Block(x, y, z)
-			bId, bData := data[0], data[1]
+			bId, bData := player.WorldSync().Block(x, y, z)
 			player.connection.WriteBlockChange(bx, by, bz, int16(bId), bData)
 		}
 	},
@@ -213,8 +212,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 				player.WorldInternal().SetBlock(x, y, z, id, data)
 				player.PlaySound(float64(x)+0.5, float64(y)+0.5, float64(z)+0.5, blocks.GetBlockById(id).PlacementSound(), 1, 50)
 			} else {
-				data := player.WorldSync().Block(x, y, z)
-				bId, bData := data[0], data[1]
+				bId, bData := player.WorldSync().Block(x, y, z)
 				player.connection.WriteBlockChange(int32(x), byte(y), int32(z), int16(bId), bData)
 			}
 		} else {
