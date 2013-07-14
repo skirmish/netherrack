@@ -108,8 +108,9 @@ func (world *World) RemovePlayer(player soulsand.Player) {
 
 func (world *World) RunSync(x, z int, f func(soulsand.SyncChunk)) {
 	world.RLock()
-	defer world.RUnlock()
-	world.getChunk(ChunkPosition{int32(x), int32(z)}).eventChannel <- f
+	chunk := world.getChunk(ChunkPosition{int32(x), int32(z)})
+	world.RUnlock()
+	chunk.eventChannel <- f
 }
 
 func (world *World) PlayEffect(x, y, z int, eff effect.Type, data int, relative bool) {
@@ -184,8 +185,9 @@ func (world *World) Blocks(x, y, z, w, h, d int) *Blocks {
 
 func (world *World) GetChunkData(x, z int32, ret chan [][]byte, stop chan struct{}) {
 	world.RLock()
-	defer world.RUnlock()
-	world.getChunk(ChunkPosition{int32(x), int32(z)}).requests <- &ChunkRequest{
+	chunk := world.getChunk(ChunkPosition{int32(x), int32(z)})
+	world.RUnlock()
+	chunk.requests <- &ChunkRequest{
 		X: x, Z: z,
 		Stop: stop,
 		Ret:  ret,
@@ -194,11 +196,12 @@ func (world *World) GetChunkData(x, z int32, ret chan [][]byte, stop chan struct
 
 func (world *World) JoinChunkAsWatcher(x, z int32, pl soulsand.Player) {
 	world.RLock()
-	defer world.RUnlock()
 	pos := ChunkPosition{
 		X: x, Z: z,
 	}
-	world.getChunk(pos).watcherJoin <- &chunkWatcherRequest{
+	chunk := world.getChunk(pos)
+	world.RUnlock()
+	chunk.watcherJoin <- &chunkWatcherRequest{
 		Pos: pos,
 		P:   pl,
 	}
@@ -206,11 +209,12 @@ func (world *World) JoinChunkAsWatcher(x, z int32, pl soulsand.Player) {
 
 func (world *World) LeaveChunkAsWatcher(x, z int32, pl soulsand.Player) {
 	world.RLock()
-	defer world.RUnlock()
 	pos := ChunkPosition{
 		X: x, Z: z,
 	}
-	world.getChunk(pos).watcherLeave <- &chunkWatcherRequest{
+	chunk := world.getChunk(pos)
+	world.RUnlock()
+	chunk.watcherLeave <- &chunkWatcherRequest{
 		Pos: pos,
 		P:   pl,
 	}
@@ -218,11 +222,12 @@ func (world *World) LeaveChunkAsWatcher(x, z int32, pl soulsand.Player) {
 
 func (world *World) JoinChunk(x, z int32, e soulsand.Entity) {
 	world.RLock()
-	defer world.RUnlock()
 	pos := ChunkPosition{
 		X: x, Z: z,
 	}
-	world.getChunk(pos).entityJoin <- &chunkEntityRequest{
+	chunk := world.getChunk(pos)
+	world.RUnlock()
+	chunk.entityJoin <- &chunkEntityRequest{
 		Pos: pos,
 		E:   e,
 	}
@@ -230,11 +235,12 @@ func (world *World) JoinChunk(x, z int32, e soulsand.Entity) {
 
 func (world *World) LeaveChunk(x, z int32, e soulsand.Entity) {
 	world.RLock()
-	defer world.RUnlock()
 	pos := ChunkPosition{
 		X: x, Z: z,
 	}
-	world.getChunk(pos).entityLeave <- &chunkEntityRequest{
+	chunk := world.getChunk(pos)
+	world.RUnlock()
+	chunk.entityLeave <- &chunkEntityRequest{
 		Pos: pos,
 		E:   e,
 	}
@@ -242,11 +248,12 @@ func (world *World) LeaveChunk(x, z int32, e soulsand.Entity) {
 
 func (world *World) SendChunkMessage(x, z, id int32, msg func(soulsand.SyncEntity)) {
 	world.RLock()
-	defer world.RUnlock()
 	pos := ChunkPosition{
 		X: x, Z: z,
 	}
-	world.getChunk(pos).messageChannel <- &chunkMessage{
+	chunk := world.getChunk(pos)
+	world.RUnlock()
+	chunk.messageChannel <- &chunkMessage{
 		pos,
 		msg,
 		id,
