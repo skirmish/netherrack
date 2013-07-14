@@ -6,7 +6,6 @@ import (
 	"github.com/NetherrackDev/netherrack/entity"
 	"github.com/NetherrackDev/netherrack/event"
 	"github.com/NetherrackDev/soulsand"
-	"github.com/NetherrackDev/soulsand/blocks"
 	"github.com/NetherrackDev/soulsand/log"
 	"runtime"
 	"time"
@@ -217,25 +216,6 @@ func chunkController(chunk *Chunk) {
 			}
 		}
 	}
-}
-
-var lightBlockMap = []byte{
-	blocks.Air.Id(),                 //0
-	blocks.RedMushroom.Id(),         //1
-	blocks.BrownMushroom.Id(),       //2
-	blocks.Lever.Id(),               //3
-	blocks.SignPost.Id(),            //4
-	blocks.SignWall.Id(),            //5
-	blocks.Carrots.Id(),             //6
-	blocks.DeadBush.Id(),            //7
-	blocks.NetherWart.Id(),          //8
-	blocks.IronPressurePlate.Id(),   //9
-	blocks.Rose.Id(),                //10
-	blocks.Dandelion.Id(),           //11
-	blocks.TallGrass.Id(),           //12
-	blocks.Rails.Id(),               //13
-	blocks.WoodenPressurePlate.Id(), //14
-	blocks.SugarCane.Id(),           //15
 }
 
 func (chunk *Chunk) toCompressedBytes(full bool) [][]byte {
