@@ -175,7 +175,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 					case 3:
 						data = 0x1
 					}
-				case 17: //Logs
+				case 17, 170: //Logs and Hay
 					if direction != 0 && direction != 1 {
 						data += 4
 						tYaw, _ := player.LookSync()

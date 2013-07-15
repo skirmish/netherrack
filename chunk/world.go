@@ -132,6 +132,9 @@ func (world *World) PlaySound(x, y, z float64, name sound.Type, volume float32, 
 }
 
 func (world *World) SetBlock(x, y, z int, block, meta byte) {
+	if y < 0 || y >= 255 {
+		return
+	}
 	cx := x >> 4
 	cz := z >> 4
 	world.RunSync(cx, cz, func(c soulsand.SyncChunk) {
@@ -144,6 +147,9 @@ func (world *World) SetBlock(x, y, z int, block, meta byte) {
 }
 
 func (world *World) Block(x, y, z int) (block, meta byte) {
+	if y < 0 || y >= 255 {
+		return 0, 0
+	}
 	cx := x >> 4
 	cz := z >> 4
 	ret := make(chan []byte, 1)
