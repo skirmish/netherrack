@@ -12,6 +12,52 @@ var _ soulsand.EntityMetadata = Type{}
 
 type Type map[int]interface{}
 
+func ReadForm(r io.Reader) Type {
+	out := Type{}
+	data := make([]byte, 1)
+	r.Read(data)
+	for data[0] != 127 {
+		idx := int(data[0] & 0x1F)
+		t := data[0] >> 5
+		switch t {
+		case 0:
+			r.Read(data)
+			out[idx] = int8(data[0])
+		case 1:
+			s := make([]byte, 2)
+			r.Read(s)
+			out[idx] = int16(binary.BigEndian.Uint16(s))
+		case 2:
+			s := make([]byte, 4)
+			r.Read(s)
+			out[idx] = int32(binary.BigEndian.Uint32(s))
+		case 3:
+			s := make([]byte, 4)
+			r.Read(s)
+			out[idx] = math.Float32frombits(binary.BigEndian.Uint32(s))
+		case 4:
+			s := make([]byte, 2)
+			r.Read(s)
+			length := binary.BigEndian.Uint16(s)
+			runes := make([]rune, length)
+			for i := range runes {
+				s := make([]byte, 2)
+				r.Read(s)
+				runes[i] = rune(binary.BigEndian.Uint16(s))
+			}
+		case 5:
+			panic("Not supported yet")
+		case 6:
+			s := make([]byte, 4*3)
+			r.Read(s)
+			out[idx] = []int32{int32(binary.BigEndian.Uint32(s)), int32(binary.BigEndian.Uint32(s[4:])), int32(binary.BigEndian.Uint32(s[8:]))}
+		}
+
+		r.Read(data)
+	}
+	return out
+}
+
 func (t Type) Set(index int, data interface{}) {
 	t[index] = data
 }

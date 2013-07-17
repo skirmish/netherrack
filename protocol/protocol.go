@@ -59,6 +59,14 @@ func CreateConnection(conn net.Conn) *Conn {
 	return &Conn{conn: conn, output: conn, input: conn}
 }
 
+func (c *Conn) SetInput(i io.Reader) {
+	c.input = i
+}
+
+func (c *Conn) SetOutput(o io.Writer) {
+	c.output = o
+}
+
 func NewConnection(conn net.Conn) (*Conn, string) {
 	connection := CreateConnection(conn)
 	protoVersion, username, _, _ := connection.ReadHandshake()

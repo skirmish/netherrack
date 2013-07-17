@@ -16,13 +16,13 @@ import (
 )
 
 var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *protocol.Conn, player *Player){
-	0x00: func(c *protocol.Conn, player *Player) { //Keep Alive
+	protocol.KeepAlive: func(c *protocol.Conn, player *Player) { //Keep Alive
 		id := c.ReadKeepAlive()
 		if id != player.currentTickID {
 			runtime.Goexit()
 		}
 	},
-	0x03: func(c *protocol.Conn, player *Player) { //Chat Message
+	protocol.ChatMessage: func(c *protocol.Conn, player *Player) { //Chat Message
 		msg := c.ReadChatMessage()
 		if len(msg) <= 0 {
 			return
@@ -40,26 +40,26 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 			}
 		}
 	},
-	0x07: func(c *protocol.Conn, player *Player) { //Use Entity
+	protocol.UseEntity: func(c *protocol.Conn, player *Player) { //Use Entity
 		c.ReadUseEntity()
 	},
-	0x0A: func(c *protocol.Conn, player *Player) { //Player
+	protocol.Player: func(c *protocol.Conn, player *Player) { //Player
 		c.ReadPlayer()
 	},
-	0x0B: func(c *protocol.Conn, player *Player) { //Player Position
+	protocol.PlayerPosition: func(c *protocol.Conn, player *Player) { //Player Position
 		x, y, _, z, _ := c.ReadPlayerPosition()
 		player.positionData.X, player.positionData.Y, player.positionData.Z = x, y, z
 	},
-	0x0C: func(c *protocol.Conn, player *Player) { //Player Look
+	protocol.PlayerLook: func(c *protocol.Conn, player *Player) { //Player Look
 		yaw, pitch, _ := c.ReadPlayerLook()
 		player.SetLookSync(yaw, pitch)
 	},
-	0x0D: func(c *protocol.Conn, player *Player) { //Player Position and Look
+	protocol.PlayerPositionAndLook: func(c *protocol.Conn, player *Player) { //Player Position and Look
 		x, y, _, z, yaw, pitch, _ := c.ReadPlayerPositionLook()
 		player.positionData.X, player.positionData.Y, player.positionData.Z = x, y, z
 		player.SetLookSync(yaw, pitch)
 	},
-	0x0E: func(c *protocol.Conn, player *Player) { //Player Digging
+	protocol.PlayerDigging: func(c *protocol.Conn, player *Player) { //Player Digging
 		status, bx, by, bz, face := c.ReadPlayerDigging()
 		if status != 2 && !(status == 0 && player.gamemode == gamemode.Creative) {
 			return
@@ -89,7 +89,7 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 			player.connection.WriteBlockChange(bx, by, bz, int16(bId), bData)
 		}
 	},
-	0x0F: func(c *protocol.Conn, player *Player) { //Player Block Placement
+	protocol.PlayerBlockPlacement: func(c *protocol.Conn, player *Player) { //Player Block Placement
 		bx, by, bz, direction, _, cy, _ := c.ReadPlayerBlockPlacement()
 		x := int(bx)
 		y := int(by)
@@ -219,35 +219,35 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 			player.Fire(event.NewPlayerRightClick(player))
 		}
 	},
-	0x10: func(c *protocol.Conn, player *Player) { //Held Item Change
+	protocol.HeldItemChange: func(c *protocol.Conn, player *Player) { //Held Item Change
 		slotID := c.ReadHeldItemChange()
 		player.CurrentSlot = int(slotID)
 	},
-	0x12: func(c *protocol.Conn, player *Player) { //Animation
+	protocol.Animation: func(c *protocol.Conn, player *Player) { //Animation
 		_, ani := c.ReadAnimation()
 		if ani == 1 {
 			player.Fire(event.NewPlayerLeftClick(player))
 		}
 	},
-	0x13: func(c *protocol.Conn, player *Player) { //Entity Action
+	protocol.EntityAction: func(c *protocol.Conn, player *Player) { //Entity Action
 		c.ReadEntityAction()
 	},
-	0x1B: func(c *protocol.Conn, player *Player) { //Steer Vehicle (0x1B)
+	protocol.SteerVehicle: func(c *protocol.Conn, player *Player) { //Steer Vehicle (0x1B)
 		c.ReadSteerVehicle()
 	},
-	0x65: func(c *protocol.Conn, player *Player) { //Close Window
+	protocol.CloseWindow: func(c *protocol.Conn, player *Player) { //Close Window
 		id := c.ReadCloseWindow()
 		if id == 5 && player.openInventory != nil {
 			player.openInventory.RemoveWatcher(player)
 		}
 	},
-	0x66: func(c *protocol.Conn, player *Player) { //Click Window
+	protocol.ClickWindow: func(c *protocol.Conn, player *Player) { //Click Window
 		c.ReadClickWindow()
 	},
-	0x6A: func(c *protocol.Conn, player *Player) { //Confirm Transaction
+	protocol.ConfirmTransaction: func(c *protocol.Conn, player *Player) { //Confirm Transaction
 		c.ReadConfirmTransaction()
 	},
-	0x6B: func(c *protocol.Conn, player *Player) { //Creative Inventory Action
+	protocol.CreativeInventoryAction: func(c *protocol.Conn, player *Player) { //Creative Inventory Action
 		slot, item := c.ReadCreativeInventoryAction()
 		if slot == -1 {
 			return
@@ -257,20 +257,20 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		}
 		player.inventory.SetSlot(int(slot), item)
 	},
-	0x6C: func(c *protocol.Conn, player *Player) { //Enchant Item
+	protocol.EnchantItem: func(c *protocol.Conn, player *Player) { //Enchant Item
 		c.ReadEnchantItem()
 	},
-	0x82: func(c *protocol.Conn, player *Player) { //Update Sign
+	protocol.UpdateSign: func(c *protocol.Conn, player *Player) { //Update Sign
 		c.ReadUpdateSign()
 	},
-	0xCA: func(c *protocol.Conn, player *Player) { //Player Abilities
+	protocol.PlayerAbilities: func(c *protocol.Conn, player *Player) { //Player Abilities
 		c.ReadPlayerAbilities()
 	},
-	0xCB: func(c *protocol.Conn, player *Player) { //Tab-complete
+	protocol.TabComplete: func(c *protocol.Conn, player *Player) { //Tab-complete
 		text := c.ReadTabComplete()
 		c.WriteTabComplete(command.Complete(text[1:]))
 	},
-	0xCC: func(c *protocol.Conn, player *Player) { //Client Settings
+	protocol.ClientSettings: func(c *protocol.Conn, player *Player) { //Client Settings
 		locale, viewDistance, chatFlags, difficulty, showCape := c.ReadClientSettings()
 		player.settings.locale = locale
 		player.setViewDistance(int(viewDistance))
@@ -278,13 +278,13 @@ var packets map[byte]func(c *protocol.Conn, player *Player) = map[byte]func(c *p
 		player.settings.difficulty = byte(difficulty)
 		player.settings.showCape = showCape
 	},
-	0xCD: func(c *protocol.Conn, player *Player) { //Client Statuses
+	protocol.ClientStatuses: func(c *protocol.Conn, player *Player) { //Client Statuses
 		c.ReadClientStatuses()
 	},
-	0xFA: func(c *protocol.Conn, player *Player) { //Plugin Message
+	protocol.PluginMessage: func(c *protocol.Conn, player *Player) { //Plugin Message
 		c.ReadPluginMessage()
 	},
-	0xFF: func(c *protocol.Conn, player *Player) { //Disconnect
+	protocol.Disconnect: func(c *protocol.Conn, player *Player) { //Disconnect
 		log.Printf("Player %s disconnect %s\n", player.Name(), c.ReadDisconnect())
 		runtime.Goexit()
 	},
