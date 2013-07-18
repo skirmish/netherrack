@@ -99,7 +99,7 @@ func (e *Entity) SendMoveUpdate() (movedChunk bool) {
 	e.position.LastY = e.position.Y
 	e.position.LastZ = e.position.Z
 
-	if dx >= 4 || dy >= 4 || dz >= 4 || e.CurrentTick%100 == 0 {
+	if dx >= 4*32 || dy >= 4*32 || dz >= 4*32 || e.CurrentTick%100 == 0 {
 		e.world.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityTeleport(e.ID(), e.position.X, e.position.Y, e.position.Z, e.position.Yaw, e.position.Pitch))
 	} else {
 		e.world.SendChunkMessage(e.Chunk.X, e.Chunk.Z, e.ID(), entityRelativeLookMove(e.ID(), int8(dx), int8(dy), int8(dz), int8(int((e.position.Yaw/180.0)*128)), int8((e.position.Pitch/180.0)*128)))
