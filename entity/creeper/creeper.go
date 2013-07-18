@@ -34,6 +34,7 @@ func New(x, y, z float64, world soulsand.World) soulsand.EntityCreeper {
 func (creeper *Type) loop() {
 	creeper.Entity.Init(creeper)
 	defer creeper.Entity.Finalise()
+
 	x, _, z := creeper.PositionSync()
 	creeper.Chunk.X, creeper.Chunk.Z = int32(x)>>4, int32(z)>>4
 	creeper.WorldInternal().JoinChunk(creeper.Chunk.X, creeper.Chunk.Z, creeper)

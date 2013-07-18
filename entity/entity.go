@@ -175,7 +175,7 @@ func (e *Entity) Spawn() {
 			event.Firer
 		})
 		if !player.Fire(event.NewEntitySpawnFor(e.Owner.(soulsand.Entity), player)) {
-			f(e)
+			f(player)
 		}
 	})
 }
@@ -190,7 +190,7 @@ func (e *Entity) Despawn() {
 			event.Firer
 		})
 		if !player.Fire(event.NewEntityDespawnFor(e.Owner.(soulsand.Entity), player)) {
-			f(e)
+			f(player)
 		}
 	})
 }
