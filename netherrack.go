@@ -25,7 +25,6 @@ import (
 var _ soulsand.Server = &Server{}
 
 func init() {
-	//log.SetFlags(log.Lshortfile | log.Ltime)
 	setDefaultLocaleStrings()
 	locale.Load("data/lang")
 	server := &Server{}
