@@ -1,163 +1,116 @@
 package netherrack
 
 import (
-	"github.com/NetherrackDev/netherrack/chunk"
+	"encoding/binary"
+	"fmt"
 	"github.com/NetherrackDev/netherrack/event"
-	"github.com/NetherrackDev/netherrack/network"
+	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/protocol"
-	"github.com/NetherrackDev/netherrack/system"
-	"github.com/NetherrackDev/soulsand"
-	"github.com/NetherrackDev/soulsand/chat"
-	"github.com/NetherrackDev/soulsand/command"
-	"github.com/NetherrackDev/soulsand/gamemode"
-	"github.com/NetherrackDev/soulsand/locale"
-	"github.com/NetherrackDev/soulsand/log"
+	"net"
 	"net/http"
-	_ "net/http/pprof"
-	"os"
 	"runtime"
 	"runtime/debug"
-	"strconv"
 	"time"
 )
 
-//Compile time checks
-var _ soulsand.Server = &Server{}
-
-func init() {
-	setDefaultLocaleStrings()
-	locale.Load("data/lang")
-	server := &Server{}
-	server.init()
-	soulsand.SetServer(server, provider{})
-
-	command.Add("safestop", func(sender soulsand.CommandSender) {
-		sender.SendMessageSync(chat.New().Colour(chat.Aqua).Text("Waiting for worlds to empty"))
-		//TODO: Kick players and prevent them from joining
-		go func() {
-			for chunk.GetWorldCount() > 0 {
-				time.Sleep(time.Second)
-			}
-			sender.SendMessageSync(chat.New().Text("Killing server"))
-			os.Exit(0)
-		}()
-	})
-}
+const (
+	ProtocolVersion  = 74
+	MinecraftVersion = "1.6.2"
+)
 
 type Server struct {
 	event.Source
 
-	flags        uint64
-	ProtoVersion int
-	ListPing     struct {
-		MessageOfTheDay string
-		Version         string
-		MaxPlayers      int
-	}
-	event chan func()
-
-	Config struct {
-		Gamemode gamemode.Type
+	connection struct {
+		Ip   string
+		Port int
 	}
 }
 
 func (server *Server) init() {
 	server.Source.Init()
-	system.EventSource = server.Source
 }
 
-func (server *Server) Start(ip string, port int) {
+func NewServer(ip string, port int) *Server {
+	server := &Server{}
+	server.connection.Ip = ip
+	server.connection.Port = port
+	return server
+}
+
+func (server *Server) Start() {
 	log.Printf("NumProcs: %d\n", runtime.GOMAXPROCS(-1))
 	debug.SetGCPercent(10)
 	go func() {
-		log.Println(http.ListenAndServe(ip+":25567", nil))
+		log.Println(http.ListenAndServe(server.connection.Ip+":25567", nil))
 	}()
 	log.Println("Starting Netherrack server")
 
-	command.Parse()
+	listen, err := net.Listen("tcp", fmt.Sprintf("%s:%d", server.connection.Ip, server.connection.Port))
+	if err != nil {
+		panic(err)
+	}
 
-	server.ProtoVersion = 74
-	protocol.PROTOVERSION = byte(server.ProtoVersion)
-	server.ListPing.Version = "1.6.2"
-
-	server.event = make(chan func(), 1000)
-
-	go server.watcher()
-	go network.Listen(ip, port)
-}
-
-func (server *Server) watcher() {
 	for {
-		select {
-		case f := <-server.event:
-			f()
+		conn, err := listen.Accept()
+		if err != nil {
+			panic(err)
 		}
+		go server.handleConnection(conn)
 	}
 }
 
-func (server *Server) DefaultGamemode() gamemode.Type {
-	res := make(chan gamemode.Type, 1)
-	server.event <- func() {
-		res <- server.Config.Gamemode
-	}
-	return <-res
-}
+func (server *Server) handleConnection(conn net.Conn) {
+	defer conn.Close()
 
-func (server *Server) SetDefaultGamemode(mode gamemode.Type) {
-	server.event <- func() {
-		server.Config.Gamemode = mode
-	}
-}
+	mcConn := protocol.CreateConnection(conn)
+	packetId := mcConn.ReadUByte()
+	if packetId == 0xFE {
+		mcConn.ReadUByte()
 
-func (server *Server) EntityCount() int {
-	return system.GetEntityCount()
-}
+		/*
+			In 1.6 extra data was added containing the clients
+			protocol version and the ip:port of the server they are
+			connected to. This infomation is not sent by older clients
+			so a custom read deadline should be set to prevent waiting
+			too long causing the client to see a large ping time.
+		*/
 
-func (server *Server) World(name string) soulsand.World {
-	return chunk.GetWorld(name)
-}
+		extraData := make([]byte, 1)
+		conn.SetReadDeadline(time.Now().Add(150 * time.Nanosecond))
+		if _, err := conn.Read(extraData); err == nil && extraData[0] == 0xFA {
+			//Extra data found
+			channel, data := mcConn.ReadPluginMessage()
 
-func (server *Server) Player(name string) soulsand.Player {
-	return system.GetPlayer(name)
-}
+			if channel != "MC|PingHost" {
+				return
+			}
+			if len(data) < 3 {
+				return
+			}
+			protoVersion := data[0]
+			offset, host := readString(data[1:])
+			if len(data) < offset+1+4 {
+				log.Println(offset, len(data), host)
+				return
+			}
+			port := binary.BigEndian.Uint32(data[offset+1:])
+			_, _, _ = protoVersion, host, port //TODO: Something with the new infomation
+		}
 
-func (server *Server) Players() []soulsand.Player {
-	return system.GetPlayers()
-}
-
-func (server *Server) SetMessageOfTheDay(message string) {
-	server.event <- func() {
-		server.ListPing.MessageOfTheDay = message
-	}
-}
-
-func (server *Server) SetMaxPlayers(max int) {
-	server.event <- func() {
-		server.ListPing.MaxPlayers = max
-	}
-}
-
-func (server *Server) ListPingData() []string {
-	res := make(chan []string, 1)
-	server.event <- func() {
-		res <- []string{
-			strconv.Itoa(server.ProtoVersion),
-			server.ListPing.Version,
-			server.ListPing.MessageOfTheDay,
-			strconv.Itoa(0),
-			strconv.Itoa(server.ListPing.MaxPlayers)}
-	}
-	return <-res
-}
-
-func (server *Server) SetFlag(flag uint64, value bool) {
-	if value {
-		server.flags |= flag
-	} else {
-		server.flags &= ^flag
 	}
 }
 
-func (server *Server) Flag(flag uint64) bool {
-	return server.flags&flag != 0
+func readString(data []byte) (off int, str string) {
+	length := binary.BigEndian.Uint16(data)
+	if int(length)*2+2 > len(data) {
+		runtime.Goexit()
+	}
+	off += 2 + int(length)*2
+	runes := make([]rune, length)
+	for i, _ := range runes {
+		runes[i] = rune(binary.BigEndian.Uint16(data[2+i*2:]))
+	}
+	str = string(runes)
+	return
 }
