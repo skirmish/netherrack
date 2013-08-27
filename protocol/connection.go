@@ -151,12 +151,41 @@ func compileField(sf reflect.StructField, t reflect.Type, ind []int) []field {
 	case reflect.Slice:
 		e := sf.Type.Elem()
 		var write func(conn *Conn, field reflect.Value)
+		noLoop := false
 		switch e.Kind() {
 		case reflect.Uint8:
 			write = encodeByteSlice
+			noLoop = true
+		case reflect.Int8:
+			write = encodeInt8
+		case reflect.Int16:
+			write = encodeInt16
+		case reflect.Uint16:
+			write = encodeUint16
+		case reflect.Int32:
+			write = encodeInt32
+		case reflect.Int64:
+			write = encodeInt64
+		case reflect.Float32:
+			write = encodeFloat32
+		case reflect.Float64:
+			write = encodeFloat64
+		case reflect.String:
+			write = encodeString
 		default:
 			panic("Unknown slice type")
 		}
+
+		if !noLoop {
+			loopWrite := write
+			write = func(conn *Conn, field reflect.Value) {
+				l := field.Len()
+				for i := 0; i < l; i++ {
+					loopWrite(conn, field.Index(i))
+				}
+			}
+		}
+
 		nilValue, _ := strconv.Atoi(sf.Tag.Get("nil"))
 		lType := sf.Tag.Get("ltype")
 		f.write = func(conn *Conn, field reflect.Value) {
