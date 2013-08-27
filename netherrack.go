@@ -2,62 +2,77 @@ package netherrack
 
 import (
 	"encoding/binary"
-	"fmt"
-	"github.com/NetherrackDev/netherrack/event"
-	"github.com/NetherrackDev/netherrack/log"
+	// "github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/protocol"
+	"log"
 	"net"
 	"net/http"
 	"runtime"
 	"runtime/debug"
+	"strings"
+	"sync"
 	"time"
 )
 
 const (
-	ProtocolVersion  = 74
+	//The currently supported protocol verison
+	ProtocolVersion       = 74
+	protocolVersionString = "74" //Save int-string conversion in list ping
+	//The currently supported Minecraft version
 	MinecraftVersion = "1.6.2"
 )
 
+//Stores server related infomation
 type Server struct {
-	event.Source
+	listener net.Listener
 
-	connection struct {
-		Ip   string
-		Port int
+	listData struct {
+		sync.RWMutex
+		MessageOfTheDay string
 	}
 }
 
 func (server *Server) init() {
-	server.Source.Init()
+
 }
 
-func NewServer(ip string, port int) *Server {
+//Creates a server that will be bound to the passed ip:port
+func NewServer() *Server {
 	server := &Server{}
-	server.connection.Ip = ip
-	server.connection.Port = port
+
+	server.listData.MessageOfTheDay = "Netherrack Server"
+
 	return server
 }
 
-func (server *Server) Start() {
+//Starts the minecraft server. This will block while the server is running
+func (server *Server) Start(address string) error {
 	log.Printf("NumProcs: %d\n", runtime.GOMAXPROCS(-1))
 	debug.SetGCPercent(10)
 	go func() {
-		log.Println(http.ListenAndServe(server.connection.Ip+":25567", nil))
+		log.Println(http.ListenAndServe(":25567", nil))
 	}()
 	log.Println("Starting Netherrack server")
 
-	listen, err := net.Listen("tcp", fmt.Sprintf("%s:%d", server.connection.Ip, server.connection.Port))
+	listen, err := net.Listen("tcp", address)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	server.listener = listen
 
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
-			panic(err)
+			return err
 		}
 		go server.handleConnection(conn)
 	}
+}
+
+//Returns the address the server is currently listening on
+//once started.
+func (server *Server) Addr() net.Addr {
+	return server.listener.Addr()
 }
 
 func (server *Server) handleConnection(conn net.Conn) {
@@ -98,7 +113,21 @@ func (server *Server) handleConnection(conn net.Conn) {
 			_, _, _ = protoVersion, host, port //TODO: Something with the new infomation
 		}
 
+		mcConn.WriteDisconnect(server.buildServerPing())
 	}
+}
+
+func (server *Server) buildServerPing() string {
+	server.listData.RLock()
+	defer server.listData.RUnlock()
+	return strings.Join([]string{
+		"§1",
+		protocolVersionString,
+		MinecraftVersion,
+		server.listData.MessageOfTheDay,
+		"0",
+		"100",
+	}, "\x00")
 }
 
 func readString(data []byte) (off int, str string) {
