@@ -1,3 +1,4 @@
+//BUG(Thinkofdeath) Errors are not handled
 package protocol
 
 import (
@@ -16,21 +17,57 @@ func init() {
 	fieldCache.create = make(map[reflect.Type]*sync.WaitGroup)
 }
 
+//Conn has WritePacket and ReadPacket methods that allow
+//Go structs to be used in sending and recieving minecraft
+//packets.
+//
+//Supported types
+//    uint8
+//    int8                 //Java byte
+//    uint16
+//    int16                //Java short
+//    int32                //Java int
+//    int64                //Java long
+//    float32              //Java float
+//    float64              //Java double
+//    string               //UTF-16 string with a int16 length prefix
+//    structs              //Not struct pointers
+//    []type               //Above are the supported types
+//    map[byte]interface{} //Encoded as entity metadata
 type Conn struct {
 	In  io.Reader
 	Out io.Writer
 
+	//Used on the write goroutine
 	b [8]byte
+	//Used on the read goroutine
+	rb [8]byte
 }
 
+//Reads a minecraft packet from conn
+func (conn *Conn) ReadPacket() Packet {
+	bs := conn.rb[:1]
+	conn.In.Read(bs)
+
+	ty := packets[bs[0]]
+	val := reflect.New(ty).Elem()
+
+	fs := fields(val.Type())
+	for _, f := range fs {
+		if f.condition(val) {
+			v := val.FieldByIndex(f.sField.Index)
+			f.read(conn, v)
+		}
+	}
+
+	return val.Interface().(Packet)
+}
+
+//Writes the packet to conn
 func (conn *Conn) WritePacket(packet Packet) {
 	conn.Out.Write([]byte{packet.ID()})
 
-	conn.writeInterface(packet)
-}
-
-func (conn *Conn) writeInterface(data interface{}) {
-	val := reflect.ValueOf(data)
+	val := reflect.ValueOf(packet)
 	fs := fields(val.Type())
 	for _, f := range fs {
 		if f.condition(val) {
@@ -46,6 +83,8 @@ var fieldCache struct {
 	create map[reflect.Type]*sync.WaitGroup
 }
 
+//Returns the fields for the type t. This method caches the results making
+//later calls cheap.
 func fields(t reflect.Type) []field {
 	fieldCache.RLock()
 	fs := fieldCache.m[t]
@@ -70,13 +109,15 @@ func fields(t reflect.Type) []field {
 
 	fs = compileStruct(t, nil)
 
-	sy.Done()
 	fieldCache.Lock()
 	fieldCache.m[t] = fs
 	fieldCache.Unlock()
+	sy.Done()
 	return fs
 }
 
+//Loops through the fields of the struct and returns a slice of fields.
+//ind is the offset of the struct in the root struct.
 func compileStruct(t reflect.Type, ind []int) []field {
 	var fs []field
 	count := t.NumField()
@@ -87,12 +128,17 @@ func compileStruct(t reflect.Type, ind []int) []field {
 	return fs
 }
 
+//A field contains the methods needed to read and write the
+//field. It also has the condition that the field requires
+//to be written.
 type field struct {
 	sField    reflect.StructField
 	condition func(root reflect.Value) bool
-	write     func(conn *Conn, field reflect.Value)
+	write     encoder
+	read      decoder
 }
 
+//Returns the field or fields needed to fully write the struct's field
 func compileField(sf reflect.StructField, t reflect.Type, ind []int) []field {
 	temp := sf.Index[0]
 	sf.Index = make([]int, len(ind)+1)
@@ -114,15 +160,33 @@ func compileField(sf reflect.StructField, t reflect.Type, ind []int) []field {
 			panic(fmt.Errorf("Unknown field: %s", args[0]))
 		}
 		ind := checkField.Index
-		val, _ := strconv.ParseInt(args[2], 10, 64)
+
+		valsStr := strings.Split(args[2], "|")
+		vals := make([]int64, len(valsStr))
+		for i := range vals {
+			vals[i], _ = strconv.ParseInt(valsStr[i], 10, 64)
+		}
+
 		switch args[1] {
 		case "!=":
 			f.condition = func(root reflect.Value) bool {
-				return root.FieldByIndex(ind).Int() != val
+				val := root.FieldByIndex(ind).Int()
+				for _, v := range vals {
+					if v != val {
+						return true
+					}
+				}
+				return false
 			}
 		case "==":
 			f.condition = func(root reflect.Value) bool {
-				return root.FieldByIndex(ind).Int() == val
+				val := root.FieldByIndex(ind).Int()
+				for _, v := range vals {
+					if v == val {
+						return true
+					}
+				}
+				return false
 			}
 		}
 	} else {
@@ -130,91 +194,316 @@ func compileField(sf reflect.StructField, t reflect.Type, ind []int) []field {
 	}
 
 	switch sf.Type.Kind() {
+	case reflect.Bool:
+		f.write = encodeBool
+		f.read = decodeBool
 	case reflect.Int8:
 		f.write = encodeInt8
+		f.read = decodeInt8
 	case reflect.Uint8:
 		f.write = encodeUint8
+		f.read = decodeUint8
 	case reflect.Int16:
 		f.write = encodeInt16
+		f.read = decodeInt16
 	case reflect.Uint16:
 		f.write = encodeUint16
+		f.read = decodeUint16
 	case reflect.Int32:
 		f.write = encodeInt32
+		f.read = decodeInt32
 	case reflect.Int64:
 		f.write = encodeInt64
+		f.read = decodeInt64
 	case reflect.Float32:
 		f.write = encodeFloat32
+		f.read = decodeFloat32
 	case reflect.Float64:
 		f.write = encodeFloat64
+		f.read = decodeFloat64
 	case reflect.String:
 		f.write = encodeString
+		f.read = decodeString
 	case reflect.Slice:
 		e := sf.Type.Elem()
-		var write func(conn *Conn, field reflect.Value)
-		noLoop := false
-		switch e.Kind() {
-		case reflect.Uint8:
-			write = encodeByteSlice
-			noLoop = true
-		case reflect.Int8:
-			write = encodeInt8
-		case reflect.Int16:
-			write = encodeInt16
-		case reflect.Uint16:
-			write = encodeUint16
-		case reflect.Int32:
-			write = encodeInt32
-		case reflect.Int64:
-			write = encodeInt64
-		case reflect.Float32:
-			write = encodeFloat32
-		case reflect.Float64:
-			write = encodeFloat64
-		case reflect.String:
-			write = encodeString
-		default:
-			panic("Unknown slice type")
-		}
-
-		if !noLoop {
-			loopWrite := write
-			write = func(conn *Conn, field reflect.Value) {
-				l := field.Len()
-				for i := 0; i < l; i++ {
-					loopWrite(conn, field.Index(i))
-				}
-			}
-		}
-
-		nilValue, _ := strconv.Atoi(sf.Tag.Get("nil"))
-		lType := sf.Tag.Get("ltype")
-		f.write = func(conn *Conn, field reflect.Value) {
-			var l int
-			if field.IsNil() {
-				l = nilValue
-			} else {
-				l = field.Len()
-			}
-			var bs []byte
-			switch lType {
-			case "int8":
-				bs = conn.b[:1]
-				bs[0] = byte(l)
-			case "int16":
-				bs = conn.b[:2]
-				binary.BigEndian.PutUint16(bs, uint16(l))
-			}
-			conn.Out.Write(bs)
-			if !field.IsNil() {
-				write(conn, field)
-			}
+		f.write, f.read = getSliceCoders(e, sf)
+	case reflect.Map:
+		if sf.Tag.Get("metadata") == "true" {
+			f.write = encodeMetadata
+			f.read = decodeMetadata
+		} else {
+			panic("Maps NYI")
 		}
 	case reflect.Struct:
 		return compileStruct(sf.Type, sf.Index)
 	default:
-		panic(fmt.Errorf("Unhandled type %s", sf.Type.Kind().String()))
+		panic(fmt.Errorf("Unhandled type %s for %s", sf.Type.Kind().String(), sf.Name))
+	}
+	if f.write == nil {
+		panic(fmt.Errorf("Missing write for type %s", sf.Type.Kind()))
+	}
+	if f.read == nil {
+		panic(fmt.Errorf("Missing read for type %s", sf.Type.Kind()))
 	}
 	return []field{f}
+}
+
+//Returns the encoding and decoder methods required to write and read the slice
+func getSliceCoders(e reflect.Type, sf reflect.StructField) (encoder, decoder) {
+	var write encoder
+	var read decoder
+	noLoop := false
+
+	nilValue, _ := strconv.Atoi(sf.Tag.Get("nil"))
+	lType := sf.Tag.Get("ltype")
+
+	switch e.Kind() {
+	case reflect.Bool:
+		write = encodeBool
+		read = decodeBool
+	case reflect.Uint8:
+		write = encodeByteSlice
+		read = func(conn *Conn, field reflect.Value) {
+			var l int
+			var bs []byte
+			switch lType {
+			case "int8":
+				bs = conn.rb[:1]
+				conn.In.Read(bs)
+				l = int(int8(bs[0]))
+			case "int16":
+				bs = conn.rb[:2]
+				conn.In.Read(bs)
+				l = int(int16(binary.BigEndian.Uint16(bs)))
+			case "int32":
+				bs = conn.rb[:4]
+				conn.In.Read(bs)
+				l = int(int32(binary.BigEndian.Uint32(bs)))
+			default:
+				panic("Unknown length type")
+			}
+			if l != nilValue {
+				b := make([]byte, l)
+				conn.In.Read(b)
+				field.SetBytes(b)
+			}
+		}
+		noLoop = true
+	case reflect.Int8:
+		write = encodeInt8
+		read = decodeInt8
+	case reflect.Int16:
+		write = encodeInt16
+		read = decodeInt16
+	case reflect.Uint16:
+		write = encodeUint16
+		read = decodeUint16
+	case reflect.Int32:
+		write = encodeInt32
+		read = decodeInt32
+	case reflect.Int64:
+		write = encodeInt64
+		read = decodeInt64
+	case reflect.Float32:
+		write = encodeFloat32
+		read = decodeFloat32
+	case reflect.Float64:
+		write = encodeFloat64
+		read = decodeFloat64
+	case reflect.String:
+		write = encodeString
+		read = decodeString
+	case reflect.Struct:
+		structFields := fields(e)
+		write = func(conn *Conn, field reflect.Value) {
+			for _, f := range structFields {
+				if f.condition(field) {
+					v := field.FieldByIndex(f.sField.Index)
+					f.write(conn, v)
+				}
+			}
+		}
+		read = func(conn *Conn, field reflect.Value) {
+			for _, f := range structFields {
+				if f.condition(field) {
+					v := field.FieldByIndex(f.sField.Index)
+					f.read(conn, v)
+				}
+			}
+		}
+	default:
+		panic("Unknown slice type " + e.Kind().String())
+	}
+
+	if !noLoop {
+		loopWrite := write
+		write = func(conn *Conn, field reflect.Value) {
+			l := field.Len()
+			for i := 0; i < l; i++ {
+				loopWrite(conn, field.Index(i))
+			}
+		}
+		loopRead := read
+		read = func(conn *Conn, field reflect.Value) {
+			var l int
+			var bs []byte
+			switch lType {
+			case "int8":
+				bs = conn.rb[:1]
+				conn.In.Read(bs)
+				l = int(int8(bs[0]))
+			case "int16":
+				bs = conn.rb[:2]
+				conn.In.Read(bs)
+				l = int(int16(binary.BigEndian.Uint16(bs)))
+			case "int32":
+				bs = conn.rb[:4]
+				conn.In.Read(bs)
+				l = int(int32(binary.BigEndian.Uint32(bs)))
+			default:
+				panic("Unknown length type")
+			}
+			if l != nilValue {
+				slice := reflect.MakeSlice(e, l, l)
+				for i := 0; i < l; i++ {
+					loopRead(conn, slice.Index(i))
+				}
+				field.Set(slice)
+			}
+		}
+	}
+
+	retwrite := func(conn *Conn, field reflect.Value) {
+		var l int
+		if field.IsNil() {
+			l = nilValue
+		} else {
+			l = field.Len()
+		}
+		var bs []byte
+		switch lType {
+		case "int8":
+			bs = conn.b[:1]
+			bs[0] = byte(l)
+		case "int16":
+			bs = conn.b[:2]
+			binary.BigEndian.PutUint16(bs, uint16(l))
+		case "int32":
+			bs = conn.b[:4]
+			binary.BigEndian.PutUint32(bs, uint32(l))
+		default:
+			panic("Unknown length type")
+		}
+		conn.Out.Write(bs)
+		if !field.IsNil() {
+			write(conn, field)
+		}
+	}
+	return retwrite, read
+}
+
+type encoder func(conn *Conn, field reflect.Value)
+type decoder func(conn *Conn, field reflect.Value)
+
+func encodeMetadata(conn *Conn, field reflect.Value) {
+	m := field.Interface().(map[byte]interface{})
+	index := []byte{0}
+	var ty byte = 0 //Type
+	var bs []byte
+	for i, v := range m {
+		manual := false
+		switch v := v.(type) {
+		case int8:
+			ty = 0
+			bs = conn.b[:1]
+			bs[0] = byte(v)
+		case int16:
+			ty = 1
+			bs = conn.b[:2]
+			binary.BigEndian.PutUint16(bs, uint16(v))
+		case int32:
+			ty = 2
+			bs = conn.b[:4]
+			binary.BigEndian.PutUint32(bs, uint32(v))
+		case float32:
+			ty = 3
+			bs = conn.b[:4]
+			binary.BigEndian.PutUint32(bs, math.Float32bits(v))
+		case string:
+			manual = true
+			ty = 4
+			index[0] = (i & 0x1F) | (ty << 5)
+			conn.Out.Write(index)
+			writeRunes(conn, []rune(v))
+		case Slot:
+			manual = true
+			ty = 5
+			index[0] = (i & 0x1F) | (ty << 5)
+			conn.Out.Write(index)
+			val := reflect.ValueOf(v)
+			fs := fields(val.Type())
+			for _, f := range fs {
+				if f.condition(val) {
+					v := val.FieldByIndex(f.sField.Index)
+					f.write(conn, v)
+				}
+			}
+		}
+		if !manual {
+			index[0] = (i & 0x1F) | (ty << 5)
+			conn.Out.Write(index)
+			conn.Out.Write(bs)
+		}
+	}
+	conn.Out.Write([]byte{0x7F})
+}
+
+var slotType = reflect.TypeOf((*Slot)(nil)).Elem()
+
+func decodeMetadata(conn *Conn, field reflect.Value) {
+	index := make([]byte, 1)
+	conn.In.Read(index)
+	m := map[byte]interface{}{}
+	for index[0] != 0x7F {
+		i := index[0] & 0x1F
+		ty := index[0] >> 5
+		var v interface{}
+		var bs []byte
+		switch ty {
+		case 0:
+			bs = conn.rb[:1]
+			conn.In.Read(bs)
+			v = int8(bs[0])
+		case 1:
+			bs = conn.rb[:2]
+			conn.In.Read(bs)
+			v = int16(binary.BigEndian.Uint16(bs))
+		case 2:
+			bs = conn.rb[:4]
+			conn.In.Read(bs)
+			v = int32(binary.BigEndian.Uint32(bs))
+		case 3:
+			bs = conn.rb[:4]
+			conn.In.Read(bs)
+			v = math.Float32frombits(binary.BigEndian.Uint32(bs))
+		case 4:
+			v = string(readRunes(conn))
+		case 5:
+			val := reflect.New(slotType).Elem()
+
+			fs := fields(val.Type())
+			for _, f := range fs {
+				if f.condition(val) {
+					v := val.FieldByIndex(f.sField.Index)
+					f.read(conn, v)
+				}
+			}
+			v = val.Interface()
+		}
+		m[i] = v
+		conn.In.Read(index)
+	}
+	field.Set(reflect.ValueOf(m))
 }
 
 func encodeByteSlice(conn *Conn, field reflect.Value) {
@@ -223,6 +512,10 @@ func encodeByteSlice(conn *Conn, field reflect.Value) {
 
 func encodeString(conn *Conn, field reflect.Value) {
 	val := []rune(field.String())
+	writeRunes(conn, val)
+}
+
+func writeRunes(conn *Conn, val []rune) {
 	length := len(val)
 	bs := make([]byte, length*2+2)
 	binary.BigEndian.PutUint16(bs, uint16(length))
@@ -232,10 +525,51 @@ func encodeString(conn *Conn, field reflect.Value) {
 	conn.Out.Write(bs)
 }
 
+func decodeString(conn *Conn, field reflect.Value) {
+	field.SetString(string(readRunes(conn)))
+}
+
+func readRunes(conn *Conn) []rune {
+	bs := conn.rb[:2]
+	conn.In.Read(bs)
+	length := binary.BigEndian.Uint16(bs)
+	bs = make([]byte, length*2)
+	conn.In.Read(bs)
+	out := make([]rune, length)
+	for i := range out {
+		out[i] = rune(binary.BigEndian.Uint16(bs[i*2:]))
+	}
+	return out
+}
+
+func encodeBool(conn *Conn, field reflect.Value) {
+	bs := conn.b[:1]
+	if field.Bool() {
+		bs[0] = 1
+	} else {
+		bs[1] = 0
+	}
+	conn.Out.Write(bs)
+}
+
+func decodeBool(conn *Conn, field reflect.Value) {
+	bs := conn.rb[:1]
+	conn.In.Read(bs)
+	if bs[0] == 1 {
+		field.SetBool(true)
+	}
+}
+
 func encodeInt8(conn *Conn, field reflect.Value) {
 	bs := conn.b[:1]
 	bs[0] = byte(field.Int())
 	conn.Out.Write(bs)
+}
+
+func decodeInt8(conn *Conn, field reflect.Value) {
+	bs := conn.rb[:1]
+	conn.In.Read(bs)
+	field.SetInt(int64(bs[0]))
 }
 
 func encodeUint8(conn *Conn, field reflect.Value) {
@@ -244,10 +578,22 @@ func encodeUint8(conn *Conn, field reflect.Value) {
 	conn.Out.Write(bs)
 }
 
+func decodeUint8(conn *Conn, field reflect.Value) {
+	bs := conn.rb[:1]
+	conn.In.Read(bs)
+	field.SetUint(uint64(bs[0]))
+}
+
 func encodeInt16(conn *Conn, field reflect.Value) {
 	bs := conn.b[:2]
 	binary.BigEndian.PutUint16(bs, uint16(field.Int()))
 	conn.Out.Write(bs)
+}
+
+func decodeInt16(conn *Conn, field reflect.Value) {
+	bs := conn.rb[:2]
+	conn.In.Read(bs)
+	field.SetInt(int64(binary.BigEndian.Uint16(bs)))
 }
 
 func encodeUint16(conn *Conn, field reflect.Value) {
@@ -256,10 +602,22 @@ func encodeUint16(conn *Conn, field reflect.Value) {
 	conn.Out.Write(bs)
 }
 
+func decodeUint16(conn *Conn, field reflect.Value) {
+	bs := conn.rb[:2]
+	conn.In.Read(bs)
+	field.SetUint(uint64(binary.BigEndian.Uint16(bs)))
+}
+
 func encodeInt32(conn *Conn, field reflect.Value) {
 	bs := conn.b[:4]
 	binary.BigEndian.PutUint32(bs, uint32(field.Int()))
 	conn.Out.Write(bs)
+}
+
+func decodeInt32(conn *Conn, field reflect.Value) {
+	bs := conn.rb[:4]
+	conn.In.Read(bs)
+	field.SetInt(int64(binary.BigEndian.Uint32(bs)))
 }
 
 func encodeInt64(conn *Conn, field reflect.Value) {
@@ -268,16 +626,34 @@ func encodeInt64(conn *Conn, field reflect.Value) {
 	conn.Out.Write(bs)
 }
 
+func decodeInt64(conn *Conn, field reflect.Value) {
+	bs := conn.rb[:8]
+	conn.In.Read(bs)
+	field.SetInt(int64(binary.BigEndian.Uint64(bs)))
+}
+
 func encodeFloat32(conn *Conn, field reflect.Value) {
 	bs := conn.b[:4]
 	binary.BigEndian.PutUint32(bs, math.Float32bits(float32(field.Float())))
 	conn.Out.Write(bs)
 }
 
+func decodeFloat32(conn *Conn, field reflect.Value) {
+	bs := conn.rb[:4]
+	conn.In.Read(bs)
+	field.SetFloat(float64(math.Float32frombits(binary.BigEndian.Uint32(bs))))
+}
+
 func encodeFloat64(conn *Conn, field reflect.Value) {
 	bs := conn.b[:8]
 	binary.BigEndian.PutUint64(bs, math.Float64bits(field.Float()))
 	conn.Out.Write(bs)
+}
+
+func decodeFloat64(conn *Conn, field reflect.Value) {
+	bs := conn.rb[:8]
+	conn.In.Read(bs)
+	field.SetFloat(math.Float64frombits(binary.BigEndian.Uint64(bs)))
 }
 
 func condAlways(root reflect.Value) bool { return true }

@@ -36,7 +36,7 @@ type LoginRequest struct {
 	Gamemode   int8
 	Dimension  int8
 	Difficulty int8
-	notUsed    int8
+	NotUsed    int8
 	MaxPlayers int8
 }
 
@@ -266,7 +266,7 @@ type SpawnNamedEntity struct {
 	Yaw         int8
 	Pitch       int8
 	CurrentItem int16
-	Metadata    map[byte]interface{}
+	Metadata    map[byte]interface{} `metadata:"true"`
 }
 
 func (SpawnNamedEntity) ID() byte { return 0x14 }
@@ -315,7 +315,7 @@ type SpawnMob struct {
 	VelocityX int16
 	VelocityY int16
 	VelocityZ int16
-	Metadata  map[byte]interface{}
+	Metadata  map[byte]interface{} `metadata:"true"`
 }
 
 func (SpawnMob) ID() byte { return 0x18 }
@@ -388,3 +388,625 @@ type Entity struct {
 }
 
 func (Entity) ID() byte { return 0x1E }
+
+//Entity Move (0x1F)
+//
+//Server --> Client
+type EntityMove struct {
+	EntityID int32
+	DX       int8
+	DY       int8
+	DZ       int8
+}
+
+func (EntityMove) ID() byte { return 0x1F }
+
+//Entity Look (0x20)
+//
+//Server --> Client
+type EntityLook struct {
+	EntityID int32
+	Yaw      int8
+	Pitch    int8
+}
+
+func (EntityLook) ID() byte { return 0x20 }
+
+//Entity Look and Move (0x21)
+//
+//Server --> Client
+type EntityLookMove struct {
+	EntityID int32
+	DX       int8
+	DY       int8
+	DZ       int8
+	Yaw      int8
+	Pitch    int8
+}
+
+func (EntityLookMove) ID() byte { return 0x21 }
+
+//Entity Teleport (0x22)
+//
+//Server --> Client
+type EntityTeleport struct {
+	EntityID int32
+	X        int32
+	Y        int32
+	Z        int32
+	Yaw      int8
+	Pitch    int8
+}
+
+func (EntityTeleport) ID() byte { return 0x22 }
+
+//Entity Head Look (0x23)
+//
+//Server --> Client
+type EntityHeadLook struct {
+	EntityID int32
+	HeadYaw  int8
+}
+
+func (EntityHeadLook) ID() byte { return 0x23 }
+
+//Entity Status (0x26)
+//
+//Server --> Client
+type EntityStatus struct {
+	EntityID int32
+	Status   int8
+}
+
+func (EntityStatus) ID() byte { return 0x26 }
+
+//Entity Attach (0x27)
+//
+//Server --> Client
+type EntityAttach struct {
+	EntityID  int32
+	VehicleID int32
+	Leash     bool
+}
+
+func (EntityAttach) ID() byte { return 0x27 }
+
+//Entity Metadata (0x28)
+//
+//Server --> Client
+type EntityMetadata struct {
+	EntityID int32
+	Metadata map[byte]interface{} `metadata:"true"`
+}
+
+func (EntityMetadata) ID() byte { return 0x28 }
+
+//Entity Effect (0x29)
+//
+//Server --> Client
+type EntityEffect struct {
+	EntityID  int32
+	EffectID  int8
+	Amplifier int8
+	Duration  int16
+}
+
+func (EntityEffect) ID() byte { return 0x29 }
+
+//Entity Effect Remove (0x2A)
+//
+//Server --> Client
+type EntityEffectRemove struct {
+	EntityID int32
+	EffectID int8
+}
+
+func (EntityEffectRemove) ID() byte { return 0x2A }
+
+//Set Experience (0x2B)
+//
+//Server --> Client
+type SetExperience struct {
+	ExperienceBar   float32
+	Level           int16
+	TotalExperience int16
+}
+
+func (SetExperience) ID() byte { return 0x2B }
+
+//Entity Properties (0x2C)
+//
+//Server --> Client
+type EntityProperties struct {
+	EntityID   int32
+	Properties []Property `ltype:"int32"`
+}
+
+//Part of Entity Properties (0x2C)
+type Property struct {
+	Key       string
+	Value     float64
+	Modifiers []Modifier `ltype:"int16"`
+}
+
+//Part of Entity Properties (0x2C)
+type Modifier struct {
+	UUIDHigh  int64
+	UUIDLow   int64
+	Amount    float64
+	Operation int8
+}
+
+func (EntityProperties) ID() byte { return 0x2C }
+
+//Chunk Data (0x33)
+//
+//Server --> Client
+type ChunkData struct {
+	X              int32
+	Z              int32
+	GroundUp       bool
+	PrimaryBitMap  uint16
+	AddBitMap      uint16
+	CompressedData []byte `ltype:"int32"`
+}
+
+func (ChunkData) ID() byte { return 0x33 }
+
+//Multi Block Change (0x34)
+//
+//Server --> Client
+type MultiBlockChange struct {
+	X           int32
+	Z           int32
+	RecordCount int16
+	Data        []int32 `ltype:"int32"`
+}
+
+func (MultiBlockChange) ID() byte { return 0x34 }
+
+//Block Change (0x35)
+//
+//Server --> Client
+type BlockChange struct {
+	X    int32
+	Y    byte
+	Z    int32
+	Type int16
+	Data byte
+}
+
+func (BlockChange) ID() byte { return 0x35 }
+
+//Block Action (0x36)
+//
+//Server --> Client
+type BlockAction struct {
+	X            int32
+	Y            int16
+	Z            int32
+	Byte1, Byte2 byte
+	BlockID      int16
+}
+
+func (BlockAction) ID() byte { return 0x36 }
+
+//Block Break Animation
+//
+//Server --> Client
+type BlockBreakAnimation struct {
+	EntityID     int32
+	X            int32
+	Y            int32
+	Z            int32
+	DestroyStage int8
+}
+
+func (BlockBreakAnimation) ID() byte { return 0x37 }
+
+//Map Chunk Bulk
+//
+//Server --> Client
+//Currently not supported
+
+//Explosion (0x3C)
+//
+//Server --> Client
+type Explosion struct {
+	X       float64
+	Y       float64
+	Z       float64
+	Radius  float32
+	Records []Record `ltype:"int32"`
+	MotionX float32
+	MotionY float32
+	MotionZ float32
+}
+
+//Part of Explosion (0x3C)
+type Record struct {
+	X byte
+	Y byte
+	Z byte
+}
+
+func (Explosion) ID() byte { return 0x3C }
+
+//Effect (0x3D)
+//
+//Server --> Client
+type Effect struct {
+	EffectID        int32
+	X               int32
+	Y               byte
+	Z               int32
+	Data            int32
+	DisableRelative bool
+}
+
+func (Effect) ID() byte { return 0x3D }
+
+//Sound Effect (0x3E)
+//
+//Server --> Client
+type SoundEffect struct {
+	Name   string
+	X      int32
+	Y      int32
+	Z      int32
+	Volume float32
+	Pitch  byte
+}
+
+func (SoundEffect) ID() byte { return 0x3E }
+
+//Particle (0x3F)
+//
+//Server --> Client
+type Particle struct {
+	Name          string
+	X             float32
+	Y             float32
+	Z             float32
+	OffsetX       float32
+	OffsetY       float32
+	OffsetZ       float32
+	ParticleSpeed float32
+	Count         int32
+}
+
+func (Particle) ID() byte { return 0x3F }
+
+//Game State (0x46)
+//
+//Server --> Client
+type GameState struct {
+	Reason   int8
+	Gamemode int8
+}
+
+func (GameState) ID() byte { return 0x46 }
+
+//Spawn Global Entity (0x47)
+//
+//Server --> Client
+type SpawnGlobalEntity struct {
+	EntityID int32
+	Type     int8
+	X        int32
+	Y        int32
+	Z        int32
+}
+
+func (SpawnGlobalEntity) ID() byte { return 0x47 }
+
+//Window Open (0x64)
+//
+//Server --> Client
+type WindowOpen struct {
+	WindowID int8
+	Type     int8
+	Title    string
+	Slots    int8
+	UseTitle bool
+	EntityID int32 `if:"Type,==,11"`
+}
+
+func (WindowOpen) ID() byte { return 0x64 }
+
+//Window Close (0x65)
+//
+//Serve<r --> Client
+type WindowClose struct {
+	WindowID int8
+}
+
+func (WindowClose) ID() byte { return 0x65 }
+
+//Window Click (0x66)
+//
+//Server <-- Client
+type WindowClick struct {
+	WindowID     int8
+	Slot         int16
+	Button       int8
+	ActionNumber int16
+	Mode         int8
+	Item         Slot
+}
+
+func (WindowClick) ID() byte { return 0x66 }
+
+//Window Set Slot
+//
+//Server --> Client
+type WindowSetSlot struct {
+	WindowID int8
+	Slot     int16
+	Item     Slot
+}
+
+func (WindowSetSlot) ID() byte { return 0x67 }
+
+//Window Set Slots
+//
+//Server --> Client
+type WindowSetSlots struct {
+	WindowID int8
+	Slots    []Slot `ltype:"int16"`
+}
+
+func (WindowSetSlots) ID() byte { return 0x68 }
+
+//Window Update Property (0x69)
+//
+//Server --> Client
+type WindowUpdateProperty struct {
+	WindowID int8
+	Property int16
+	Value    int16
+}
+
+func (WindowUpdateProperty) ID() byte { return 0x69 }
+
+//Confirm Transaction (0x6A)
+//
+//Server <--> Client
+type WindowTransactionConfirm struct {
+	WindowID     int8
+	ActionNumber int16
+	Accepted     bool
+}
+
+func (WindowTransactionConfirm) ID() byte { return 0x6A }
+
+//Creative Inventory Action (0x6B)
+//
+//Server <--> Client
+type CreativeInventoryAction struct {
+	Slot int16
+	Item Slot
+}
+
+func (CreativeInventoryAction) ID() byte { return 0x6B }
+
+//Enchant Item (0x6C)
+//
+//Server <-- Client
+type EnchantItem struct {
+	WindowID    int8
+	Enchantment int8
+}
+
+func (EnchantItem) ID() byte { return 0x6C }
+
+//Update Sign (0x82)
+//
+//Server <--> Client
+type UpdateSign struct {
+	X     int32
+	Y     int16
+	Z     int32
+	Line1 string
+	Line2 string
+	Line3 string
+	Line4 string
+}
+
+func (UpdateSign) ID() byte { return 0x82 }
+
+//Item Data (0x83)
+//
+//Server --> Client
+type ItemData struct {
+	ItemType int16
+	ItemData int16
+	Data     []byte `ltype:"int16"`
+}
+
+func (ItemData) ID() byte { return 0x83 }
+
+//Update Tile Entity (0x84)
+//
+//Server --> Client
+type UpdateTileEntity struct {
+	X      int32
+	Y      int16
+	Z      int32
+	Action int8
+	Data   []byte `ltype:"int16"`
+}
+
+func (UpdateTileEntity) ID() byte { return 0x84 }
+
+//Tile Editor Open (0x85)
+//
+//Server --> Client
+type TileEditorOpen struct {
+	TileEntityID int8
+	X            int32
+	Y            int32
+	Z            int32
+}
+
+func (TileEditorOpen) ID() byte { return 0x85 }
+
+//Increment Statistic (0xC8)
+//
+//Server --> Client
+type IncrementStatistic struct {
+	StatisticID int32
+	Amount      int32
+}
+
+func (IncrementStatistic) ID() byte { return 0xC8 }
+
+//Player List Item (0xC9)
+//
+//Server --> Client
+type PlayerListItem struct {
+	PlayerName string
+	Online     bool
+	Ping       int16
+}
+
+func (PlayerListItem) ID() byte { return 0xC9 }
+
+//Player Abilities (0xCA)
+//
+//Server <--> Client
+type PlayerAbilities struct {
+	Flags        byte
+	FlyingSpeed  float32
+	WalkingSpeed float32
+}
+
+func (PlayerAbilities) ID() byte { return 0xCA }
+
+//Tab-complete (0xCB)
+//
+//Server <--> Client
+type TabComplete struct {
+	Text string
+}
+
+func (TabComplete) ID() byte { return 0xCB }
+
+//Client Settings (0xCC)
+//
+//Server <-- Client
+type ClientSettings struct {
+	Locale       string
+	ViewDistance int8
+	ChatFlags    byte
+	Difficulty   int8
+	ShowCape     bool
+}
+
+func (ClientSettings) ID() byte { return 0xCC }
+
+//Client Statuses (0xCD)
+//
+//Server <-- Client
+type ClientStatuses struct {
+	Payload byte
+}
+
+func (ClientStatuses) ID() byte { return 0xCD }
+
+//Scoreboard Objective (0xCE)
+//
+//Server --> Client
+type ScoreboardObjective struct {
+	Name  string
+	Value string
+	Mode  int8
+}
+
+func (ScoreboardObjective) ID() byte { return 0xCE }
+
+//Update Score
+//
+//Server --> Client
+type UpdateScore struct {
+	ObjectiveName string
+	Mode          int8
+	Name          string
+	Value         int32
+}
+
+func (UpdateScore) ID() byte { return 0xCF }
+
+//Display Scoreboard (0xD0)
+//
+//Server --> Client
+type DisplayScoreboard struct {
+	Position      int8
+	ObjectiveName string
+}
+
+func (DisplayScoreboard) ID() byte { return 0xD0 }
+
+//Teams (0xD1)
+//
+//Server --> Client
+type Teams struct {
+	Name        string
+	Mode        byte
+	DisplayName string   `if:"Mode,==,0|2"`
+	Prefix      string   `if:"Mode,==,0|2"`
+	Suffix      string   `if:"Mode,==,0|2"`
+	Flags       byte     `if:"Mode,==,0|2"`
+	Players     []string `if:"Mode,==,0|3|4" ltype:"int16"`
+}
+
+func (Teams) ID() byte { return 0xD1 }
+
+//Plugin Message (0xFA)
+//
+//Server <--> Client
+type PluginMessage struct {
+	Channel string
+	Data    []byte `ltype:"int16"`
+}
+
+func (PluginMessage) ID() byte { return 0xFA }
+
+//Encryption Key Response (0xFC)
+//
+//Server <--> Client
+type EncryptionKeyResponse struct {
+	SharedSecret []byte `ltype:"int16"`
+	VerifyToken  []byte `ltype:"int16"`
+}
+
+func (EncryptionKeyResponse) ID() byte { return 0xFC }
+
+//Encryption Key Request (0xFD)
+//
+//Server --> Client
+type EncryptionKeyRequest struct {
+	ServerID    string
+	PublicKey   []byte `ltype:"int16"`
+	VerifyToken []byte `ltype:"int16"`
+}
+
+func (EncryptionKeyRequest) ID() byte { return 0xFD }
+
+//Server List Ping (0xFE)
+//
+//Server <-- Client
+type ServerListPing struct {
+	Magic byte
+}
+
+func (ServerListPing) ID() byte { return 0xFE }
+
+//Disconnect
+//
+//Server <--> Client
+type Disconnect struct {
+	Reason string
+}
+
+func (Disconnect) ID() byte { return 0xFF }

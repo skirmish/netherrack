@@ -3,8 +3,29 @@ package protocol
 import (
 	"bytes"
 	"io/ioutil"
+	"reflect"
 	"testing"
 )
+
+func TestPacketsID(t *testing.T) {
+	for i, packetType := range packets {
+		if packetType == nil {
+			continue
+		}
+		if reflect.New(packetType).Elem().Interface().(Packet).ID() != byte(i) {
+			t.Fatalf("Id mis-match: %d", i)
+		}
+	}
+}
+
+func TestPackets(t *testing.T) {
+	for _, packetType := range packets {
+		if packetType == nil {
+			continue
+		}
+		fields(packetType)
+	}
+}
 
 func TestConnection(t *testing.T) {
 	var buf bytes.Buffer
@@ -38,8 +59,7 @@ func TestSlot(t *testing.T) {
 		t.FailNow()
 	}
 }
-
-func BenchmarkConnectionSimple(b *testing.B) {
+func BenchmarkSimpleWrite(b *testing.B) {
 	packet := KeepAlive{55}
 	conn := &Conn{}
 	var buf bytes.Buffer
@@ -53,7 +73,37 @@ func BenchmarkConnectionSimple(b *testing.B) {
 	b.SetBytes(int64(buf.Len()))
 }
 
-func BenchmarkConnectionLong(b *testing.B) {
+func BenchmarkSimpleRead(b *testing.B) {
+	packet := KeepAlive{55}
+	conn := &Conn{}
+	var buf bytes.Buffer
+	conn.Out = &buf
+	conn.WritePacket(packet)
+	conn.Out = ioutil.Discard
+	reader := bytes.NewReader(buf.Bytes())
+	conn.In = reader
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		conn.ReadPacket()
+		reader.Seek(0, 0)
+	}
+	b.SetBytes(int64(buf.Len()))
+}
+
+func BenchmarkLongCompile(b *testing.B) {
+	packet := LoginRequest{}
+	t := reflect.TypeOf(packet)
+	delete(fieldCache.m, t)
+	delete(fieldCache.create, t)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		fields(t)
+		delete(fieldCache.m, t)
+		delete(fieldCache.create, t)
+	}
+}
+
+func BenchmarkLongWrite(b *testing.B) {
 	packet := LoginRequest{
 		EntityID:   5745,
 		LevelType:  "largeBiomes",
@@ -74,7 +124,31 @@ func BenchmarkConnectionLong(b *testing.B) {
 	b.SetBytes(int64(buf.Len()))
 }
 
-func BenchmarkSlotAll(b *testing.B) {
+func BenchmarkLongRead(b *testing.B) {
+	packet := LoginRequest{
+		EntityID:   5745,
+		LevelType:  "largeBiomes",
+		Gamemode:   0,
+		Dimension:  -1,
+		Difficulty: 3,
+		MaxPlayers: 60,
+	}
+	conn := &Conn{}
+	var buf bytes.Buffer
+	conn.Out = &buf
+	conn.WritePacket(packet)
+	conn.Out = ioutil.Discard
+	reader := bytes.NewReader(buf.Bytes())
+	conn.In = reader
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		conn.ReadPacket()
+		reader.Seek(0, 0)
+	}
+	b.SetBytes(int64(buf.Len()))
+}
+
+func BenchmarkSlotAllWrite(b *testing.B) {
 	packet := EntityEquipment{
 		EntityID: 0x88,
 		Slot:     0x03,
@@ -97,7 +171,33 @@ func BenchmarkSlotAll(b *testing.B) {
 	b.SetBytes(int64(buf.Len()))
 }
 
-func BenchmarkSlotNoTag(b *testing.B) {
+func BenchmarkSlotAllRead(b *testing.B) {
+	packet := EntityEquipment{
+		EntityID: 0x88,
+		Slot:     0x03,
+		Item: Slot{
+			ID:     0x05,
+			Count:  0x01,
+			Damage: 0x60,
+			Tag:    []byte{69, 69},
+		},
+	}
+	conn := &Conn{}
+	var buf bytes.Buffer
+	conn.Out = &buf
+	conn.WritePacket(packet)
+	conn.Out = ioutil.Discard
+	reader := bytes.NewReader(buf.Bytes())
+	conn.In = reader
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		conn.ReadPacket()
+		reader.Seek(0, 0)
+	}
+	b.SetBytes(int64(buf.Len()))
+}
+
+func BenchmarkSlotNoTagWrite(b *testing.B) {
 	packet := EntityEquipment{
 		EntityID: 0x88,
 		Slot:     0x03,
@@ -119,7 +219,32 @@ func BenchmarkSlotNoTag(b *testing.B) {
 	b.SetBytes(int64(buf.Len()))
 }
 
-func BenchmarkSlotEmpty(b *testing.B) {
+func BenchmarkSlotNoTagRead(b *testing.B) {
+	packet := EntityEquipment{
+		EntityID: 0x88,
+		Slot:     0x03,
+		Item: Slot{
+			ID:     0x05,
+			Count:  0x01,
+			Damage: 0x60,
+		},
+	}
+	conn := &Conn{}
+	var buf bytes.Buffer
+	conn.Out = &buf
+	conn.WritePacket(packet)
+	conn.Out = ioutil.Discard
+	reader := bytes.NewReader(buf.Bytes())
+	conn.In = reader
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		conn.ReadPacket()
+		reader.Seek(0, 0)
+	}
+	b.SetBytes(int64(buf.Len()))
+}
+
+func BenchmarkSlotEmptyWrite(b *testing.B) {
 	packet := EntityEquipment{
 		EntityID: 0x88,
 		Slot:     0x03,
@@ -135,6 +260,29 @@ func BenchmarkSlotEmpty(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		conn.WritePacket(packet)
+	}
+	b.SetBytes(int64(buf.Len()))
+}
+
+func BenchmarkSlotEmptyRead(b *testing.B) {
+	packet := EntityEquipment{
+		EntityID: 0x88,
+		Slot:     0x03,
+		Item: Slot{
+			ID: -1,
+		},
+	}
+	conn := &Conn{}
+	var buf bytes.Buffer
+	conn.Out = &buf
+	conn.WritePacket(packet)
+	conn.Out = ioutil.Discard
+	reader := bytes.NewReader(buf.Bytes())
+	conn.In = reader
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		conn.ReadPacket()
+		reader.Seek(0, 0)
 	}
 	b.SetBytes(int64(buf.Len()))
 }
