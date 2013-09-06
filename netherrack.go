@@ -2,13 +2,14 @@ package netherrack
 
 import (
 	"encoding/binary"
-	// "github.com/NetherrackDev/netherrack/log"
+	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/protocol"
-	"log"
+	"github.com/NetherrackDev/netherrack/protocol/auth"
 	"net"
 	"net/http"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -16,11 +17,12 @@ import (
 
 const (
 	//The currently supported protocol verison
-	ProtocolVersion       = 74
-	protocolVersionString = "74" //Save int-string conversion in list ping
+	ProtocolVersion = protocol.Version
 	//The currently supported Minecraft version
 	MinecraftVersion = "1.6.2"
 )
+
+var protocolVersionString = strconv.Itoa(ProtocolVersion) //Save int-string conversion in list ping
 
 //Stores server related infomation
 type Server struct {
@@ -36,7 +38,7 @@ func (server *Server) init() {
 
 }
 
-//Creates a server that will be bound to the passed ip:port
+//Creates a server
 func NewServer() *Server {
 	server := &Server{}
 
@@ -77,12 +79,20 @@ func (server *Server) Addr() net.Addr {
 
 func (server *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
+	defer time.Sleep(time.Second) //Allow for last messages to be sent before closing
 
-	mcConn := protocol.CreateConnection(conn)
-	packetId := mcConn.ReadUByte()
-	if packetId == 0xFE {
-		mcConn.ReadUByte()
+	mcConn := protocol.Conn{
+		Out:       conn,
+		In:        conn,
+		Deadliner: conn,
+	}
 
+	packet, err := mcConn.ReadPacket()
+	if err != nil {
+		mcConn.WritePacket(protocol.Disconnect{"Protocol Error"})
+		return
+	}
+	if _, ok := packet.(protocol.ServerListPing); ok {
 		/*
 			In 1.6 extra data was added containing the clients
 			protocol version and the ip:port of the server they are
@@ -90,31 +100,44 @@ func (server *Server) handleConnection(conn net.Conn) {
 			so a custom read deadline should be set to prevent waiting
 			too long causing the client to see a large ping time.
 		*/
-
-		extraData := make([]byte, 1)
-		conn.SetReadDeadline(time.Now().Add(150 * time.Nanosecond))
-		if _, err := conn.Read(extraData); err == nil && extraData[0] == 0xFA {
-			//Extra data found
-			channel, data := mcConn.ReadPluginMessage()
-
-			if channel != "MC|PingHost" {
-				return
+		conn.SetReadDeadline(time.Now().Add(9000 * time.Nanosecond))
+		mcConn.Deadliner = nil
+		packet, err := mcConn.ReadPacket()
+		if err != nil {
+			if extraData, ok := packet.(protocol.PluginMessage); ok {
+				if extraData.Channel != "MC|PingHost" {
+					goto sendPing
+				}
+				if len(extraData.Data) < 3 {
+					goto sendPing
+				}
+				protoVersion := extraData.Data[0]
+				offset, host := readString(extraData.Data[1:])
+				if len(extraData.Data) < offset+1+4 {
+					goto sendPing
+				}
+				port := binary.BigEndian.Uint32(extraData.Data[offset+1:])
+				_, _, _ = protoVersion, host, port //TODO: Something with the new infomation
 			}
-			if len(data) < 3 {
-				return
-			}
-			protoVersion := data[0]
-			offset, host := readString(data[1:])
-			if len(data) < offset+1+4 {
-				log.Println(offset, len(data), host)
-				return
-			}
-			port := binary.BigEndian.Uint32(data[offset+1:])
-			_, _, _ = protoVersion, host, port //TODO: Something with the new infomation
 		}
-
-		mcConn.WriteDisconnect(server.buildServerPing())
+	sendPing:
+		mcConn.Deadliner = conn
+		mcConn.WritePacket(protocol.Disconnect{server.buildServerPing()})
+		return
 	}
+	if _, ok := packet.(protocol.Handshake); !ok {
+		mcConn.WritePacket(protocol.Disconnect{"Protocol Error"})
+		return
+	}
+
+	username, err := mcConn.Login(packet.(protocol.Handshake), auth.Instance)
+	if err != nil {
+		log.Printf("Player %s login error: %s", username, err)
+		mcConn.WritePacket(protocol.Disconnect{err.Error()})
+		return
+	}
+
+	mcConn.WritePacket(protocol.Disconnect{"Login complete"})
 }
 
 func (server *Server) buildServerPing() string {
