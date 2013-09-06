@@ -1002,7 +1002,7 @@ type ServerListPing struct {
 
 func (ServerListPing) ID() byte { return 0xFE }
 
-//Disconnect
+//Disconnect (0xFF)
 //
 //Server <--> Client
 type Disconnect struct {
