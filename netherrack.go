@@ -27,11 +27,14 @@ var protocolVersionString = strconv.Itoa(ProtocolVersion) //Save int-string conv
 //Stores server related infomation
 type Server struct {
 	listener net.Listener
+	running  bool
 
 	listData struct {
 		sync.RWMutex
 		MessageOfTheDay string
 	}
+
+	authenticator protocol.Authenticator
 }
 
 func (server *Server) init() {
@@ -40,8 +43,9 @@ func (server *Server) init() {
 
 //Creates a server
 func NewServer() *Server {
-	server := &Server{}
-
+	server := &Server{
+		authenticator: auth.Instance,
+	}
 	server.listData.MessageOfTheDay = "Netherrack Server"
 
 	return server
@@ -49,6 +53,7 @@ func NewServer() *Server {
 
 //Starts the minecraft server. This will block while the server is running
 func (server *Server) Start(address string) error {
+	server.running = true
 	log.Printf("NumProcs: %d\n", runtime.GOMAXPROCS(-1))
 	debug.SetGCPercent(10)
 	go func() {
@@ -75,6 +80,15 @@ func (server *Server) Start(address string) error {
 //once started.
 func (server *Server) Addr() net.Addr {
 	return server.listener.Addr()
+}
+
+//Changes the authenticator usered by the server. This panics
+//if the server is started.
+func (server *Server) SetAuthenticator(auth protocol.Authenticator) {
+	if server.running {
+		panic("Server is running")
+	}
+	server.authenticator = auth
 }
 
 func (server *Server) handleConnection(conn net.Conn) {
@@ -130,7 +144,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 		return
 	}
 
-	username, err := mcConn.Login(packet.(protocol.Handshake), auth.Instance)
+	username, err := mcConn.Login(packet.(protocol.Handshake), server.authenticator)
 	if err != nil {
 		log.Printf("Player %s login error: %s", username, err)
 		mcConn.WritePacket(protocol.Disconnect{err.Error()})
