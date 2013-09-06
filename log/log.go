@@ -6,8 +6,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/NetherrackDev/soulsand"
-	"github.com/NetherrackDev/soulsand/chat"
 	"os"
 	"sync"
 )
@@ -17,11 +15,6 @@ const ()
 var (
 	globalLock sync.Mutex
 )
-
-func Fatalln(args ...interface{}) {
-	Println(args...)
-	os.Exit(-1)
-}
 
 func stripColourCodes(str string) string {
 	var buf bytes.Buffer
@@ -35,37 +28,6 @@ func stripColourCodes(str string) string {
 		buf.WriteRune(c)
 	}
 	return buf.String()
-}
-
-func MCPrintln(chatMsg *chat.Message) {
-	mCPrintln(chatMsg, 3)
-}
-
-func mCPrintln(chatMsg *chat.Message, level int) {
-	globalLock.Lock()
-	defer globalLock.Unlock()
-	printFileInfo(level)
-	fmt.Fprintln(os.Stdout, chatMsg.String())
-	return
-
-	globalLock.Lock()
-	defer globalLock.Unlock()
-	printFileInfo(level)
-	msg := map[string]interface{}{}
-	json.Unmarshal(chatMsg.Bytes(), msg)
-	text, ok := msg["text"].([]interface{})
-	if !ok {
-		panic("Not implemented")
-	}
-	for _, i := range text {
-		switch i := i.(type) {
-		case string:
-			os.Stdout.WriteString(i)
-		case map[string]interface{}:
-			os.Stdout.WriteString(i["text"].(string))
-		}
-	}
-	os.Stdout.WriteString("\n")
 }
 
 func Println(args ...interface{}) {

@@ -2,10 +2,8 @@
 
 package log
 
-import (
-	"github.com/NetherrackDev/soulsand/chat"
-)
+import ()
 
 func Debug(str string) {
-	mCPrintln(chat.New().Colour(chat.Yellow).Text(str), 3)
+	Println(str, 3)
 }

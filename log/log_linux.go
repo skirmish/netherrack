@@ -2,9 +2,7 @@ package log
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"github.com/NetherrackDev/soulsand/chat"
 	"hash/adler32"
 	"os"
 	"runtime"
@@ -35,11 +33,6 @@ var (
 	globalLock sync.Mutex
 )
 
-func Fatalln(args ...interface{}) {
-	Println(args...)
-	os.Exit(-1)
-}
-
 func stripColourCodes(str string) string {
 	var buf bytes.Buffer
 	runes := []rune(str)
@@ -52,77 +45,6 @@ func stripColourCodes(str string) string {
 		buf.WriteRune(c)
 	}
 	return buf.String()
-}
-
-func MCPrintln(chatMsg *chat.Message) {
-	mCPrintln(chatMsg, 3)
-}
-
-func mCPrintln(chatMsg *chat.Message, level int) {
-	globalLock.Lock()
-	defer globalLock.Unlock()
-	printFileInfo(level)
-	fmt.Fprintln(os.Stdout, chatMsg.String())
-	return
-
-	globalLock.Lock()
-	defer globalLock.Unlock()
-	printFileInfo(level)
-	msg := map[string]interface{}{}
-	err := json.Unmarshal(chatMsg.Bytes(), &msg)
-	if err != nil {
-		panic(err)
-	}
-	text, ok := msg["text"].([]interface{})
-	if !ok {
-		panic("Not implemented")
-	}
-	for _, i := range text {
-		os.Stdout.WriteString(colourWhite)
-		switch i := i.(type) {
-		case string:
-			os.Stdout.WriteString(stripColourCodes(i))
-		case map[string]interface{}:
-			if col, ok := i["color"]; ok {
-				switch col.(string) {
-				case "black":
-					os.Stdout.WriteString(colourBlack)
-				case "dark_blue":
-					os.Stdout.WriteString(colourDarkBlue)
-				case "dark_green":
-					os.Stdout.WriteString(colourDarkGreen)
-				case "dark_aqua":
-					os.Stdout.WriteString(colourDarkCyan)
-				case "dark_red":
-					os.Stdout.WriteString(colourDarkRed)
-				case "dark_purple":
-					os.Stdout.WriteString(colourDarkMagenta)
-				case "gold":
-					os.Stdout.WriteString(colourGold)
-				case "gray":
-					os.Stdout.WriteString(colourGrey)
-				case "dark_gray":
-					os.Stdout.WriteString(colourDarkGrey)
-				case "blue":
-					os.Stdout.WriteString(colourBlue)
-				case "green":
-					os.Stdout.WriteString(colourGreen)
-				case "aqua":
-					os.Stdout.WriteString(colourCyan)
-				case "red":
-					os.Stdout.WriteString(colourRed)
-				case "light_purple":
-					os.Stdout.WriteString(colourMagenta)
-				case "yellow":
-					os.Stdout.WriteString(colourYellow)
-				case "white":
-					os.Stdout.WriteString(colourWhite)
-				}
-			}
-			os.Stdout.WriteString(stripColourCodes(i["text"].(string)))
-		}
-	}
-	os.Stdout.WriteString("\n")
 }
 
 func Println(args ...interface{}) {

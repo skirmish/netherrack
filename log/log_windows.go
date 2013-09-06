@@ -2,9 +2,7 @@ package log
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"github.com/NetherrackDev/soulsand/chat"
 	"hash/adler32"
 	"os"
 	"runtime"
@@ -58,82 +56,6 @@ func stripColourCodes(str string) string {
 		buf.WriteRune(c)
 	}
 	return buf.String()
-}
-
-func Fatalln(args ...interface{}) {
-	Println(args...)
-	os.Exit(-1)
-}
-
-func MCPrintln(chatMsg *chat.Message) {
-	mCPrintln(chatMsg, 3)
-}
-
-func mCPrintln(chatMsg *chat.Message, level int) {
-	globalLock.Lock()
-	defer globalLock.Unlock()
-	printFileInfo(level)
-	fmt.Fprintln(os.Stdout, chatMsg.String())
-	return
-
-	globalLock.Lock()
-	defer globalLock.Unlock()
-	printFileInfo(level)
-	msg := map[string]interface{}{}
-	err := json.Unmarshal(chatMsg.Bytes(), &msg)
-	if err != nil {
-		panic(err)
-	}
-	text, ok := msg["text"].([]interface{})
-	if !ok {
-		panic("Not implemented")
-	}
-	for _, i := range text {
-		setConsoleAttribute(colourWhite)
-		switch i := i.(type) {
-		case string:
-			os.Stdout.WriteString(stripColourCodes(i))
-		case map[string]interface{}:
-			if col, ok := i["color"]; ok {
-				switch col.(string) {
-				case "black":
-					setConsoleAttribute(colourBlack)
-				case "dark_blue":
-					setConsoleAttribute(colourDarkBlue)
-				case "dark_green":
-					setConsoleAttribute(colourDarkGreen)
-				case "dark_aqua":
-					setConsoleAttribute(colourDarkCyan)
-				case "dark_red":
-					setConsoleAttribute(colourDarkRed)
-				case "dark_purple":
-					setConsoleAttribute(colourDarkMagenta)
-				case "gold":
-					setConsoleAttribute(colourGold)
-				case "gray":
-					setConsoleAttribute(colourGrey)
-				case "dark_gray":
-					setConsoleAttribute(colourDarkGrey)
-				case "blue":
-					setConsoleAttribute(colourBlue)
-				case "green":
-					setConsoleAttribute(colourGreen)
-				case "aqua":
-					setConsoleAttribute(colourCyan)
-				case "red":
-					setConsoleAttribute(colourRed)
-				case "light_purple":
-					setConsoleAttribute(colourMagenta)
-				case "yellow":
-					setConsoleAttribute(colourYellow)
-				case "white":
-					setConsoleAttribute(colourWhite)
-				}
-			}
-			os.Stdout.WriteString(stripColourCodes(i["text"].(string)))
-		}
-	}
-	os.Stdout.WriteString("\n")
 }
 
 func Println(args ...interface{}) {
