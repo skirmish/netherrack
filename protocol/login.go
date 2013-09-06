@@ -47,6 +47,7 @@ type Authenticator interface {
 }
 
 //Auths the user and returns their username
+//Uses infomation from http://wiki.vg/Protocol_Encryption
 func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (string, error) {
 	if handshake.ProtocolVersion != Version {
 		if handshake.ProtocolVersion < Version {
