@@ -37,10 +37,6 @@ type Server struct {
 	authenticator protocol.Authenticator
 }
 
-func (server *Server) init() {
-
-}
-
 //Creates a server
 func NewServer() *Server {
 	server := &Server{
