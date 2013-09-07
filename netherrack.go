@@ -2,9 +2,11 @@ package netherrack
 
 import (
 	"encoding/binary"
+	"github.com/NetherrackDev/netherrack/entity/player"
 	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/protocol/auth"
+	"github.com/NetherrackDev/netherrack/world"
 	"net"
 	"net/http"
 	"runtime"
@@ -32,6 +34,12 @@ type Server struct {
 	listData struct {
 		sync.RWMutex
 		MessageOfTheDay string
+	}
+
+	worlds struct {
+		sync.RWMutex
+		m   map[string]world.World
+		def world.World
 	}
 
 	authenticator protocol.Authenticator
@@ -87,11 +95,23 @@ func (server *Server) SetAuthenticator(auth protocol.Authenticator) {
 	server.authenticator = auth
 }
 
+//Returns the default world for the server
+func (server *Server) DefaultWorld() (world world.World) {
+	server.worlds.RLock()
+	world = server.worlds.def
+	server.worlds.RUnlock()
+	return
+}
+
+func (server *Server) World(name string) world.World {
+	return nil
+}
+
 func (server *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
-	defer time.Sleep(time.Second) //Allow for last messages to be sent before closing
+	defer time.Sleep(time.Second / 2) //Allow for last messages to be sent before closing
 
-	mcConn := protocol.Conn{
+	mcConn := &protocol.Conn{
 		Out:       conn,
 		In:        conn,
 		Deadliner: conn,
@@ -147,7 +167,8 @@ func (server *Server) handleConnection(conn net.Conn) {
 		return
 	}
 
-	mcConn.WritePacket(protocol.Disconnect{"Login complete"})
+	p := player.NewLocalPlayer(username, mcConn)
+	p.Start()
 }
 
 func (server *Server) buildServerPing() string {
