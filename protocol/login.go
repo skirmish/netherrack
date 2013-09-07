@@ -89,7 +89,6 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (strin
 	if err != nil {
 		return handshake.Username, err
 	}
-
 	if !bytes.Equal(verifyToken, verifyTokenResponse) {
 		return handshake.Username, ErrorVerifyFailed
 	}
@@ -97,7 +96,6 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (strin
 	if err := authenticator.Authenticate(handshake, serverID, sharedSecret, publicKeyBytes); err != nil {
 		return handshake.Username, err
 	}
-
 	conn.WritePacket(EncryptionKeyResponse{})
 
 	aesCipher, err := aes.NewCipher(sharedSecret)
