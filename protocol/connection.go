@@ -1,4 +1,3 @@
-//BUG(Thinkofdeath) Errors are not handled
 package protocol
 
 import (
