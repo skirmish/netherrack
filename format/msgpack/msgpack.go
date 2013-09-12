@@ -609,15 +609,18 @@ func compileField(sf reflect.StructField, name string) interface{} {
 				if err != nil {
 					return err
 				}
-				for i := 0; i < l; i++ {
-					v := fi.Index(i)
-					if f, ok := elemField.(field); ok {
+				if f, ok := elemField.(field); ok {
+					for i := 0; i < l; i++ {
+						v := fi.Index(i)
 						err := f.write(w, en, v)
 						if err != nil {
 							return err
 						}
-					} else {
-						f := elemField.(fieldStruct)
+					}
+				} else {
+					f := elemField.(fieldStruct)
+					for i := 0; i < l; i++ {
+						v := fi.Index(i)
 						err := write(w, en, f.m, v)
 						if err != nil {
 							return err
@@ -654,15 +657,18 @@ func compileField(sf reflect.StructField, name string) interface{} {
 					}
 				}
 				val := reflect.MakeSlice(sf.Type, l, l)
-				for i := 0; i < l; i++ {
-					v := val.Index(i)
-					if f, ok := elemField.(field); ok {
+				if f, ok := elemField.(field); ok {
+					for i := 0; i < l; i++ {
+						v := val.Index(i)
 						err := f.read(r, de, v)
 						if err != nil {
 							return err
 						}
-					} else {
-						f := elemField.(fieldStruct)
+					}
+				} else {
+					f := elemField.(fieldStruct)
+					for i := 0; i < l; i++ {
+						v := val.Index(i)
 						err := read(r, de, f.m, v)
 						if err != nil {
 							return err
