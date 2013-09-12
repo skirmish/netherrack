@@ -38,24 +38,28 @@ func skip(r io.Reader, de *msgDecoder) error {
 		if err != nil {
 			return err
 		}
+		return nil
 	case 0xCD, 0xD1: //2 byte
 		bs = de.b[:2]
 		_, err := r.Read(bs)
 		if err != nil {
 			return err
 		}
+		return nil
 	case 0xCE, 0xD2, 0xCA: //4 byte
 		bs = de.b[:4]
 		_, err := r.Read(bs)
 		if err != nil {
 			return err
 		}
+		return nil
 	case 0xCF, 0xD3, 0xCB: //8 byte
 		bs = de.b[:8]
 		_, err := r.Read(bs)
 		if err != nil {
 			return err
 		}
+		return nil
 	}
 	_, err = fallbackRead(r, de)
 	return err
