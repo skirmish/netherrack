@@ -19,10 +19,10 @@ package netherrack
 import (
 	"encoding/binary"
 	"github.com/NetherrackDev/netherrack/entity/player"
-	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/protocol/auth"
 	"github.com/NetherrackDev/netherrack/world"
+	"log"
 	"net"
 	"net/http"
 	"runtime"
@@ -183,7 +183,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 		return
 	}
 
-	p := player.NewLocalPlayer(username, mcConn)
+	p := player.NewLocalPlayer(username, mcConn, server)
 	p.Start()
 }
 

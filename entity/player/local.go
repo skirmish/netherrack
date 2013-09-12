@@ -18,8 +18,8 @@ package player
 
 import (
 	"github.com/NetherrackDev/netherrack/entity"
-	"github.com/NetherrackDev/netherrack/log"
 	"github.com/NetherrackDev/netherrack/protocol"
+	"log"
 )
 
 //A local player is a player connected directly to this server
@@ -67,7 +67,7 @@ func (lp *LocalPlayer) Start() {
 	for {
 		select {
 		case err := <-lp.errorChannel:
-			log.Printf("Player %s error: %s", lp.username, err)
+			log.Printf("Player %s error: %s\n", lp.username, err)
 			return
 		case packet := <-lp.packetQueue:
 			lp.conn.WritePacket(packet)
@@ -81,7 +81,7 @@ func (lp *LocalPlayer) Start() {
 func (lp *LocalPlayer) processPacket(packet protocol.Packet) {
 	switch packet := packet.(type) {
 	default:
-		log.Printf("Unhandled packet %X from %s", packet.ID(), lp.username)
+		log.Printf("Unhandled packet %X from %s\n", packet.ID(), lp.username)
 	}
 }
 
