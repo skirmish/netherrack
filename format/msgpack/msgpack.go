@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"reflect"
 	"sync"
@@ -437,7 +436,6 @@ func compileField(sf reflect.StructField, name string) interface{} {
 						if err != nil {
 							return err
 						}
-						log.Println(v)
 						val = reflect.ValueOf(v)
 					} else {
 						val = reflect.New(elem)
