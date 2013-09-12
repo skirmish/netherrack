@@ -22,49 +22,89 @@ import (
 	"testing"
 )
 
-func BenchmarkWrite(b *testing.B) {
+func BenchmarkWriteMap(b *testing.B) {
 	var buf bytes.Buffer
-	data := Type{
-		"nested compound test": Type{
-			"egg": Type{
-				"name":  "Eggbert",
-				"value": float32(0.5),
-			},
-			"ham": Type{
-				"name":  "Hampus",
-				"value": float32(0.75),
-			},
-		},
-		"intTest":    int32(2147483647),
-		"byteTest":   int8(127),
-		"stringTest": "HELLO WORLD THIS IS A TEST STRING \xc3\x85\xc3\x84\xc3\x96!",
-		"listTest": []interface{}{
-			int64(11),
-			int64(12),
-			int64(13),
-			int64(14),
-			int64(15),
-		},
-		"doubleTest": float64(0.49312871321823148),
-		"floatTest":  float32(0.49823147058486938),
-		"longTest":   int64(9223372036854775807),
-		"listTest (compound)": []interface{}{
-			Type{
-				"created-on": int64(1264099775885),
-				"name":       "Compound tag #0",
-			},
-			Type{
-				"created-on": int64(1264099775885),
-				"name":       "Compound tag #1",
-			},
-		},
-		"byteArrayTest": []byte{1, 2, 3, 4, 5, 6, 7, 8, 10},
-		"shortTest":     int16(32767),
-	}
-	data.WriteTo(&buf, "Level")
+	Write(&buf, mapData, "")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		data.WriteTo(ioutil.Discard, "Level")
+		Write(ioutil.Discard, mapData, "")
+	}
+	b.SetBytes(int64(buf.Len()))
+}
+
+type testStruct struct {
+	NestedCompoundTest testStruct2   `nbt:"nested compound test"`
+	IntTest            int32         `nbt:"intTest"`
+	ByteTest           int8          `nbt:"byteTest"`
+	StringTest         string        `nbt:"stringTest"`
+	ListTest           []int64       `nbt:"listTest"`
+	DoubleTest         float64       `nbt:"doubleTest"`
+	FloatTest          float32       `nbt:"floatTest"`
+	LongTest           int64         `nbt:"longTest"`
+	ListTestCompound   []testStruct3 `nbt:"list (compound)"`
+	ByteArrayTest      []byte        `nbt:"byteArrayTest"`
+	ShortTest          int16         `nbt:"shortTest"`
+}
+
+type testStruct2 struct {
+	Egg testStruct2Value `nbt:"egg"`
+	Ham testStruct2Value `nbt:"ham"`
+}
+
+type testStruct2Value struct {
+	Name  string  `nbt:"name"`
+	Value float32 `nbt:"value"`
+}
+
+type testStruct3 struct {
+	CreatedOn int64  `nbt:"created-on"`
+	Name      string `nbt:"name"`
+}
+
+func BenchmarkWriteStruct(b *testing.B) {
+	var buf bytes.Buffer
+	data := testStruct{
+		NestedCompoundTest: testStruct2{
+			Egg: testStruct2Value{
+				Name:  "Eggbert",
+				Value: 0.5,
+			},
+			Ham: testStruct2Value{
+				Name:  "Hampus",
+				Value: 0.75,
+			},
+		},
+		IntTest:    2147483647,
+		ByteTest:   127,
+		StringTest: "HELLO WORLD THIS IS A TEST STRING \xc3\x85\xc3\x84\xc3\x96!",
+		ListTest: []int64{
+			11,
+			12,
+			13,
+			14,
+			15,
+		},
+		DoubleTest: 0.49312871321823148,
+		FloatTest:  0.49823147058486938,
+		LongTest:   9223372036854775807,
+		ListTestCompound: []testStruct3{
+			testStruct3{
+				CreatedOn: 1264099775885,
+				Name:      "Compound tag #0",
+			},
+			testStruct3{
+				CreatedOn: 1264099775885,
+				Name:      "Compound tag #1",
+			},
+		},
+		ByteArrayTest: []byte{1, 2, 3, 4, 5, 6, 7, 8, 10},
+		ShortTest:     32767,
+	}
+	Write(&buf, data, "")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Write(ioutil.Discard, data, "")
 	}
 	b.SetBytes(int64(buf.Len()))
 }
