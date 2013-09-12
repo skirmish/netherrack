@@ -42,7 +42,18 @@ func (f fullReader) Read(p []byte) (int, error) {
 	return io.ReadFull(f.Reader, p)
 }
 
+//Reads in the msgpack format from r into v. Panics if
+//v is not a pointer to a struct.
 func Read(r io.Reader, v interface{}) (err error) {
+	ptr := reflect.ValueOf(v)
+	if ptr.Kind() != reflect.Ptr {
+		panic("format/msgpack: v is not a pointer")
+	}
+	val := ptr.Elem()
+	if val.Kind() != reflect.Struct {
+		panic("format/msgpack: v isn't a pointer to a struct")
+	}
+	//Catch any errors to prevent crashing
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
@@ -53,17 +64,13 @@ func Read(r io.Reader, v interface{}) (err error) {
 			return
 		}
 	}()
-	ptr := reflect.ValueOf(v)
-	if ptr.Kind() != reflect.Ptr {
-		panic("msgpack: v is not a pointer")
-	}
-	val := ptr.Elem()
 
 	fs := fields(val.Type())
 	de := &msgDecoder{}
 	return read(fullReader{r}, de, fs, val)
 }
 
+//Reads a struct map from r into val
 func read(r io.Reader, de *msgDecoder, fs map[string]interface{}, val reflect.Value) error {
 	m := de.b[:1]
 	_, err := r.Read(m)
@@ -114,6 +121,7 @@ func read(r io.Reader, de *msgDecoder, fs map[string]interface{}, val reflect.Va
 	return nil
 }
 
+//Writes v into w in the msgpack format.
 func Write(w io.Writer, v interface{}) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
@@ -134,6 +142,7 @@ func Write(w io.Writer, v interface{}) (err error) {
 	return write(w, en, fs, val)
 }
 
+//Writes val into w using the struct map fs
 func write(w io.Writer, en *msgEncoder, fs map[string]interface{}, val reflect.Value) error {
 	count := val.NumField()
 	var bs []byte
@@ -229,8 +238,7 @@ func compileStruct(t reflect.Type) map[string]interface{} {
 }
 
 //A field contains the methods needed to read and write the
-//field. It also has the condition that the field requires
-//to be written.
+//field.
 type field struct {
 	sField    int
 	nameBytes []byte
@@ -238,6 +246,7 @@ type field struct {
 	read      decoder
 }
 
+//A special type of field which contains a struct
 type fieldStruct struct {
 	sField    int
 	nameBytes []byte
@@ -702,6 +711,9 @@ func encodeBool(w io.Writer, en *msgEncoder, field reflect.Value) error {
 func decodeBool(r io.Reader, de *msgDecoder, field reflect.Value) error {
 	bs := de.b[:1]
 	_, err := r.Read(bs)
+	if bs[0] != 0xC3 && bs[0] != 0xC2 {
+		return ErrorIncorrectType
+	}
 	field.SetBool(bs[0] == 0xC3)
 	return err
 }
@@ -771,6 +783,8 @@ func decodeInt(r io.Reader, de *msgDecoder, field reflect.Value) error {
 			return err
 		}
 		field.SetInt(int64(binary.LittleEndian.Uint64(bs)))
+	default:
+		return ErrorIncorrectType
 	}
 	return nil
 }
@@ -840,6 +854,8 @@ func decodeUint(r io.Reader, de *msgDecoder, field reflect.Value) error {
 			return err
 		}
 		field.SetUint(binary.LittleEndian.Uint64(bs))
+	default:
+		return ErrorIncorrectType
 	}
 	return nil
 }
@@ -913,13 +929,15 @@ func readString(r io.Reader, de *msgDecoder) (string, error) {
 				return "", err
 			}
 			l = int(binary.LittleEndian.Uint16(bs))
-		default:
+		case 0xDB:
 			bs = de.b[:4]
 			_, err := r.Read(bs)
 			if err != nil {
 				return "", err
 			}
 			l = int(binary.LittleEndian.Uint32(bs))
+		default:
+			return "", ErrorIncorrectType
 		}
 	}
 	str := make([]byte, l)
@@ -951,6 +969,9 @@ func decodeFloat32(r io.Reader, de *msgDecoder, field reflect.Value) error {
 	if err != nil {
 		return err
 	}
+	if de.b[0] != 0xCA {
+		return ErrorIncorrectType
+	}
 	bs := de.b[:4]
 	_, err = r.Read(bs)
 	if err != nil {
@@ -980,6 +1001,9 @@ func decodeFloat64(r io.Reader, de *msgDecoder, field reflect.Value) error {
 	_, err := r.Read(de.b[:1])
 	if err != nil {
 		return err
+	}
+	if de.b[0] != 0xCB {
+		return ErrorIncorrectType
 	}
 	bs := de.b[:8]
 	_, err = r.Read(bs)

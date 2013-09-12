@@ -58,7 +58,6 @@ func TestBool(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	v = typeBool{}
 	err = Read(&buf, &v)
 	if err != nil {

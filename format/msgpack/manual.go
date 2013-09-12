@@ -2,11 +2,12 @@ package msgpack
 
 import (
 	"encoding/binary"
-	"fmt"
+	"errors"
 	"io"
 	"math"
 )
 
+//Shortcuts for simple types to save an alloc
 func skip(r io.Reader, de *msgDecoder) error {
 	bs := de.b[:1]
 	_, err := r.Read(bs)
@@ -44,6 +45,8 @@ func skip(r io.Reader, de *msgDecoder) error {
 	return err
 }
 
+//If the type isn't known at read time then this will manually check the type
+//and return the value
 func fallbackRead(r io.Reader, de *msgDecoder) (interface{}, error) {
 	bs := de.b[:1]
 	_, err := r.Read(bs)
@@ -271,9 +274,12 @@ func fallbackRead(r io.Reader, de *msgDecoder) (interface{}, error) {
 			return string(b), nil
 		}
 	}
-	panic(fmt.Errorf("Unhandled type %X", bs[0]))
+	return nil, ErrorUnknownType
 }
 
+var ErrorUnknownType = errors.New("format/msgpack: Unknown type")
+
+//Reads an array of an unknown type
 func readArray(r io.Reader, de *msgDecoder, l int) ([]interface{}, error) {
 	out := make([]interface{}, l)
 	var err error
@@ -286,6 +292,7 @@ func readArray(r io.Reader, de *msgDecoder, l int) ([]interface{}, error) {
 	return out, nil
 }
 
+//Reads an map of an unknown type
 func readMap(r io.Reader, de *msgDecoder, l int) (map[interface{}]interface{}, error) {
 	out := make(map[interface{}]interface{}, l)
 	for i := 0; i < l; i++ {
