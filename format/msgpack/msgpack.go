@@ -230,6 +230,9 @@ func compileStruct(t reflect.Type) map[string]interface{} {
 			if tName := f.Tag.Get("msgpack"); len(tName) > 0 {
 				name = tName
 			}
+			if name == "ignore" {
+				continue
+			}
 			fs[name] = compileField(f, name)
 		}
 	}
