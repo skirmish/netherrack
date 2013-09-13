@@ -143,7 +143,7 @@ func Write(w io.Writer, v interface{}) (err error) {
 
 //Writes val into w using the struct map fs
 func write(w io.Writer, en *msgEncoder, fs map[string]interface{}, val reflect.Value) error {
-	count := val.NumField()
+	count := len(fs)
 	var bs []byte
 	if count <= 15 {
 		bs = en.b[:1]
