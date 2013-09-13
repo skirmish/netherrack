@@ -18,5 +18,10 @@ package world
 
 import ()
 
-type World interface {
+type World struct {
+	system System
+}
+
+func (world *World) run() {
+
 }

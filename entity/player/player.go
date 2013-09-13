@@ -35,7 +35,7 @@ type Player interface {
 type Server interface {
 	entity.Server
 	//Returns the default world for the server
-	DefaultWorld() world.World
+	DefaultWorld() *world.World
 	//Gets the world by name, loads the world if it isn't loaded
-	World(name string) world.World
+	World(name string) *world.World
 }

@@ -24,7 +24,6 @@ import (
 	"github.com/NetherrackDev/netherrack/world"
 	"log"
 	"net"
-	"net/http"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -54,8 +53,9 @@ type Server struct {
 
 	worlds struct {
 		sync.RWMutex
-		m   map[string]world.World
-		def world.World
+		m       map[string]*world.World
+		waitMap map[string]*sync.WaitGroup
+		def     *world.World
 	}
 
 	authenticator protocol.Authenticator
@@ -67,6 +67,8 @@ func NewServer() *Server {
 		authenticator: auth.Instance,
 	}
 	server.listData.MessageOfTheDay = "Netherrack Server"
+	server.worlds.m = make(map[string]*world.World)
+	server.worlds.waitMap = make(map[string]*sync.WaitGroup)
 
 	return server
 }
@@ -76,9 +78,7 @@ func (server *Server) Start(address string) error {
 	server.running = true
 	log.Printf("NumProcs: %d\n", runtime.GOMAXPROCS(-1))
 	debug.SetGCPercent(10)
-	go func() {
-		log.Println(http.ListenAndServe(":25567", nil))
-	}()
+
 	log.Println("Starting Netherrack server")
 
 	listen, err := net.Listen("tcp", address)
@@ -111,16 +111,99 @@ func (server *Server) SetAuthenticator(auth protocol.Authenticator) {
 	server.authenticator = auth
 }
 
+//Sets the default world for the server
+func (server *Server) SetDefaultWorld(world *world.World) {
+	server.worlds.Lock()
+	server.worlds.def = world
+	server.worlds.Unlock()
+}
+
 //Returns the default world for the server
-func (server *Server) DefaultWorld() (world world.World) {
+func (server *Server) DefaultWorld() (world *world.World) {
 	server.worlds.RLock()
 	world = server.worlds.def
 	server.worlds.RUnlock()
 	return
 }
 
-func (server *Server) World(name string) world.World {
-	return nil
+//Gets the world by name. If the world isn't loaded but it exists
+//then it is loaded. If it doesn't exist then it is created using
+//the passed system.
+func (server *Server) LoadWorld(name string, system world.System) *world.World {
+	w := server.World(name)
+	if w != nil {
+		return w
+	}
+	server.worlds.Lock()
+	if w = server.worlds.m[name]; w != nil { //Double check now we have the lock
+		return w
+	}
+	wait, ok := server.worlds.waitMap[name]
+	if ok { //Another goroutine is currently loading the world
+		server.worlds.Unlock()
+		wait.Wait() //Wait for completion
+		server.worlds.RLock()
+		w := server.worlds.m[name] //Get the loaded world
+		server.worlds.RUnlock()
+
+		//This can happen if World is called before LoadWorld.
+		//This will try again until it loads the world.
+		//TODO: Make it so this isn't needed
+		if w == nil {
+			w = server.LoadWorld(name, system)
+		}
+		return w
+	}
+	wait = &sync.WaitGroup{}
+	server.worlds.waitMap[name] = wait
+	wait.Add(1) //Force other goroutines to wait for this world
+	server.worlds.Unlock()
+	w = world.LoadWorld(name, system)
+
+	server.worlds.Lock()
+	server.worlds.m[name] = w //Put the loaded world in the map
+	server.worlds.Unlock()
+
+	wait.Done() //Unpause other goroutines
+	return w
+}
+
+//Gets the world by name. If the world isn't loaded but it exists
+//then it is loaded.
+func (server *Server) World(name string) *world.World {
+	//Check if the world is loaded
+	server.worlds.RLock()
+	w := server.worlds.m[name]
+	server.worlds.RUnlock()
+
+	if w == nil { //World isn't loaded
+		server.worlds.Lock()
+		if w = server.worlds.m[name]; w != nil { //Double check now we have the lock
+			return w
+		}
+		wait, ok := server.worlds.waitMap[name]
+		if ok { //Another goroutine is currently loading the world
+			server.worlds.Unlock()
+			wait.Wait() //Wait for completion
+			server.worlds.RLock()
+			w := server.worlds.m[name] //Get the loaded world
+			server.worlds.RUnlock()
+			return w
+		}
+		wait = &sync.WaitGroup{}
+		server.worlds.waitMap[name] = wait
+		wait.Add(1) //Force other goroutines to wait for this world
+		server.worlds.Unlock()
+		w = world.GetWorld(name)
+
+		server.worlds.Lock()
+		server.worlds.m[name] = w //Put the loaded world in the map
+		delete(server.worlds.waitMap, name)
+		server.worlds.Unlock()
+
+		wait.Done() //Unpause other goroutines
+	}
+	return w
 }
 
 func (server *Server) handleConnection(conn net.Conn) {
