@@ -75,10 +75,10 @@ func (mw *MsgpackWorld) SystemName() string {
 	return msgpackName
 }
 
-//Writes the passed struct/struct pointer to the system's storage
-//with the key 'name'.
-func (mw *MsgpackWorld) Write(name string, v interface{}) error {
-	f, err := os.Create(filepath.Join(mw.path, "data", name+".nether"))
+//Writes the passed struct/struct pointer to the data folder
+//with the name key.nether.
+func (mw *MsgpackWorld) Write(key string, v interface{}) error {
+	f, err := os.Create(filepath.Join(mw.path, "data", key+".nether"))
 	if err != nil {
 		return err
 	}
@@ -86,12 +86,12 @@ func (mw *MsgpackWorld) Write(name string, v interface{}) error {
 	return msgpack.Write(f, v)
 }
 
-//Reads 'name' into the passed struct pointer
-func (mw *MsgpackWorld) Read(name string, v interface{}) error {
-	f, err := os.Open(filepath.Join(mw.path, "data", name+".nether"))
+//Reads key into the passed struct pointer
+func (mw *MsgpackWorld) Read(key string, v interface{}) error {
+	f, err := os.Open(filepath.Join(mw.path, "data", key+".nether"))
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return msgpack.Write(f, v)
+	return msgpack.Read(f, v)
 }

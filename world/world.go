@@ -25,3 +25,15 @@ type World struct {
 func (world *World) run() {
 
 }
+
+//Writes the value into the world's system's storage. This method
+//is safe to call from different goroutines when the key is different.
+func (world *World) Write(key string, value interface{}) error {
+	return world.system.Write(key, value)
+}
+
+//Reads the value into the world's system's storage. This method
+//is safe to call from different goroutines when the key is different.
+func (world *World) Read(key string, value interface{}) error {
+	return world.system.Read(key, value)
+}
