@@ -55,8 +55,7 @@ func NewLocalPlayer(username string, conn *protocol.Conn, server Server) *LocalP
 func (lp *LocalPlayer) QueuePacket(packet protocol.Packet) {
 	select {
 	case lp.packetQueue <- packet:
-	case <-lp.closedChannel:
-		lp.closedChannel <- struct{}{}
+	case _, _ = <-lp.closedChannel:
 	}
 }
 
@@ -88,7 +87,7 @@ func (lp *LocalPlayer) processPacket(packet protocol.Packet) {
 //Close and cleanup the player. The packetReader will close
 //once the orginal net.Conn is closed.
 func (lp *LocalPlayer) close() {
-	lp.closedChannel <- struct{}{}
+	close(lp.closedChannel)
 }
 
 //Reads incomming packets and passes them to the watcher
