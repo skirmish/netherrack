@@ -270,3 +270,33 @@ func TestArray(t *testing.T) {
 		t.Fail()
 	}
 }
+
+type testEmbeded struct {
+	Hello int32
+	EmbededStruct
+}
+
+type EmbededStruct struct {
+	Cake string
+}
+
+func TestEmbeded(t *testing.T) {
+	v := testEmbeded{5, EmbededStruct{"Hello"}}
+	org := v
+
+	var buf bytes.Buffer
+	err := Write(&buf, &v, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	v = testEmbeded{}
+	err = Read(&buf, &v)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(v, org) {
+		t.Fail()
+	}
+}

@@ -225,16 +225,25 @@ func compileStruct(t reflect.Type) map[string]interface{} {
 	count := t.NumField()
 	for i := 0; i < count; i++ {
 		f := t.Field(i)
+		var name string
 		if !f.Anonymous {
-			name := f.Name
+			name = f.Name
 			if tName := f.Tag.Get("msgpack"); len(tName) > 0 {
 				name = tName
 			}
-			if name == "ignore" {
+			if name == "ignore" || f.Tag.Get("ignore") == "true" {
 				continue
 			}
-			fs[name] = compileField(f, name)
+		} else {
+			name = f.Type.Name()
+			if tName := f.Tag.Get("msgpack"); len(tName) > 0 {
+				name = tName
+			}
+			if f.Tag.Get("ignore") == "true" {
+				continue
+			}
 		}
+		fs[name] = compileField(f, name)
 	}
 	return fs
 }
