@@ -76,8 +76,8 @@ func (lp *LocalPlayer) Start() {
 	})
 	lp.conn.WritePacket(protocol.PlayerPositionLook{
 		X:        0,
-		Y:        64,
-		Stance:   64 + 1.6,
+		Y:        90,
+		Stance:   90 + 1.6,
 		Z:        0,
 		Yaw:      0,
 		Pitch:    0,
