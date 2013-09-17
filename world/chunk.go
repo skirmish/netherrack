@@ -53,6 +53,7 @@ type byteChunkSection struct {
 	Data       [(16 * 16 * 16) / 2]byte
 	BlockLight [(16 * 16 * 16) / 2]byte
 	SkyLight   [(16 * 16 * 16) / 2]byte
+	BlockCount uint
 }
 
 //Inits the chunk. Should only be called by the world
@@ -110,6 +111,14 @@ func (c *byteChunk) SetBlock(x, y, z int, b byte) {
 		c.Sections[y>>4] = section
 	}
 	section.Blocks[x|(z<<4)|((y&0xF)<<8)] = b
+	if b == 0 {
+		section.BlockCount--
+	} else {
+		section.BlockCount++
+	}
+	if section.BlockCount == 0 {
+		c.Sections[y>>4] = nil
+	}
 }
 
 func (c *byteChunk) genPacketData() ([]byte, uint16) {
