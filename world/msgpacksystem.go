@@ -26,17 +26,17 @@ const msgpackName = "Msgpack"
 
 func init() {
 	AddSystem(msgpackName, func() System {
-		return &MsgpackWorld{}
+		return &MsgpackSystem{}
 	})
 }
 
-type MsgpackWorld struct {
+type MsgpackSystem struct {
 	Name string
 	path string `msgpack:"ignore"`
 }
 
 //Loads or creates the system
-func (mw *MsgpackWorld) Init(path string) {
+func (mw *MsgpackSystem) Init(path string) {
 	mw.path = path
 	level := filepath.Join(path, "level.nether")
 	_, err := os.Stat(level)
@@ -44,9 +44,27 @@ func (mw *MsgpackWorld) Init(path string) {
 		mw.readLevel(level)
 	}
 	mw.writeLevel(level)
+	os.MkdirAll(filepath.Join(mw.path, "data"), 0777)
 }
 
-func (mw *MsgpackWorld) readLevel(level string) {
+//Returns the chunk at the coordinates, also returns if the chunk existed
+//before this
+func (mw *MsgpackSystem) Chunk(x, z int) (Chunk, bool) {
+	return &byteChunk{X: x, Z: z}, false //TEMP
+}
+
+//Saves the chunk back to storage but leaves it open.
+func (mw *MsgpackSystem) SaveChunk(x, z int, storage Chunk) {
+
+}
+
+//Same as SaveChunk but informs the system that it can free resources
+//related to the chunk
+func (mw *MsgpackSystem) CloseChunk(x, y int, storage Chunk) {
+
+}
+
+func (mw *MsgpackSystem) readLevel(level string) {
 	f, err := os.Open(level)
 	if err != nil {
 		panic(err)
@@ -58,7 +76,7 @@ func (mw *MsgpackWorld) readLevel(level string) {
 	}
 }
 
-func (mw *MsgpackWorld) writeLevel(level string) {
+func (mw *MsgpackSystem) writeLevel(level string) {
 	f, err := os.Create(level)
 	if err != nil {
 		panic(err)
@@ -71,13 +89,13 @@ func (mw *MsgpackWorld) writeLevel(level string) {
 }
 
 //Gets the name of the system
-func (mw *MsgpackWorld) SystemName() string {
+func (mw *MsgpackSystem) SystemName() string {
 	return msgpackName
 }
 
 //Writes the passed struct/struct pointer to the data folder
 //with the name key.nether.
-func (mw *MsgpackWorld) Write(key string, v interface{}) error {
+func (mw *MsgpackSystem) Write(key string, v interface{}) error {
 	f, err := os.Create(filepath.Join(mw.path, "data", key+".nether"))
 	if err != nil {
 		return err
@@ -87,7 +105,7 @@ func (mw *MsgpackWorld) Write(key string, v interface{}) error {
 }
 
 //Reads key into the passed struct pointer
-func (mw *MsgpackWorld) Read(key string, v interface{}) error {
+func (mw *MsgpackSystem) Read(key string, v interface{}) error {
 	f, err := os.Open(filepath.Join(mw.path, "data", key+".nether"))
 	if err != nil {
 		return err

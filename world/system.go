@@ -22,6 +22,11 @@ import (
 	"path/filepath"
 )
 
+/*
+	Systems are the underlying storage system for worlds. The
+	Write/Read and Chunk methods write/read structs into the system.
+	The methods should ignore fields tagged `ignore:"true"`
+*/
 type System interface {
 	//Loads or creates the system
 	Init(path string)
@@ -32,6 +37,14 @@ type System interface {
 	Write(name string, v interface{}) error
 	//Reads 'name' into the passed struct pointer
 	Read(name string, v interface{}) error
+	//Returns the chunk at the coordinates, also returns if the chunk existed
+	//before this
+	Chunk(x, z int) (Chunk, bool)
+	//Saves the chunk back to storage but leaves it open.
+	SaveChunk(x, z int, storage Chunk)
+	//Same as SaveChunk but informs the system that it can free resources
+	//related to the chunk
+	CloseChunk(x, y int, storage Chunk)
 }
 
 var systems = map[string]func() System{}
@@ -44,7 +57,7 @@ func AddSystem(name string, f func() System) {
 
 //Loads the world by name using the passed system if
 //the world doesn't exists.
-func LoadWorld(name string, system System) *World {
+func LoadWorld(name string, system System, gen Generator) *World {
 	metapath := filepath.Join("./worlds/", name, "netherrack.meta")
 	_, err := os.Stat(metapath)
 	if err == nil {
@@ -54,7 +67,8 @@ func LoadWorld(name string, system System) *World {
 
 	//Create the world
 	meta := netherrackMeta{
-		SystemName: system.SystemName(),
+		SystemName:    system.SystemName(),
+		GeneratorName: gen.Name(),
 	}
 	os.MkdirAll(filepath.Join("./worlds/", name), 0777)
 	f, err := os.Create(metapath)
@@ -65,16 +79,20 @@ func LoadWorld(name string, system System) *World {
 	msgpack.Write(f, meta)
 
 	w := &World{
-		system: system,
+		name:      name,
+		system:    system,
+		generator: gen,
 	}
-	system.Init(filepath.Join("./worlds/", name))
+	w.system.Init(filepath.Join("./worlds/", w.name))
+	w.generator.Save(w)
 	go w.run()
 
 	return w
 }
 
 type netherrackMeta struct {
-	SystemName string
+	SystemName    string
+	GeneratorName string
 }
 
 //Loads the world by name
@@ -95,10 +113,18 @@ func GetWorld(name string) *World {
 	}
 	system := sys()
 
-	w := &World{
-		system: system,
+	gen, ok := generators[meta.GeneratorName]
+	if !ok {
+		panic("Unknown world generator")
 	}
-	system.Init(filepath.Join("./worlds/", name))
+	generator := gen()
+
+	w := &World{
+		name:      name,
+		system:    system,
+		generator: generator,
+	}
+	w.system.Init(filepath.Join("./worlds/", w.name))
 	go w.run()
 
 	return w

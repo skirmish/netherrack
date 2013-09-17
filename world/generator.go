@@ -14,15 +14,23 @@
    limitations under the License.
 */
 
-package entity
+package world
 
-import (
-	"github.com/NetherrackDev/netherrack/world"
-)
+type Generator interface {
+	//Generates the terrain in the passed chunk
+	Generate(chunk Chunk)
+	//Returns the generator's name
+	Name() string
+	//Loads the generator's settings from the world
+	Load(world *World)
+	//Saves the generator's settings to the world
+	Save(world *World)
+}
 
-type LocalEntity struct {
-	//Exported for setting when embedded
-	Server Server
-	//Exported for setting when embedded
-	World *world.World
+var generators = map[string]func() Generator{}
+
+//Add a generator to be used for gemerating worlds.
+//Should only be called at init.
+func AddGenerator(name string, f func() Generator) {
+	generators[name] = f
 }

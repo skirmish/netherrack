@@ -63,6 +63,32 @@ func (lp *LocalPlayer) QueuePacket(packet protocol.Packet) {
 //or is kicked.
 func (lp *LocalPlayer) Start() {
 	defer lp.close()
+
+	lp.World = lp.Server.DefaultWorld()
+
+	lp.conn.WritePacket(protocol.LoginRequest{
+		EntityID:   0,
+		LevelType:  "netherrack", //Not used by the client
+		Gamemode:   1,
+		Dimension:  0,
+		Difficulty: 3,
+		MaxPlayers: 127,
+	})
+	lp.conn.WritePacket(protocol.PlayerPositionLook{
+		X:        0,
+		Y:        64,
+		Stance:   64 + 1.6,
+		Z:        0,
+		Yaw:      0,
+		Pitch:    0,
+		OnGround: true,
+	})
+
+	for x := -10; x <= 10; x++ {
+		for z := -10; z <= 10; z++ {
+			lp.World.JoinChunk(x, z, lp)
+		}
+	}
 	for {
 		select {
 		case err := <-lp.errorChannel:
@@ -80,7 +106,7 @@ func (lp *LocalPlayer) Start() {
 func (lp *LocalPlayer) processPacket(packet protocol.Packet) {
 	switch packet := packet.(type) {
 	default:
-		log.Printf("Unhandled packet %X from %s\n", packet.ID(), lp.username)
+		log.Printf("Unhandled packet %02X(%+v) from %s\n", packet.ID(), packet, lp.username)
 	}
 }
 
