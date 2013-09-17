@@ -79,6 +79,9 @@ func (conn *Conn) ReadPacket() (Packet, error) {
 	}
 
 	ty := packets[bs[0]]
+	if ty == nil {
+		return nil, fmt.Errorf("Invalid packet %02X", bs[0])
+	}
 	val := reflect.New(ty).Elem()
 
 	fs := fields(val.Type())
