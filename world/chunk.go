@@ -29,6 +29,8 @@ type Chunk interface {
 	Init(world *World, gen Generator)
 	//Adds the watcher to the chunk
 	Join(watcher Watcher)
+	//Sets the block at the coordinates
+	SetBlock(x, y, z int, b byte)
 }
 
 type Watcher interface {
@@ -53,6 +55,7 @@ type byteChunkSection struct {
 	SkyLight   [(16 * 16 * 16) / 2]byte
 }
 
+//Inits the chunk. Should only be called by the world
 func (c *byteChunk) Init(world *World, gen Generator) {
 	c.world = world
 	c.join = make(chan Watcher, 20)
@@ -96,6 +99,19 @@ func (c *byteChunk) run(gen Generator) {
 	}
 }
 
+//Sets the block at the coordinates
+func (c *byteChunk) SetBlock(x, y, z int, b byte) {
+	section := c.Sections[y>>4]
+	if section == nil {
+		if b == 0 {
+			return
+		}
+		section = &byteChunkSection{}
+		c.Sections[y>>4] = section
+	}
+	section.Blocks[x|(z<<4)|((y&0xF)<<8)] = b
+}
+
 func (c *byteChunk) genPacketData() ([]byte, uint16) {
 	var buf bytes.Buffer
 	var mask uint16
@@ -132,6 +148,7 @@ func (c *byteChunk) genPacketData() ([]byte, uint16) {
 	return buf.Bytes(), mask
 }
 
+//Adds the watcher to the chunk
 func (c *byteChunk) Join(watcher Watcher) {
 	c.join <- watcher
 }
@@ -140,6 +157,7 @@ func (c *byteChunk) close() {
 
 }
 
+//Returns the chunk's location
 func (c *byteChunk) Location() (x, z int) {
 	return c.X, c.Z
 }

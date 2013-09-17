@@ -119,7 +119,17 @@ func (sf *SuperFlat) parseString(code string) {
 
 //Generates the chunk.
 func (sf *SuperFlat) Generate(chunk world.Chunk) {
-
+	y := 0
+	for _, layer := range sf.layers {
+		for i := 0; i < layer.count; i++ {
+			for x := 0; x < 16; x++ {
+				for z := 0; z < 16; z++ {
+					chunk.SetBlock(x, y, z, layer.block)
+				}
+			}
+			y++
+		}
+	}
 }
 
 //The name of the generator
