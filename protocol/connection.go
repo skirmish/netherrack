@@ -197,7 +197,9 @@ func compileField(sf reflect.StructField, t reflect.Type, ind []int) []field {
 		if !ok {
 			panic(fmt.Errorf("Unknown field: %s", args[0]))
 		}
-		ind := checkField.Index
+		in := make([]int, len(checkField.Index)+len(ind))
+		copy(in, ind)
+		copy(in[len(ind):], checkField.Index)
 
 		valsStr := strings.Split(args[2], "|")
 		vals := make([]int64, len(valsStr))
@@ -208,7 +210,7 @@ func compileField(sf reflect.StructField, t reflect.Type, ind []int) []field {
 		switch args[1] {
 		case "!=":
 			f.condition = func(root reflect.Value) bool {
-				val := root.FieldByIndex(ind).Int()
+				val := root.FieldByIndex(in).Int()
 				for _, v := range vals {
 					if v != val {
 						return true
