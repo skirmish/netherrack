@@ -17,9 +17,12 @@
 package player
 
 import (
+	"errors"
 	"github.com/NetherrackDev/netherrack/entity"
 	"github.com/NetherrackDev/netherrack/protocol"
 	"log"
+	"math/rand"
+	"time"
 )
 
 //A local player is a player connected directly to this server
@@ -34,6 +37,8 @@ type LocalPlayer struct {
 	readPackets   chan protocol.Packet
 	errorChannel  chan error
 	closedChannel chan struct{}
+
+	pingID int32
 }
 
 func NewLocalPlayer(username string, conn *protocol.Conn, server Server) *LocalPlayer {
@@ -47,6 +52,7 @@ func NewLocalPlayer(username string, conn *protocol.Conn, server Server) *LocalP
 		Server:        server,
 	}
 	lp.LocalEntity.Server = server
+	lp.pingID = -1
 	go lp.packetReader()
 	return lp
 }
@@ -89,11 +95,20 @@ func (lp *LocalPlayer) Start() {
 			lp.World.JoinChunk(x, z, lp)
 		}
 	}
+	tick := time.NewTicker(time.Second / 10)
+	var currentTick uint64
+	defer tick.Stop()
 	for {
 		select {
 		case err := <-lp.errorChannel:
 			log.Printf("Player %s error: %s\n", lp.username, err)
 			return
+		case <-tick.C:
+			if currentTick%(15*10) == 0 { //Every 15 seconds
+				lp.pingID = rand.Int31()
+				lp.conn.WritePacket(protocol.KeepAlive{lp.pingID})
+			}
+			currentTick++
 		case packet := <-lp.packetQueue:
 			lp.conn.WritePacket(packet)
 		case packet := <-lp.readPackets:
@@ -105,9 +120,23 @@ func (lp *LocalPlayer) Start() {
 //Acts on the passed packet
 func (lp *LocalPlayer) processPacket(packet protocol.Packet) {
 	switch packet := packet.(type) {
+	case protocol.KeepAlive:
+		if lp.pingID == -1 {
+			return
+		}
+		if lp.pingID != packet.KeepAliveID {
+			lp.disconnect("Incorrect KeepAliveID")
+			return
+		}
+		lp.pingID = -1
 	default:
 		log.Printf("Unhandled packet %02X(%+v) from %s\n", packet.ID(), packet, lp.username)
 	}
+}
+
+func (lp *LocalPlayer) disconnect(reason string) {
+	lp.conn.WritePacket(protocol.Disconnect{reason})
+	lp.errorChannel <- errors.New(reason)
 }
 
 //Close and cleanup the player. The packetReader will close
