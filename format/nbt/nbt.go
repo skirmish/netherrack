@@ -52,14 +52,14 @@ func Read(r io.Reader, v interface{}) (err error) {
 	}
 	//Catch any errors to prevent crashing
 	defer func() {
-		/*if e := recover(); e != nil {
+		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
 				err = er
 			} else {
 				err = fmt.Errorf("format/nbt: %s", e)
 			}
 			return
-		}*/
+		}
 	}()
 
 	fs := fields(val.Type())
@@ -130,14 +130,14 @@ func readPrefix(r io.Reader, de *msgDecoder) (name string, t byte, err error) {
 //Writes v into w in the nbt format.
 func Write(w io.Writer, v interface{}, name string) (err error) {
 	defer func() {
-		/*if e := recover(); e != nil {
+		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
 				err = er
 			} else {
 				err = fmt.Errorf("format/nbt: %s", e)
 			}
 			return
-		}*/
+		}
 	}()
 	val := reflect.ValueOf(v)
 	if val.Kind() == reflect.Ptr {
@@ -263,7 +263,7 @@ func compileStruct(t reflect.Type) map[string]interface{} {
 			if tName := f.Tag.Get("nbt"); len(tName) > 0 {
 				name = tName
 			}
-			if f.Tag.Get("ignore") == "true" {
+			if name == "ignore" || f.Tag.Get("ignore") == "true" {
 				continue
 			}
 		}
