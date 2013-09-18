@@ -463,8 +463,9 @@ func compileField(sf reflect.StructField, name string) interface{} {
 			fi.Set(ma)
 			return nil
 		}
-	case reflect.Slice:
+	case reflect.Slice, reflect.Array:
 		elem := sf.Type.Elem()
+		isArray := sf.Type.Kind() == reflect.Array
 		switch elem.Kind() {
 		case reflect.Uint8: //Short-cut for byte arrays
 			f.write = func(w io.Writer, en *msgEncoder, fi reflect.Value) error {
@@ -487,7 +488,11 @@ func compileField(sf reflect.StructField, name string) interface{} {
 				if err != nil {
 					return err
 				}
-				_, err = w.Write(fi.Bytes())
+				if !isArray {
+					_, err = w.Write(fi.Bytes())
+				} else {
+					_, err = w.Write(fi.Slice(0, fi.Len()).Bytes())
+				}
 				return err
 			}
 			f.read = func(r io.Reader, de *msgDecoder, fi reflect.Value) error {
@@ -524,10 +529,17 @@ func compileField(sf reflect.StructField, name string) interface{} {
 				if err != nil {
 					return nil
 				}
-				fi.SetBytes(out)
+				if !isArray {
+					fi.SetBytes(out)
+				} else {
+					reflect.Copy(fi, reflect.ValueOf(out))
+				}
 				return nil
 			}
 		case reflect.Interface: //Manual method
+			if isArray {
+				panic("NYI")
+			}
 			f.write = func(w io.Writer, en *msgEncoder, fi reflect.Value) error {
 				l := fi.Len()
 				var bs []byte
@@ -668,7 +680,12 @@ func compileField(sf reflect.StructField, name string) interface{} {
 						l = int(bs[0] & 0x0F)
 					}
 				}
-				val := reflect.MakeSlice(sf.Type, l, l)
+				var val reflect.Value
+				if !isArray {
+					val = reflect.MakeSlice(sf.Type, l, l)
+				} else {
+					val = fi
+				}
 				if f, ok := elemField.(field); ok {
 					for i := 0; i < l; i++ {
 						v := val.Index(i)
@@ -687,7 +704,9 @@ func compileField(sf reflect.StructField, name string) interface{} {
 						}
 					}
 				}
-				fi.Set(val)
+				if !isArray {
+					fi.Set(val)
+				}
 				return nil
 			}
 		}

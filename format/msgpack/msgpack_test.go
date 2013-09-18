@@ -205,12 +205,37 @@ func TestMap(t *testing.T) {
 	}
 }
 
-type testArrayBytes struct {
+type testSliceBytes struct {
 	Val []byte
 }
 
+func TestSliceBytes(t *testing.T) {
+	v := testSliceBytes{[]byte{5, 6, 7, 8, 9, 22}}
+	org := v
+
+	var buf bytes.Buffer
+	err := Write(&buf, &v)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	v = testSliceBytes{}
+	err = Read(&buf, &v)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(v, org) {
+		t.Fail()
+	}
+}
+
+type testArrayBytes struct {
+	Val [6]byte
+}
+
 func TestArrayBytes(t *testing.T) {
-	v := testArrayBytes{[]byte{5, 6, 7, 8, 9, 22}}
+	v := testArrayBytes{[6]byte{5, 6, 7, 8, 9, 22}}
 	org := v
 
 	var buf bytes.Buffer
@@ -230,12 +255,53 @@ func TestArrayBytes(t *testing.T) {
 	}
 }
 
-type testArray struct {
+type testSlice struct {
 	Val  []int
 	Val2 []uint
 	Val3 []float32
-	Val4 []testArrayStruct
+	Val4 []testSliceStruct
 	Val5 []string
+}
+type testSliceStruct struct {
+	Name string
+}
+
+func TestSlice(t *testing.T) {
+	v := testSlice{
+		[]int{5, -6, 7, -8, 9, -22},
+		[]uint{5, 363, 73, 7, 784, 6},
+		[]float32{0.5, 0.3, 0.6, 0.1},
+		[]testSliceStruct{
+			testSliceStruct{"Bob"},
+			testSliceStruct{"Jim"},
+		},
+		[]string{"Hello", "World"},
+	}
+	org := v
+
+	var buf bytes.Buffer
+	err := Write(&buf, &v)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	v = testSlice{}
+	err = Read(&buf, &v)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(v, org) {
+		t.Fail()
+	}
+}
+
+type testArray struct {
+	Val  [6]int
+	Val2 [6]uint
+	Val3 [4]float32
+	Val4 [2]testArrayStruct
+	Val5 [2]string
 }
 type testArrayStruct struct {
 	Name string
@@ -243,14 +309,14 @@ type testArrayStruct struct {
 
 func TestArray(t *testing.T) {
 	v := testArray{
-		[]int{5, -6, 7, -8, 9, -22},
-		[]uint{5, 363, 73, 7, 784, 6},
-		[]float32{0.5, 0.3, 0.6, 0.1},
-		[]testArrayStruct{
+		[6]int{5, -6, 7, -8, 9, -22},
+		[6]uint{5, 363, 73, 7, 784, 6},
+		[4]float32{0.5, 0.3, 0.6, 0.1},
+		[2]testArrayStruct{
 			testArrayStruct{"Bob"},
 			testArrayStruct{"Jim"},
 		},
-		[]string{"Hello", "World"},
+		[2]string{"Hello", "World"},
 	}
 	org := v
 
@@ -271,13 +337,13 @@ func TestArray(t *testing.T) {
 	}
 }
 
-type testArrayInterface struct {
+type testSliceInterface struct {
 	Val []interface{}
 }
 
-func TestArrayInterface(t *testing.T) {
+func TestSliceInterface(t *testing.T) {
 	t.Skip("Currently broken")
-	v := testArrayInterface{
+	v := testSliceInterface{
 		[]interface{}{
 			"Hello",
 			5,
@@ -292,7 +358,7 @@ func TestArrayInterface(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	v = testArrayInterface{}
+	v = testSliceInterface{}
 	err = Read(&buf, &v)
 	if err != nil {
 		t.Fatal(err)

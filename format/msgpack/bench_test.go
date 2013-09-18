@@ -108,3 +108,65 @@ func BenchmarkWriteStruct(b *testing.B) {
 	}
 	b.SetBytes(int64(buf.Len()))
 }
+
+type benchSlice struct {
+	Val []byte
+}
+
+func BenchmarkByteSliceWrite(b *testing.B) {
+	var buf bytes.Buffer
+	data := benchSlice{
+		Val: make([]byte, 16*16*256),
+	}
+	Write(&buf, data)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Write(ioutil.Discard, data)
+	}
+	b.SetBytes(int64(buf.Len()))
+}
+
+func BenchmarkByteSliceRead(b *testing.B) {
+	var buf bytes.Buffer
+	data := benchSlice{
+		Val: make([]byte, 16*16*256),
+	}
+	Write(&buf, data)
+
+	reader := bytes.NewReader(buf.Bytes())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Read(reader, &data)
+	}
+	b.SetBytes(int64(buf.Len()))
+}
+
+type benchArray struct {
+	Val [16 * 16 * 256]byte
+}
+
+func BenchmarkByteArrayWrite(b *testing.B) {
+	var buf bytes.Buffer
+	data := &benchArray{}
+	Write(&buf, data)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Write(ioutil.Discard, data)
+	}
+	b.SetBytes(int64(buf.Len()))
+}
+
+func BenchmarkByteArrayRead(b *testing.B) {
+	var buf bytes.Buffer
+	data := &benchArray{}
+	Write(&buf, data)
+
+	reader := bytes.NewReader(buf.Bytes())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Read(reader, data)
+	}
+	b.SetBytes(int64(buf.Len()))
+}
