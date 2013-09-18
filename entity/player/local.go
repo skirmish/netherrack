@@ -105,6 +105,10 @@ func (lp *LocalPlayer) Start() {
 			return
 		case <-tick.C:
 			if currentTick%(15*10) == 0 { //Every 15 seconds
+				if lp.pingID != -1 {
+					lp.disconnect("Timed out")
+					continue
+				}
 				lp.pingID = rand.Int31()
 				lp.conn.WritePacket(protocol.KeepAlive{lp.pingID})
 			}
