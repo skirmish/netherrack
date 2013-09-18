@@ -22,26 +22,29 @@ import (
 	"testing"
 )
 
-type typeNilPointer struct {
-	Val *bool
+type typePointer struct {
+	Val  *bool
+	Val2 *bool
+	Val3 *int
 }
 
-func TestNil(t *testing.T) {
-	v := typeNilPointer{}
+func TestPtr(t *testing.T) {
+	temp := true
+	temp2 := 5673
+	v := typePointer{Val2: &temp, Val3: &temp2}
 
 	var buf bytes.Buffer
 	err := Write(&buf, &v)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	v = typeNilPointer{new(bool)}
+	v = typePointer{new(bool), nil, nil}
 	err = Read(&buf, &v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if v.Val != nil {
+	if v.Val != nil || *v.Val2 != true || *v.Val3 != temp2 {
 		t.Fail()
 	}
 }
@@ -261,6 +264,7 @@ type testSlice struct {
 	Val3 []float32
 	Val4 []testSliceStruct
 	Val5 []string
+	Val6 []*testSliceStruct
 }
 type testSliceStruct struct {
 	Name string
@@ -276,6 +280,10 @@ func TestSlice(t *testing.T) {
 			testSliceStruct{"Jim"},
 		},
 		[]string{"Hello", "World"},
+		[]*testSliceStruct{
+			&testSliceStruct{"Bob"},
+			&testSliceStruct{"Jim"},
+		},
 	}
 	org := v
 
@@ -302,6 +310,7 @@ type testArray struct {
 	Val3 [4]float32
 	Val4 [2]testArrayStruct
 	Val5 [2]string
+	Val6 [2]*testArrayStruct
 }
 type testArrayStruct struct {
 	Name string
@@ -317,6 +326,10 @@ func TestArray(t *testing.T) {
 			testArrayStruct{"Jim"},
 		},
 		[2]string{"Hello", "World"},
+		[2]*testArrayStruct{
+			&testArrayStruct{"Bob"},
+			&testArrayStruct{"Jim"},
+		},
 	}
 	org := v
 

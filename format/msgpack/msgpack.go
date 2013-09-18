@@ -17,7 +17,6 @@
 package msgpack
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
 	"errors"
@@ -267,6 +266,32 @@ type fieldStruct struct {
 type encoder func(w io.Writer, en *msgEncoder, field reflect.Value) error
 type decoder func(r io.Reader, de *msgDecoder, field reflect.Value) error
 
+type pointerBuffer struct {
+	buf     [1]byte
+	hasRead bool
+	r       io.Reader
+}
+
+func (pb *pointerBuffer) Peek() (byte, error) {
+	_, err := pb.r.Read(pb.buf[:])
+	return pb.buf[0], err
+}
+
+func (pb *pointerBuffer) Read(p []byte) (n int, err error) {
+	var org []byte
+	if !pb.hasRead {
+		org = p
+		p = p[1:]
+	}
+	n, err = pb.r.Read(p)
+	if !pb.hasRead {
+		n++
+		pb.hasRead = true
+		org[0] = pb.buf[0]
+	}
+	return
+}
+
 //Returns the field or fields needed to fully write the struct's field
 func compileField(sf reflect.StructField, name string) interface{} {
 	f := field{sField: sf.Index[0]}
@@ -278,35 +303,51 @@ func compileField(sf reflect.StructField, name string) interface{} {
 	switch sf.Type.Kind() {
 	case reflect.Ptr:
 		fs := compileField(reflect.StructField{Type: sf.Type.Elem(), Index: []int{0}}, "*"+sf.Name)
-		if fi, ok := fs.(field); ok {
-			elem := sf.Type.Elem()
-			zero := reflect.Zero(sf.Type)
-			f.read = func(r io.Reader, de *msgDecoder, field reflect.Value) error {
-				buf := bufio.NewReader(r)
-				if b, err := buf.Peek(1); b[0] == 0xC0 {
-					buf.ReadByte()
-					field.Set(zero)
+
+		elem := sf.Type.Elem()
+		zero := reflect.Zero(sf.Type)
+		f.read = func(r io.Reader, de *msgDecoder, fie reflect.Value) error {
+			pb := &pointerBuffer{r: r}
+			if b, err := pb.Peek(); b == 0xC0 {
+				fie.Set(zero)
+				return err
+			}
+			org := reflect.New(elem)
+			val := org.Elem()
+			if fi, ok := fs.(field); ok {
+				if err := fi.read(pb, de, val); err != nil {
 					return err
 				}
-				val := reflect.New(elem)
-				if err := fi.read(buf, de, val); err != nil {
+			} else {
+				fs := fs.(fieldStruct)
+				err := read(pb, de, fs.m, val)
+				if err != nil {
 					return err
 				}
-				field.Set(val)
+			}
+			fie.Set(org)
+			return nil
+		}
+		f.write = func(w io.Writer, en *msgEncoder, fie reflect.Value) error {
+			if fie.IsNil() {
+				w.Write([]byte{0xC0})
 				return nil
 			}
-			f.write = func(w io.Writer, en *msgEncoder, field reflect.Value) error {
-				if field.IsNil() {
-					w.Write([]byte{0xC0})
-					return nil
-				}
-				val := field.Elem()
+			val := fie.Elem()
+			if fi, ok := fs.(field); ok {
 				if err := fi.write(w, en, val); err != nil {
 					return err
 				}
-				return nil
+			} else {
+				fs := fs.(fieldStruct)
+				err := write(w, en, fs.m, val)
+				if err != nil {
+					return err
+				}
 			}
+			return nil
 		}
+
 	case reflect.Struct:
 		return fieldStruct{f.sField, f.nameBytes, compileStruct(sf.Type)}
 	case reflect.Bool:
@@ -717,7 +758,10 @@ func compileField(sf reflect.StructField, name string) interface{} {
 		f.write = encodeFloat64
 		f.read = decodeFloat64
 	default:
-		panic(fmt.Errorf("Unhandled type %s for %s", sf.Type.Kind().String(), sf.Name))
+		panic(fmt.Errorf("Unhandled type %s for %s", sf.Type.Kind(), sf.Name))
+	}
+	if f.read == nil || f.write == nil {
+		panic(fmt.Errorf("Error with %s", sf.Type.Kind()))
 	}
 	return f
 }
