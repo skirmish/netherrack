@@ -27,11 +27,24 @@ type World struct {
 	loadedChunks map[uint64]Chunk
 
 	joinChunk chan joinChunk
+
+	//The limiters were added because trying to send/save all the chunks
+	//at once caused large amounts of memory usage
+	SendLimiter chan struct{}
+	SaveLimiter chan struct{}
 }
 
 func (world *World) run() {
 	world.generator.Load(world)
 	world.loadedChunks = make(map[uint64]Chunk)
+	world.SendLimiter = make(chan struct{}, 50)
+	for i := 0; i < cap(world.SendLimiter); i++ {
+		world.SendLimiter <- struct{}{}
+	}
+	world.SaveLimiter = make(chan struct{}, 50)
+	for i := 0; i < cap(world.SendLimiter); i++ {
+		world.SaveLimiter <- struct{}{}
+	}
 	for {
 		select {
 		case jc := <-world.joinChunk:

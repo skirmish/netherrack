@@ -79,7 +79,9 @@ func (c *byteChunk) Init(world *World, gen Generator, system System) {
 func (c *byteChunk) run(gen Generator) {
 	if gen != nil {
 		gen.Generate(c)
+		<-c.world.SaveLimiter
 		c.system.SaveChunk(c.X, c.Z, c)
+		c.world.SaveLimiter <- struct{}{}
 	}
 	defer c.close()
 	for {
@@ -96,6 +98,7 @@ func (c *byteChunk) run(gen Generator) {
 					break getWatchers
 				}
 			}
+			<-c.world.SendLimiter
 			data, primaryBitMap := c.genPacketData()
 			packet := protocol.ChunkData{
 				X: int32(c.X), Z: int32(c.Z),
@@ -107,6 +110,7 @@ func (c *byteChunk) run(gen Generator) {
 			for _, watcher := range watchers {
 				watcher.QueuePacket(packet)
 			}
+			c.world.SendLimiter <- struct{}{}
 		}
 	}
 }
