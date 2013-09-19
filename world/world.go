@@ -32,8 +32,6 @@ type World struct {
 func (world *World) run() {
 	world.generator.Load(world)
 	world.loadedChunks = make(map[uint64]Chunk)
-
-	world.joinChunk = make(chan joinChunk, 500)
 	for {
 		select {
 		case jc := <-world.joinChunk:
@@ -73,9 +71,9 @@ func (world *World) chunk(x, z int) Chunk {
 	chunk, ok := world.system.Chunk(x, z)
 	world.loadedChunks[chunkKey(x, z)] = chunk
 	if !ok {
-		chunk.Init(world, world.generator)
+		chunk.Init(world, world.generator, world.system)
 	} else {
-		chunk.Init(world, nil)
+		chunk.Init(world, nil, world.system)
 	}
 	return chunk
 }

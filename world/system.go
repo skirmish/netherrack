@@ -82,6 +82,7 @@ func LoadWorld(name string, system System, gen Generator) *World {
 		name:      name,
 		system:    system,
 		generator: gen,
+		joinChunk: make(chan joinChunk, 500),
 	}
 	w.system.Init(filepath.Join("./worlds/", w.name))
 	w.generator.Save(w)
@@ -123,6 +124,7 @@ func GetWorld(name string) *World {
 		name:      name,
 		system:    system,
 		generator: generator,
+		joinChunk: make(chan joinChunk, 500),
 	}
 	w.system.Init(filepath.Join("./worlds/", w.name))
 	go w.run()
