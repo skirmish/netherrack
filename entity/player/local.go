@@ -133,6 +133,8 @@ func (lp *LocalPlayer) processPacket(packet protocol.Packet) {
 			return
 		}
 		lp.pingID = -1
+	case protocol.Disconnect:
+		lp.disconnect(packet.Reason)
 	default:
 		log.Printf("Unhandled packet %02X(%+v) from %s\n", packet.ID(), packet, lp.username)
 	}
