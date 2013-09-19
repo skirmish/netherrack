@@ -666,12 +666,13 @@ func (Effect) ID() byte { return 0x3D }
 //
 //Server --> Client
 type SoundEffect struct {
-	Name   string
-	X      int32
-	Y      int32
-	Z      int32
-	Volume float32
-	Pitch  byte
+	Name          string
+	X             int32
+	Y             int32
+	Z             int32
+	Volume        float32
+	Pitch         int8
+	SoundCategory byte
 }
 
 func (SoundEffect) ID() byte { return 0x3E }
@@ -871,8 +872,12 @@ func (TileEditorOpen) ID() byte { return 0x85 }
 //
 //Server --> Client
 type IncrementStatistic struct {
-	StatisticID int32
-	Amount      int32
+	Statistics []Statistic `ltype:"int32"`
+}
+
+type Statistic struct {
+	Name   string
+	Amount int32
 }
 
 func (IncrementStatistic) ID() byte { return 0xC8 }
