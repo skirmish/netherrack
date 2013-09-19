@@ -80,6 +80,10 @@ func (lp *LocalPlayer) Start() {
 		Difficulty: 3,
 		MaxPlayers: 127,
 	})
+	lp.conn.WritePacket(protocol.PluginMessage{
+		Channel: "MC|Brand",
+		Data:    []byte("Netherrack"),
+	})
 	lp.conn.WritePacket(protocol.PlayerPositionLook{
 		X:        0,
 		Y:        90,
