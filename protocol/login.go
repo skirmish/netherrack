@@ -33,7 +33,7 @@ var (
 	privateKey     *rsa.PrivateKey
 )
 
-const Version = 74
+const Version = 77
 
 func init() {
 	var err error

@@ -36,7 +36,7 @@ const (
 	//The currently supported protocol verison
 	ProtocolVersion = protocol.Version
 	//The currently supported Minecraft version
-	MinecraftVersion = "1.6.2"
+	MinecraftVersion = "1.6.3"
 )
 
 var protocolVersionString = strconv.Itoa(ProtocolVersion) //Save int-string conversion in list ping
