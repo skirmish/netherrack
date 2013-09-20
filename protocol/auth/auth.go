@@ -19,10 +19,10 @@ package auth
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/NetherrackDev/netherrack/protocol"
-	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -33,8 +33,12 @@ type Authenticator struct{}
 
 var ErrorAuthFailed = errors.New("Authentication failed")
 
+type jsonResponse struct {
+	ID string `json:"id"`
+}
+
 //Checks the users against the Mojang login servers
-func (Authenticator) Authenticate(handshake protocol.Handshake, serverID string, sharedSecret, publicKey []byte) error {
+func (Authenticator) Authenticate(handshake protocol.Handshake, serverID string, sharedSecret, publicKey []byte) (string, error) {
 	sha := sha1.New()
 	sha.Write([]byte(serverID))
 	sha.Write(sharedSecret)
@@ -52,21 +56,24 @@ func (Authenticator) Authenticate(handshake protocol.Handshake, serverID string,
 	}
 	hashString := strings.TrimLeft(buf, "0")
 
-	response, err := http.Get(fmt.Sprintf("http://session.minecraft.net/game/checkserver.jsp?user=%s&serverId=%s", handshake.Username, hashString))
+	response, err := http.Get(fmt.Sprintf("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=%s&serverId=%s", handshake.Username, hashString))
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer response.Body.Close()
 
-	responseBytes, err := ioutil.ReadAll(response.Body)
+	dec := json.NewDecoder(response.Body)
+	res := &jsonResponse{}
+	err = dec.Decode(res)
 	if err != nil {
-		return err
-	}
-	if string(responseBytes) != "YES" {
-		return ErrorAuthFailed
+		return "", ErrorAuthFailed
 	}
 
-	return nil
+	if len(res.ID) != 32 {
+		return "", ErrorAuthFailed
+	}
+
+	return res.ID, nil
 }
 
 func twosCompliment(p []byte) {

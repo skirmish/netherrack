@@ -259,14 +259,14 @@ func (server *Server) handleConnection(conn net.Conn) {
 		return
 	}
 
-	username, err := mcConn.Login(packet.(protocol.Handshake), server.authenticator)
+	username, uuid, err := mcConn.Login(packet.(protocol.Handshake), server.authenticator)
 	if err != nil {
-		log.Printf("Player %s login error: %s", username, err)
+		log.Printf("Player %s(%s) login error: %s", uuid, username, err)
 		mcConn.WritePacket(protocol.Disconnect{err.Error()})
 		return
 	}
 
-	p := player.NewLocalPlayer(username, mcConn, server)
+	p := player.NewLocalPlayer(uuid, username, mcConn, server)
 	p.Start()
 }
 

@@ -30,6 +30,7 @@ type LocalPlayer struct {
 	entity.LocalEntity
 
 	conn     *protocol.Conn
+	uuid     string
 	username string
 	Server   Server
 
@@ -41,8 +42,9 @@ type LocalPlayer struct {
 	pingID int32
 }
 
-func NewLocalPlayer(username string, conn *protocol.Conn, server Server) *LocalPlayer {
+func NewLocalPlayer(uuid, username string, conn *protocol.Conn, server Server) *LocalPlayer {
 	lp := &LocalPlayer{
+		uuid:          uuid,
 		username:      username,
 		conn:          conn,
 		packetQueue:   make(chan protocol.Packet, 200),
