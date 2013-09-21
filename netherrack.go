@@ -266,7 +266,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 		return
 	}
 
-	p := player.NewLocalPlayer(uuid, username, mcConn, server)
+	p := player.NewPlayer(uuid, username, mcConn, server)
 	p.Start()
 }
 

@@ -33,6 +33,8 @@ func init() {
 type Watcher interface {
 	//Queues a packet to be sent to the watcher
 	QueuePacket(packet protocol.Packet)
+	//Returns the watcher's UUID
+	UUID() string
 }
 
 //A chunk loaded locally in a flat byte arrays
@@ -46,6 +48,8 @@ type Chunk struct {
 
 	join  chan Watcher `ignore:"true"`
 	leave chan Watcher `ignore:"true"`
+
+	watchers map[string]Watcher `ignore:"true"`
 }
 
 type ChunkSection struct {
@@ -61,6 +65,8 @@ func (c *Chunk) Init(world *World, gen Generator, system System) {
 	c.world = world
 	c.system = system
 	c.join = make(chan Watcher, 20)
+	c.leave = make(chan Watcher, 20)
+	c.watchers = make(map[string]Watcher)
 	go c.run(gen)
 }
 
@@ -71,16 +77,17 @@ func (c *Chunk) run(gen Generator) {
 		c.system.SaveChunk(c.X, c.Z, c)
 		c.world.SaveLimiter <- struct{}{}
 	}
-	defer c.close()
 	for {
 		select {
 		case watcher := <-c.join:
 			watchers := make([]Watcher, 0, 1)
+			c.watchers[watcher.UUID()] = watcher
 			watchers = append(watchers, watcher)
 		getWatchers:
 			for {
 				select {
 				case watcher := <-c.join:
+					c.watchers[watcher.UUID()] = watcher
 					watchers = append(watchers, watcher)
 				default:
 					break getWatchers
@@ -92,14 +99,19 @@ func (c *Chunk) run(gen Generator) {
 				X: int32(c.X), Z: int32(c.Z),
 				GroundUp:       true,
 				PrimaryBitMap:  primaryBitMap,
-				AddBitMap:      0x0,
 				CompressedData: data,
 			}
 			for _, watcher := range watchers {
 				watcher.QueuePacket(packet)
 			}
 			c.world.SendLimiter <- struct{}{}
-		case <-c.leave:
+		case watcher := <-c.leave:
+			delete(c.watchers, watcher.UUID())
+			watcher.QueuePacket(protocol.ChunkData{
+				X: int32(c.X), Z: int32(c.Z),
+				GroundUp:       true,
+				CompressedData: []byte{},
+			})
 		}
 	}
 }
@@ -194,10 +206,6 @@ func (c *Chunk) Join(watcher Watcher) {
 //Removes the watcher to the chunk
 func (c *Chunk) Leave(watcher Watcher) {
 	c.leave <- watcher
-}
-
-func (c *Chunk) close() {
-
 }
 
 //Returns the chunk's location

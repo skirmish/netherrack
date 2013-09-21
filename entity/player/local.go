@@ -20,14 +20,24 @@ import (
 	"errors"
 	"github.com/NetherrackDev/netherrack/entity"
 	"github.com/NetherrackDev/netherrack/protocol"
+	"github.com/NetherrackDev/netherrack/world"
 	"log"
 	"math/rand"
 	"time"
 )
 
+//Contains methods that a player needs for a server
+type Server interface {
+	entity.Server
+	//Returns the default world for the server
+	DefaultWorld() *world.World
+	//Gets the world by name, loads the world if it isn't loaded
+	World(name string) *world.World
+}
+
 //A local player is a player connected directly to this server
-type LocalPlayer struct {
-	entity.LocalEntity
+type Player struct {
+	entity.CommonEntity
 
 	conn     *protocol.Conn
 	uuid     string
@@ -39,11 +49,13 @@ type LocalPlayer struct {
 	errorChannel  chan error
 	closedChannel chan struct{}
 
+	rand *rand.Rand
+
 	pingID int32
 }
 
-func NewLocalPlayer(uuid, username string, conn *protocol.Conn, server Server) *LocalPlayer {
-	lp := &LocalPlayer{
+func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Player {
+	lp := &Player{
 		uuid:          uuid,
 		username:      username,
 		conn:          conn,
@@ -52,15 +64,16 @@ func NewLocalPlayer(uuid, username string, conn *protocol.Conn, server Server) *
 		errorChannel:  make(chan error, 1),
 		closedChannel: make(chan struct{}, 1),
 		Server:        server,
+		rand:          rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
-	lp.LocalEntity.Server = server
+	lp.CommonEntity.Server = server
 	lp.pingID = -1
 	go lp.packetReader()
 	return lp
 }
 
 //Queues a packet to be sent to the player
-func (lp *LocalPlayer) QueuePacket(packet protocol.Packet) {
+func (lp *Player) QueuePacket(packet protocol.Packet) {
 	select {
 	case lp.packetQueue <- packet:
 	case _, _ = <-lp.closedChannel:
@@ -69,7 +82,7 @@ func (lp *LocalPlayer) QueuePacket(packet protocol.Packet) {
 
 //Processes incomming and outgoing packets. Blocks until the player leaves
 //or is kicked.
-func (lp *LocalPlayer) Start() {
+func (lp *Player) Start() {
 	defer lp.close()
 
 	lp.World = lp.Server.DefaultWorld()
@@ -115,8 +128,11 @@ func (lp *LocalPlayer) Start() {
 					lp.disconnect("Timed out")
 					continue
 				}
-				lp.pingID = rand.Int31()
+				lp.pingID = lp.rand.Int31()
 				lp.conn.WritePacket(protocol.KeepAlive{lp.pingID})
+			}
+			if lp.UpdateMovement() {
+				//TODO: Magic
 			}
 			currentTick++
 		case packet := <-lp.packetQueue:
@@ -128,8 +144,17 @@ func (lp *LocalPlayer) Start() {
 }
 
 //Acts on the passed packet
-func (lp *LocalPlayer) processPacket(packet protocol.Packet) {
+func (lp *Player) processPacket(packet protocol.Packet) {
 	switch packet := packet.(type) {
+	case protocol.PlayerLook:
+		lp.Yaw = packet.Yaw
+		lp.Pitch = packet.Pitch
+	case protocol.PlayerPosition:
+		lp.X, lp.Y, lp.Z = packet.X, packet.Y, packet.Z
+	case protocol.PlayerPositionLook:
+		lp.X, lp.Y, lp.Z = packet.X, packet.Y, packet.Z
+		lp.Yaw = packet.Yaw
+		lp.Pitch = packet.Pitch
 	case protocol.KeepAlive:
 		if lp.pingID == -1 {
 			return
@@ -144,19 +169,19 @@ func (lp *LocalPlayer) processPacket(packet protocol.Packet) {
 	}
 }
 
-func (lp *LocalPlayer) disconnect(reason string) {
+func (lp *Player) disconnect(reason string) {
 	lp.conn.WritePacket(protocol.Disconnect{reason})
 	lp.errorChannel <- errors.New(reason)
 }
 
 //Close and cleanup the player. The packetReader will close
 //once the orginal net.Conn is closed.
-func (lp *LocalPlayer) close() {
+func (lp *Player) close() {
 	close(lp.closedChannel)
 }
 
 //Reads incomming packets and passes them to the watcher
-func (lp *LocalPlayer) packetReader() {
+func (lp *Player) packetReader() {
 	for {
 		packet, err := lp.conn.ReadPacket()
 		if err != nil {
@@ -165,4 +190,9 @@ func (lp *LocalPlayer) packetReader() {
 		}
 		lp.readPackets <- packet
 	}
+}
+
+//Returns the player's UUID
+func (lp *Player) UUID() string {
+	return lp.uuid
 }

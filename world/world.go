@@ -16,8 +16,6 @@
 
 package world
 
-import ()
-
 type World struct {
 	name string
 
@@ -55,8 +53,8 @@ func (world *World) run() {
 		select {
 		case jc := <-world.joinChunk:
 			world.chunk(jc.x, jc.z).Join(jc.watcher)
-		case jc := <-world.leaveChunk:
-			world.chunk(jc.x, jc.z).Leave(jc.watcher)
+		case lc := <-world.leaveChunk:
+			world.chunk(lc.x, lc.z).Leave(lc.watcher)
 		}
 	}
 }

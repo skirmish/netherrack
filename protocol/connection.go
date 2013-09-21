@@ -295,7 +295,7 @@ func getSliceCoders(e reflect.Type, sf reflect.StructField) (encoder, decoder) {
 	noLoop := false
 
 	nilValue, err := strconv.Atoi(sf.Tag.Get("nil"))
-	if err != nil && len(sf.Tag.Get("nil")) == 0 {
+	if err != nil || len(sf.Tag.Get("nil")) == 0 {
 		nilValue = 0
 	}
 	lType := sf.Tag.Get("ltype")

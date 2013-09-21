@@ -20,9 +20,19 @@ import (
 	"github.com/NetherrackDev/netherrack/world"
 )
 
-type LocalEntity struct {
+type CommonEntity struct {
 	//Exported for setting when embedded
 	Server Server
 	//Exported for setting when embedded
 	World *world.World
+
+	CX, CZ, LastCX, LastCZ int32
+	X, Y, Z                float64
+	Yaw, Pitch             float32
+}
+
+func (ce *CommonEntity) UpdateMovement() (movedChunk bool) {
+
+	ce.LastCX, ce.LastCZ = ce.CX, ce.CZ
+	return
 }
