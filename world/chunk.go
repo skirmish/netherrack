@@ -17,8 +17,6 @@
 package world
 
 import (
-	"bytes"
-	"compress/zlib"
 	"github.com/NetherrackDev/netherrack/protocol"
 )
 
@@ -93,8 +91,8 @@ func (c *Chunk) run(gen Generator) {
 					break getWatchers
 				}
 			}
-			<-c.world.SendLimiter
-			data, primaryBitMap := c.genPacketData()
+			zl := <-c.world.SendLimiter
+			data, primaryBitMap := c.genPacketData(zl)
 			packet := protocol.ChunkData{
 				X: int32(c.X), Z: int32(c.Z),
 				GroundUp:       true,
@@ -104,7 +102,7 @@ func (c *Chunk) run(gen Generator) {
 			for _, watcher := range watchers {
 				watcher.QueuePacket(packet)
 			}
-			c.world.SendLimiter <- struct{}{}
+			c.world.SendLimiter <- zl
 		case watcher := <-c.leave:
 			delete(c.watchers, watcher.UUID())
 			watcher.QueuePacket(protocol.ChunkData{
@@ -162,10 +160,11 @@ func (c *Chunk) Block(x, y, z int) byte {
 	return section.Blocks[x|(z<<4)|((y&0xF)<<8)]
 }
 
-func (c *Chunk) genPacketData() ([]byte, uint16) {
-	var buf bytes.Buffer
+func (c *Chunk) genPacketData(cache cachedCompressor) ([]byte, uint16) {
 	var mask uint16
-	zl := zlib.NewWriter(&buf)
+	buf, zl := cache.buf, cache.zl
+	buf.Reset()
+	zl.Reset(buf)
 	for i, sec := range c.Sections {
 		if sec == nil {
 			continue
@@ -194,7 +193,7 @@ func (c *Chunk) genPacketData() ([]byte, uint16) {
 		}
 		zl.Write(sec.SkyLight[:])
 	}
-	zl.Close()
+	zl.Flush()
 	return buf.Bytes(), mask
 }
 

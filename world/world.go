@@ -16,6 +16,11 @@
 
 package world
 
+import (
+	"bytes"
+	"compress/zlib"
+)
+
 type World struct {
 	name string
 
@@ -29,8 +34,13 @@ type World struct {
 
 	//The limiters were added because trying to send/save all the chunks
 	//at once caused large amounts of memory usage
-	SendLimiter chan struct{}
+	SendLimiter chan cachedCompressor
 	SaveLimiter chan struct{}
+}
+
+type cachedCompressor struct {
+	buf *bytes.Buffer
+	zl  *zlib.Writer
 }
 
 func (world *World) init() {
@@ -41,12 +51,13 @@ func (world *World) init() {
 func (world *World) run() {
 	world.generator.Load(world)
 	world.loadedChunks = make(map[uint64]*Chunk)
-	world.SendLimiter = make(chan struct{}, 50)
+	world.SendLimiter = make(chan cachedCompressor, 20)
 	for i := 0; i < cap(world.SendLimiter); i++ {
-		world.SendLimiter <- struct{}{}
+		buf := &bytes.Buffer{}
+		world.SendLimiter <- cachedCompressor{buf, zlib.NewWriter(buf)}
 	}
-	world.SaveLimiter = make(chan struct{}, 50)
-	for i := 0; i < cap(world.SendLimiter); i++ {
+	world.SaveLimiter = make(chan struct{}, 5)
+	for i := 0; i < cap(world.SaveLimiter); i++ {
 		world.SaveLimiter <- struct{}{}
 	}
 	for {
