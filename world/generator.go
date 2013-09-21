@@ -18,7 +18,7 @@ package world
 
 type Generator interface {
 	//Generates the terrain in the passed chunk
-	Generate(chunk Chunk)
+	Generate(chunk *Chunk)
 	//Returns the generator's name
 	Name() string
 	//Loads the generator's settings from the world

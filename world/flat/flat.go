@@ -118,7 +118,7 @@ func (sf *SuperFlat) parseString(code string) {
 }
 
 //Generates the chunk.
-func (sf *SuperFlat) Generate(chunk world.Chunk) {
+func (sf *SuperFlat) Generate(chunk *world.Chunk) {
 	y := 0
 	for _, layer := range sf.layers {
 		for i := 0; i < layer.count; i++ {

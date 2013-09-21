@@ -39,12 +39,12 @@ type System interface {
 	Read(name string, v interface{}) error
 	//Returns the chunk at the coordinates, also returns if the chunk existed
 	//before this
-	Chunk(x, z int) (Chunk, bool)
+	Chunk(x, z int) (*Chunk, bool)
 	//Saves the chunk back to storage but leaves it open.
-	SaveChunk(x, z int, storage Chunk)
+	SaveChunk(x, z int, storage *Chunk)
 	//Same as SaveChunk but informs the system that it can free resources
 	//related to the chunk
-	CloseChunk(x, y int, storage Chunk)
+	CloseChunk(x, y int, storage *Chunk)
 }
 
 var systems = map[string]func() System{}
@@ -82,8 +82,8 @@ func LoadWorld(name string, system System, gen Generator) *World {
 		name:      name,
 		system:    system,
 		generator: gen,
-		joinChunk: make(chan joinChunk, 500),
 	}
+	w.init()
 	w.system.Init(filepath.Join("./worlds/", w.name))
 	w.generator.Save(w)
 	go w.run()
@@ -124,8 +124,8 @@ func GetWorld(name string) *World {
 		name:      name,
 		system:    system,
 		generator: generator,
-		joinChunk: make(chan joinChunk, 500),
 	}
+	w.init()
 	w.system.Init(filepath.Join("./worlds/", w.name))
 	go w.run()
 

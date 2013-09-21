@@ -30,37 +30,25 @@ func init() {
 	}
 }
 
-type Chunk interface {
-	//Returns the chunk's location
-	Location() (x, z int)
-	//Inits the chunk. Should only be called by the world
-	Init(world *World, gen Generator, system System)
-	//Adds the watcher to the chunk
-	Join(watcher Watcher)
-	//Sets the block at the coordinates
-	SetBlock(x, y, z int, b byte)
-	//Gets the block at the coordinates
-	Block(x, y, z int) byte
-}
-
 type Watcher interface {
 	//Queues a packet to be sent to the watcher
 	QueuePacket(packet protocol.Packet)
 }
 
 //A chunk loaded locally in a flat byte arrays
-type byteChunk struct {
+type Chunk struct {
 	X, Z   int
 	world  *World `ignore:"true"`
 	system System `ignore:"true"`
 
-	Sections  [16]*byteChunkSection
+	Sections  [16]*ChunkSection
 	HeightMap [16 * 16]byte
 
-	join chan Watcher `ignore:"true"`
+	join  chan Watcher `ignore:"true"`
+	leave chan Watcher `ignore:"true"`
 }
 
-type byteChunkSection struct {
+type ChunkSection struct {
 	Blocks     [16 * 16 * 16]byte
 	Data       [(16 * 16 * 16) / 2]byte
 	BlockLight [(16 * 16 * 16) / 2]byte
@@ -69,14 +57,14 @@ type byteChunkSection struct {
 }
 
 //Inits the chunk. Should only be called by the world
-func (c *byteChunk) Init(world *World, gen Generator, system System) {
+func (c *Chunk) Init(world *World, gen Generator, system System) {
 	c.world = world
 	c.system = system
 	c.join = make(chan Watcher, 20)
 	go c.run(gen)
 }
 
-func (c *byteChunk) run(gen Generator) {
+func (c *Chunk) run(gen Generator) {
 	if gen != nil {
 		gen.Generate(c)
 		<-c.world.SaveLimiter
@@ -111,18 +99,19 @@ func (c *byteChunk) run(gen Generator) {
 				watcher.QueuePacket(packet)
 			}
 			c.world.SendLimiter <- struct{}{}
+		case <-c.leave:
 		}
 	}
 }
 
 //Sets the block at the coordinates
-func (c *byteChunk) SetBlock(x, y, z int, b byte) {
+func (c *Chunk) SetBlock(x, y, z int, b byte) {
 	section := c.Sections[y>>4]
 	if section == nil {
 		if b == 0 {
 			return
 		}
-		section = &byteChunkSection{}
+		section = &ChunkSection{}
 		copy(section.SkyLight[:], defaultSkyLight[:])
 		c.Sections[y>>4] = section
 	}
@@ -153,7 +142,7 @@ func (c *byteChunk) SetBlock(x, y, z int, b byte) {
 }
 
 //Gets the block at the coordinates
-func (c *byteChunk) Block(x, y, z int) byte {
+func (c *Chunk) Block(x, y, z int) byte {
 	section := c.Sections[y>>4]
 	if section == nil {
 		return 0
@@ -161,7 +150,7 @@ func (c *byteChunk) Block(x, y, z int) byte {
 	return section.Blocks[x|(z<<4)|((y&0xF)<<8)]
 }
 
-func (c *byteChunk) genPacketData() ([]byte, uint16) {
+func (c *Chunk) genPacketData() ([]byte, uint16) {
 	var buf bytes.Buffer
 	var mask uint16
 	zl := zlib.NewWriter(&buf)
@@ -198,15 +187,20 @@ func (c *byteChunk) genPacketData() ([]byte, uint16) {
 }
 
 //Adds the watcher to the chunk
-func (c *byteChunk) Join(watcher Watcher) {
+func (c *Chunk) Join(watcher Watcher) {
 	c.join <- watcher
 }
 
-func (c *byteChunk) close() {
+//Removes the watcher to the chunk
+func (c *Chunk) Leave(watcher Watcher) {
+	c.leave <- watcher
+}
+
+func (c *Chunk) close() {
 
 }
 
 //Returns the chunk's location
-func (c *byteChunk) Location() (x, z int) {
+func (c *Chunk) Location() (x, z int) {
 	return c.X, c.Z
 }

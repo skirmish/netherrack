@@ -24,9 +24,10 @@ type World struct {
 	system    System
 	generator Generator
 
-	loadedChunks map[uint64]Chunk
+	loadedChunks map[uint64]*Chunk
 
-	joinChunk chan joinChunk
+	joinChunk  chan joinChunk
+	leaveChunk chan joinChunk
 
 	//The limiters were added because trying to send/save all the chunks
 	//at once caused large amounts of memory usage
@@ -34,9 +35,14 @@ type World struct {
 	SaveLimiter chan struct{}
 }
 
+func (world *World) init() {
+	world.joinChunk = make(chan joinChunk, 500)
+	world.leaveChunk = make(chan joinChunk, 500)
+}
+
 func (world *World) run() {
 	world.generator.Load(world)
-	world.loadedChunks = make(map[uint64]Chunk)
+	world.loadedChunks = make(map[uint64]*Chunk)
 	world.SendLimiter = make(chan struct{}, 50)
 	for i := 0; i < cap(world.SendLimiter); i++ {
 		world.SendLimiter <- struct{}{}
@@ -49,6 +55,8 @@ func (world *World) run() {
 		select {
 		case jc := <-world.joinChunk:
 			world.chunk(jc.x, jc.z).Join(jc.watcher)
+		case jc := <-world.leaveChunk:
+			world.chunk(jc.x, jc.z).Leave(jc.watcher)
 		}
 	}
 }
@@ -64,6 +72,11 @@ func (world *World) JoinChunk(x, z int, watcher Watcher) {
 	world.joinChunk <- joinChunk{x, z, watcher}
 }
 
+//Removes the watcher to the chunk at the coordinates.
+func (world *World) LeaveChunk(x, z int, watcher Watcher) {
+	world.leaveChunk <- joinChunk{x, z, watcher}
+}
+
 //Writes the value into the world's system's storage. This method
 //is safe to call from different goroutines when the key is different.
 func (world *World) Write(key string, value interface{}) error {
@@ -77,7 +90,7 @@ func (world *World) Read(key string, value interface{}) error {
 }
 
 //Gets the loaded chunk or loads it if it isn't loaded
-func (world *World) chunk(x, z int) Chunk {
+func (world *World) chunk(x, z int) *Chunk {
 	if chunk, ok := world.loadedChunks[chunkKey(x, z)]; ok {
 		return chunk
 	}

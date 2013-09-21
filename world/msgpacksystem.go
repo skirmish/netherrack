@@ -81,7 +81,7 @@ func (mw *MsgpackSystem) run() {
 
 //Returns the chunk at the coordinates, also returns if the chunk existed
 //before this
-func (mw *MsgpackSystem) Chunk(x, z int) (Chunk, bool) {
+func (mw *MsgpackSystem) Chunk(x, z int) (*Chunk, bool) {
 	reg := mw.region(x>>5, z>>5)
 	reg.RLock()
 	rx := x & 0x1F
@@ -91,7 +91,7 @@ func (mw *MsgpackSystem) Chunk(x, z int) (Chunk, bool) {
 	count := reg.SectionCounts[idx]
 	reg.RUnlock()
 	if offset == 0 {
-		return &byteChunk{X: x, Z: z}, false
+		return &Chunk{X: x, Z: z}, false
 	}
 
 	section := io.NewSectionReader(reg.file, int64(offset)*regionSectionSize, int64(count)*regionSectionSize)
@@ -99,7 +99,7 @@ func (mw *MsgpackSystem) Chunk(x, z int) (Chunk, bool) {
 	if err != nil {
 		panic(err)
 	}
-	chunk := &byteChunk{}
+	chunk := &Chunk{}
 	err = msgpack.Read(gz, chunk)
 	gz.Close()
 
@@ -110,12 +110,7 @@ func (mw *MsgpackSystem) Chunk(x, z int) (Chunk, bool) {
 }
 
 //Saves the chunk back to storage but leaves it open.
-func (mw *MsgpackSystem) SaveChunk(x, z int, ch Chunk) {
-	chunk, ok := ch.(*byteChunk)
-	if !ok {
-		panic("Invalid chunk")
-	}
-
+func (mw *MsgpackSystem) SaveChunk(x, z int, chunk *Chunk) {
 	reg := mw.region(x>>5, z>>5)
 	reg.Lock()
 	rx := x & 0x1F
@@ -141,10 +136,10 @@ check:
 		if !reg.usedLocations[i] {
 			for j := 1; j < count; j++ {
 				if reg.usedLocations[i+j] {
-					ok = false
 					continue check
 				}
 			}
+			offset = i
 			break
 		}
 	}
@@ -231,7 +226,7 @@ func (mw *MsgpackSystem) region(x, z int) *region {
 
 //Same as SaveChunk but informs the system that it can free resources
 //related to the chunk
-func (mw *MsgpackSystem) CloseChunk(x, y int, chunk Chunk) {
+func (mw *MsgpackSystem) CloseChunk(x, y int, chunk *Chunk) {
 
 }
 
