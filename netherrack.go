@@ -129,7 +129,7 @@ func (server *Server) DefaultWorld() (world *world.World) {
 //Gets the world by name. If the world isn't loaded but it exists
 //then it is loaded. If it doesn't exist then it is created using
 //the passed system.
-func (server *Server) LoadWorld(name string, system world.System, gen world.Generator) *world.World {
+func (server *Server) LoadWorld(name string, system world.System, gen world.Generator, dimension world.Dimension) *world.World {
 	w := server.World(name)
 	if w != nil {
 		return w
@@ -150,7 +150,7 @@ func (server *Server) LoadWorld(name string, system world.System, gen world.Gene
 		//This will try again until it loads the world.
 		//TODO: Make it so this isn't needed
 		if w == nil {
-			w = server.LoadWorld(name, system, gen)
+			w = server.LoadWorld(name, system, gen, dimension)
 		}
 		return w
 	}
@@ -158,7 +158,7 @@ func (server *Server) LoadWorld(name string, system world.System, gen world.Gene
 	server.worlds.waitMap[name] = wait
 	wait.Add(1) //Force other goroutines to wait for this world
 	server.worlds.Unlock()
-	w = world.LoadWorld(name, system, gen)
+	w = world.LoadWorld(name, system, gen, dimension)
 
 	server.worlds.Lock()
 	server.worlds.m[name] = w //Put the loaded world in the map

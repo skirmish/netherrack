@@ -21,6 +21,15 @@ import (
 	"compress/zlib"
 )
 
+//Dimensions normally control the lighting and skycolour
+type Dimension int8
+
+const (
+	Overworld Dimension = 0
+	Nether    Dimension = -1
+	End       Dimension = 1
+)
+
 type World struct {
 	name string
 
@@ -37,6 +46,10 @@ type World struct {
 	SendLimiter  chan cachedCompressor
 	SaveLimiter  chan struct{}
 	RequestClose chan *Chunk
+
+	worldData struct {
+		Dimension Dimension
+	}
 }
 
 type cachedCompressor struct {
@@ -117,6 +130,11 @@ func (world *World) chunk(x, z int) *Chunk {
 		chunk.Init(world, nil, world.system)
 	}
 	return chunk
+}
+
+//Returns the worlds dimension
+func (world *World) Dimension() Dimension {
+	return world.worldData.Dimension
 }
 
 func chunkKey(x, z int) uint64 {

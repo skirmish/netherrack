@@ -57,7 +57,7 @@ func AddSystem(name string, f func() System) {
 
 //Loads the world by name using the passed system if
 //the world doesn't exists.
-func LoadWorld(name string, system System, gen Generator) *World {
+func LoadWorld(name string, system System, gen Generator, dimension Dimension) *World {
 	metapath := filepath.Join("./worlds/", name, "netherrack.meta")
 	_, err := os.Stat(metapath)
 	if err == nil {
@@ -83,9 +83,11 @@ func LoadWorld(name string, system System, gen Generator) *World {
 		system:    system,
 		generator: gen,
 	}
+	w.worldData.Dimension = dimension
 	w.init()
 	w.system.Init(filepath.Join("./worlds/", w.name))
 	w.generator.Save(w)
+	w.system.Write("levelData", &w.worldData)
 	go w.run()
 
 	return w
@@ -127,6 +129,7 @@ func GetWorld(name string) *World {
 	}
 	w.init()
 	w.system.Init(filepath.Join("./worlds/", w.name))
+	w.system.Read("levelData", &w.worldData)
 	go w.run()
 
 	return w

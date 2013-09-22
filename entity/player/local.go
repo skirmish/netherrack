@@ -91,7 +91,7 @@ func (lp *Player) Start() {
 		EntityID:   0,
 		LevelType:  "netherrack", //Not used by the client
 		Gamemode:   1,
-		Dimension:  0,
+		Dimension:  int8(lp.World.Dimension()),
 		Difficulty: 3,
 		MaxPlayers: 127,
 	})
