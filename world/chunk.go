@@ -42,6 +42,7 @@ type Chunk struct {
 	system System `ignore:"true"`
 
 	Sections  [16]*ChunkSection
+	Biome     [16 * 16]byte
 	HeightMap [16 * 16]byte
 
 	join  chan Watcher `ignore:"true"`
@@ -205,6 +206,7 @@ func (c *Chunk) genPacketData(cache cachedCompressor) ([]byte, uint16) {
 		}
 		zl.Write(sec.SkyLight[:])
 	}
+	zl.Write(c.Biome[:])
 	zl.Flush()
 	return buf.Bytes(), mask
 }
