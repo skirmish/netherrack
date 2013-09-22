@@ -47,7 +47,8 @@ type Chunk struct {
 	join  chan Watcher `ignore:"true"`
 	leave chan Watcher `ignore:"true"`
 
-	watchers map[string]Watcher `ignore:"true"`
+	watchers     map[string]Watcher `ignore:"true"`
+	closeChannel chan chan bool     `ignore:"true"`
 }
 
 type ChunkSection struct {
@@ -65,6 +66,7 @@ func (c *Chunk) Init(world *World, gen Generator, system System) {
 	c.join = make(chan Watcher, 20)
 	c.leave = make(chan Watcher, 20)
 	c.watchers = make(map[string]Watcher)
+	c.closeChannel = make(chan chan bool)
 	go c.run(gen)
 }
 
@@ -110,6 +112,16 @@ func (c *Chunk) run(gen Generator) {
 				GroundUp:       true,
 				CompressedData: []byte{},
 			})
+			if len(c.watchers) == 0 {
+				c.world.RequestClose <- c
+			}
+		case ret := <-c.closeChannel:
+			if len(c.watchers) == 0 && len(c.join) == 0 {
+				ret <- true
+				return
+			} else {
+				ret <- false
+			}
 		}
 	}
 }
@@ -195,6 +207,12 @@ func (c *Chunk) genPacketData(cache cachedCompressor) ([]byte, uint16) {
 	}
 	zl.Flush()
 	return buf.Bytes(), mask
+}
+
+func (c *Chunk) Close() bool {
+	ret := make(chan bool, 1)
+	c.closeChannel <- ret
+	return <-ret
 }
 
 //Adds the watcher to the chunk

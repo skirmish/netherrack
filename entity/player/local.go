@@ -131,8 +131,22 @@ func (lp *Player) Start() {
 				lp.pingID = lp.rand.Int31()
 				lp.conn.WritePacket(protocol.KeepAlive{lp.pingID})
 			}
-			if lp.UpdateMovement() {
-				//TODO: Magic
+			lcx, lcz := lp.LastCX, lp.LastCZ
+			if lp.UpdateMovement(lp) {
+				for x := lcx - 10; x <= lcx+10; x++ {
+					for z := lcz - 10; z <= lcz+10; z++ {
+						if x < lp.CX-10 || x > lp.CX+10 || z < lp.CZ-10 || z > lp.CZ+10 {
+							lp.World.LeaveChunk(int(x), int(z), lp)
+						}
+					}
+				}
+				for x := lp.CX - 10; x <= lp.CX+10; x++ {
+					for z := lp.CZ - 10; z <= lp.CZ+10; z++ {
+						if x < lcx-10 || x > lcx+10 || z < lcz-10 || z > lcz+10 {
+							lp.World.JoinChunk(int(x), int(z), lp)
+						}
+					}
+				}
 			}
 			currentTick++
 		case packet := <-lp.packetQueue:
@@ -178,6 +192,11 @@ func (lp *Player) disconnect(reason string) {
 //once the orginal net.Conn is closed.
 func (lp *Player) close() {
 	close(lp.closedChannel)
+	for x := lp.CX - 10; x <= lp.CX+10; x++ {
+		for z := lp.CZ - 10; z <= lp.CZ+10; z++ {
+			lp.World.LeaveChunk(int(x), int(z), lp)
+		}
+	}
 }
 
 //Reads incomming packets and passes them to the watcher

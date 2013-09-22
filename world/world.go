@@ -34,8 +34,9 @@ type World struct {
 
 	//The limiters were added because trying to send/save all the chunks
 	//at once caused large amounts of memory usage
-	SendLimiter chan cachedCompressor
-	SaveLimiter chan struct{}
+	SendLimiter  chan cachedCompressor
+	SaveLimiter  chan struct{}
+	RequestClose chan *Chunk
 }
 
 type cachedCompressor struct {
@@ -46,6 +47,7 @@ type cachedCompressor struct {
 func (world *World) init() {
 	world.joinChunk = make(chan joinChunk, 500)
 	world.leaveChunk = make(chan joinChunk, 500)
+	world.RequestClose = make(chan *Chunk, 20)
 }
 
 func (world *World) run() {
@@ -66,6 +68,10 @@ func (world *World) run() {
 			world.chunk(jc.x, jc.z).Join(jc.watcher)
 		case lc := <-world.leaveChunk:
 			world.chunk(lc.x, lc.z).Leave(lc.watcher)
+		case chunk := <-world.RequestClose:
+			if chunk.Close() {
+				delete(world.loadedChunks, chunkKey(chunk.X, chunk.Z))
+			}
 		}
 	}
 }

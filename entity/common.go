@@ -31,8 +31,13 @@ type CommonEntity struct {
 	Yaw, Pitch             float32
 }
 
-func (ce *CommonEntity) UpdateMovement() (movedChunk bool) {
-
+//Updates the entity's movement and moves the chunk its in if required
+func (ce *CommonEntity) UpdateMovement(super Entity) (movedChunk bool) {
+	ce.CX, ce.CZ = int32(ce.X)>>4, int32(ce.Z)>>4
+	if ce.CX != ce.LastCX || ce.CZ != ce.LastCZ {
+		movedChunk = true
+		//TODO: Move the entity to the next chunk
+	}
 	ce.LastCX, ce.LastCZ = ce.CX, ce.CZ
 	return
 }
