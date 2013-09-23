@@ -18,6 +18,7 @@ package netherrack
 
 import (
 	"encoding/binary"
+	"errors"
 	"github.com/NetherrackDev/netherrack/entity/player"
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/protocol/auth"
@@ -46,11 +47,6 @@ type Server struct {
 	listener net.Listener
 	running  bool
 
-	listData struct {
-		sync.RWMutex
-		MessageOfTheDay string
-	}
-
 	worlds struct {
 		sync.RWMutex
 		m       map[string]*world.World
@@ -59,6 +55,12 @@ type Server struct {
 	}
 
 	authenticator protocol.Authenticator
+
+	event struct {
+		sync.RWMutex
+		oldPingEvent chan<- OldPingEvent
+		pingEvent    chan<- PingEvent
+	}
 }
 
 //Creates a server
@@ -66,7 +68,6 @@ func NewServer() *Server {
 	server := &Server{
 		authenticator: auth.Instance,
 	}
-	server.listData.MessageOfTheDay = "Netherrack Server"
 	server.worlds.m = make(map[string]*world.World)
 	server.worlds.waitMap = make(map[string]*sync.WaitGroup)
 
@@ -229,29 +230,62 @@ func (server *Server) handleConnection(conn net.Conn) {
 			so a custom read deadline should be set to prevent waiting
 			too long causing the client to see a large ping time.
 		*/
-		conn.SetReadDeadline(time.Now().Add(9000 * time.Nanosecond))
+		conn.SetReadDeadline(time.Now().Add(time.Millisecond))
 		mcConn.Deadliner = nil
 		packet, err := mcConn.ReadPacket()
-		if err != nil {
+
+		var response string
+
+		if err == nil {
 			if extraData, ok := packet.(protocol.PluginMessage); ok {
 				if extraData.Channel != "MC|PingHost" {
-					goto sendPing
+					err = errors.New("Incorrect channel")
+					goto oldPing
 				}
 				if len(extraData.Data) < 3 {
-					goto sendPing
+					err = errors.New("Incorrect size")
+					goto oldPing
 				}
 				protoVersion := extraData.Data[0]
 				offset, host := readString(extraData.Data[1:])
 				if len(extraData.Data) < offset+1+4 {
-					goto sendPing
+					err = errors.New("Incorrect size")
+					goto oldPing
 				}
 				port := binary.BigEndian.Uint32(extraData.Data[offset+1:])
-				_, _, _ = protoVersion, host, port //TODO: Something with the new infomation
+
+				server.event.RLock()
+				if server.event.pingEvent != nil {
+					res := make(chan string, 1)
+					pingEvent := PingEvent{
+						Addr:            conn.RemoteAddr(),
+						ProtocolVersion: protoVersion,
+						TargetHost:      host,
+						TargetPort:      int(port),
+						Response:        res,
+					}
+					server.event.pingEvent <- pingEvent
+					response = <-res
+				}
+				server.event.RUnlock()
 			}
 		}
-	sendPing:
+	oldPing:
+		if err != nil {
+			server.event.RLock()
+			if server.event.oldPingEvent != nil {
+				res := make(chan string, 1)
+				event := OldPingEvent{conn.RemoteAddr(), res}
+				server.event.oldPingEvent <- event
+				response = <-res
+			}
+			server.event.RUnlock()
+		}
 		mcConn.Deadliner = conn
-		mcConn.WritePacket(protocol.Disconnect{server.buildServerPing()})
+		if response == "" {
+			response = server.buildServerPing()
+		}
+		mcConn.WritePacket(protocol.Disconnect{response})
 		return
 	}
 	if _, ok := packet.(protocol.Handshake); !ok {
@@ -271,13 +305,11 @@ func (server *Server) handleConnection(conn net.Conn) {
 }
 
 func (server *Server) buildServerPing() string {
-	server.listData.RLock()
-	defer server.listData.RUnlock()
 	return strings.Join([]string{
 		"§1",
 		protocolVersionString,
 		MinecraftVersion,
-		server.listData.MessageOfTheDay,
+		"Netherrack Server",
 		"0",
 		"100",
 	}, "\x00")
