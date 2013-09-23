@@ -130,6 +130,12 @@ func (sf *SuperFlat) Generate(chunk *world.Chunk) {
 			y++
 		}
 	}
+	for x := 0; x < 16; x++ {
+		for z := 0; z < 16; z++ {
+			chunk.Biome[x|z<<4] = sf.biome
+		}
+	}
+
 }
 
 //The name of the generator
