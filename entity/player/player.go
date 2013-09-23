@@ -39,9 +39,9 @@ type Server interface {
 type Player struct {
 	entity.CommonEntity
 
-	conn     *protocol.Conn
+	Conn     *protocol.Conn
 	uuid     string
-	username string
+	Username string
 	Server   Server
 
 	packetQueue   chan protocol.Packet
@@ -57,8 +57,8 @@ type Player struct {
 func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Player {
 	lp := &Player{
 		uuid:          uuid,
-		username:      username,
-		conn:          conn,
+		Username:      username,
+		Conn:          conn,
 		packetQueue:   make(chan protocol.Packet, 200),
 		readPackets:   make(chan protocol.Packet, 20),
 		errorChannel:  make(chan error, 1),
@@ -87,7 +87,7 @@ func (lp *Player) Start() {
 
 	lp.World = lp.Server.DefaultWorld()
 
-	lp.conn.WritePacket(protocol.LoginRequest{
+	lp.Conn.WritePacket(protocol.LoginRequest{
 		EntityID:   0,
 		LevelType:  "netherrack", //Not used by the client
 		Gamemode:   1,
@@ -95,11 +95,11 @@ func (lp *Player) Start() {
 		Difficulty: 3,
 		MaxPlayers: 127,
 	})
-	lp.conn.WritePacket(protocol.PluginMessage{
+	lp.Conn.WritePacket(protocol.PluginMessage{
 		Channel: "MC|Brand",
 		Data:    []byte("Netherrack"),
 	})
-	lp.conn.WritePacket(protocol.PlayerPositionLook{
+	lp.Conn.WritePacket(protocol.PlayerPositionLook{
 		X:        0,
 		Y:        90,
 		Stance:   90 + 1.6,
@@ -120,7 +120,7 @@ func (lp *Player) Start() {
 	for {
 		select {
 		case err := <-lp.errorChannel:
-			log.Printf("Player %s error: %s\n", lp.username, err)
+			log.Printf("Player %s error: %s\n", lp.Username, err)
 			return
 		case <-tick.C:
 			if currentTick%(15*10) == 0 { //Every 15 seconds
@@ -129,7 +129,7 @@ func (lp *Player) Start() {
 					continue
 				}
 				lp.pingID = lp.rand.Int31()
-				lp.conn.WritePacket(protocol.KeepAlive{lp.pingID})
+				lp.Conn.WritePacket(protocol.KeepAlive{lp.pingID})
 			}
 			lcx, lcz := lp.LastCX, lp.LastCZ
 			if lp.UpdateMovement(lp) {
@@ -150,7 +150,7 @@ func (lp *Player) Start() {
 			}
 			currentTick++
 		case packet := <-lp.packetQueue:
-			lp.conn.WritePacket(packet)
+			lp.Conn.WritePacket(packet)
 		case packet := <-lp.readPackets:
 			lp.processPacket(packet)
 		}
@@ -184,7 +184,7 @@ func (lp *Player) processPacket(packet protocol.Packet) {
 }
 
 func (lp *Player) disconnect(reason string) {
-	lp.conn.WritePacket(protocol.Disconnect{reason})
+	lp.Conn.WritePacket(protocol.Disconnect{reason})
 	lp.errorChannel <- errors.New(reason)
 }
 
@@ -202,7 +202,7 @@ func (lp *Player) close() {
 //Reads incomming packets and passes them to the watcher
 func (lp *Player) packetReader() {
 	for {
-		packet, err := lp.conn.ReadPacket()
+		packet, err := lp.Conn.ReadPacket()
 		if err != nil {
 			lp.errorChannel <- err
 			return
