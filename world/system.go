@@ -40,11 +40,10 @@ type System interface {
 	//Returns the chunk at the coordinates, also returns if the chunk existed
 	//before this
 	Chunk(x, z int) (*Chunk, bool)
-	//Saves the chunk back to storage but leaves it open.
+	//Saves the chunk back to storage.
 	SaveChunk(x, z int, storage *Chunk)
-	//Same as SaveChunk but informs the system that it can free resources
-	//related to the chunk
-	CloseChunk(x, y int, storage *Chunk)
+	//Closes the chunk in the system
+	CloseChunk(x, z int, storage *Chunk)
 }
 
 var systems = map[string]func() System{}

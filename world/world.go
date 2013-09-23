@@ -40,6 +40,7 @@ type World struct {
 
 	joinChunk  chan joinChunk
 	leaveChunk chan joinChunk
+	placeBlock chan blockPlace
 
 	//The limiters were added because trying to send/save all the chunks
 	//at once caused large amounts of memory usage
@@ -60,6 +61,7 @@ type cachedCompressor struct {
 func (world *World) init() {
 	world.joinChunk = make(chan joinChunk, 500)
 	world.leaveChunk = make(chan joinChunk, 500)
+	world.placeBlock = make(chan blockPlace, 1000)
 	world.RequestClose = make(chan *Chunk, 20)
 }
 
@@ -81,11 +83,26 @@ func (world *World) run() {
 			world.chunk(jc.x, jc.z).Join(jc.watcher)
 		case lc := <-world.leaveChunk:
 			world.chunk(lc.x, lc.z).Leave(lc.watcher)
+		case bp := <-world.placeBlock:
+			cx, cz := bp.X>>4, bp.Z>>4
+			world.chunk(cx, cz).blockPlace <- bp
 		case chunk := <-world.RequestClose:
 			if chunk.Close() {
 				delete(world.loadedChunks, chunkKey(chunk.X, chunk.Z))
 			}
 		}
+	}
+}
+
+type blockPlace struct {
+	X, Y, Z     int
+	Block, Data byte
+}
+
+//Sets the block and data at the location
+func (world *World) SetBlock(x, y, z int, block, data byte) {
+	world.placeBlock <- blockPlace{
+		x, y, z, block, data,
 	}
 }
 

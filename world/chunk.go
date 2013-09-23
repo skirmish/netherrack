@@ -18,6 +18,7 @@ package world
 
 import (
 	"github.com/NetherrackDev/netherrack/protocol"
+	"time"
 )
 
 var defaultSkyLight [(16 * 16 * 16) / 2]byte
@@ -44,9 +45,11 @@ type Chunk struct {
 	Sections  [16]*ChunkSection
 	Biome     [16 * 16]byte
 	HeightMap [16 * 16]byte
+	needsSave bool `ignore:"true"`
 
-	join  chan Watcher `ignore:"true"`
-	leave chan Watcher `ignore:"true"`
+	join       chan Watcher    `ignore:"true"`
+	leave      chan Watcher    `ignore:"true"`
+	blockPlace chan blockPlace `ignore:"true"`
 
 	watchers     map[string]Watcher `ignore:"true"`
 	closeChannel chan chan bool     `ignore:"true"`
@@ -66,6 +69,7 @@ func (c *Chunk) Init(world *World, gen Generator, system System) {
 	c.system = system
 	c.join = make(chan Watcher, 20)
 	c.leave = make(chan Watcher, 20)
+	c.blockPlace = make(chan blockPlace, 50)
 	c.watchers = make(map[string]Watcher)
 	c.closeChannel = make(chan chan bool)
 	go c.run(gen)
@@ -78,8 +82,17 @@ func (c *Chunk) run(gen Generator) {
 		c.system.SaveChunk(c.X, c.Z, c)
 		c.world.SaveLimiter <- struct{}{}
 	}
+	t := time.NewTicker(5 * time.Minute)
+	defer t.Stop()
 	for {
 		select {
+		case <-t.C:
+			if c.needsSave {
+				<-c.world.SaveLimiter
+				c.needsSave = false
+				c.system.SaveChunk(c.X, c.Z, c)
+				c.world.SaveLimiter <- struct{}{}
+			}
 		case watcher := <-c.join:
 			watchers := make([]Watcher, 0, 1)
 			c.watchers[watcher.UUID()] = watcher
@@ -116,12 +129,20 @@ func (c *Chunk) run(gen Generator) {
 			if len(c.watchers) == 0 {
 				c.world.RequestClose <- c
 			}
+		case bp := <-c.blockPlace:
+			x, z := bp.X&0xF, bp.Z&0xF
+			c.SetBlock(x, bp.Y, z, bp.Block)
+			c.SetData(x, bp.Y, z, bp.Data)
 		case ret := <-c.closeChannel:
-			if len(c.watchers) == 0 && len(c.join) == 0 {
+			if len(c.watchers) == 0 && len(c.join) == 0 && !c.needsSave {
+				c.system.CloseChunk(c.X, c.Z, c)
 				ret <- true
 				return
-			} else {
-				ret <- false
+			}
+			ret <- false
+			if c.needsSave {
+				t.Stop()
+				t = time.NewTicker(100 * time.Millisecond)
 			}
 		}
 	}
@@ -138,6 +159,7 @@ func (c *Chunk) SetBlock(x, y, z int, b byte) {
 		copy(section.SkyLight[:], defaultSkyLight[:])
 		c.Sections[y>>4] = section
 	}
+	c.needsSave = true
 	idx := x | (z << 4) | ((y & 0xF) << 8)
 	if section.Blocks[idx] != 0 && b == 0 {
 		section.BlockCount--
@@ -179,6 +201,7 @@ func (c *Chunk) SetData(x, y, z int, d byte) {
 	if section == nil {
 		return
 	}
+	c.needsSave = true
 	idx := (x | (z << 4) | ((y & 0xF) << 8))
 	data := section.Data[idx>>1]
 	if idx&1 == 0 {

@@ -109,7 +109,7 @@ func (mw *MsgpackSystem) Chunk(x, z int) (*Chunk, bool) {
 	return chunk, true
 }
 
-//Saves the chunk back to storage but leaves it open.
+//Saves the chunk back to storage.
 func (mw *MsgpackSystem) SaveChunk(x, z int, chunk *Chunk) {
 	reg := mw.region(x>>5, z>>5)
 	reg.Lock()
@@ -224,9 +224,8 @@ func (mw *MsgpackSystem) region(x, z int) *region {
 	return reg
 }
 
-//Same as SaveChunk but informs the system that it can free resources
-//related to the chunk
-func (mw *MsgpackSystem) CloseChunk(x, y int, chunk *Chunk) {
+//Closes the chunk in the system
+func (mw *MsgpackSystem) CloseChunk(x, z int, chunk *Chunk) {
 
 }
 
