@@ -173,6 +173,35 @@ func (c *Chunk) Block(x, y, z int) byte {
 	return section.Blocks[x|(z<<4)|((y&0xF)<<8)]
 }
 
+//Sets the block at the coordinates
+func (c *Chunk) SetData(x, y, z int, d byte) {
+	section := c.Sections[y>>4]
+	if section == nil {
+		return
+	}
+	idx := (x | (z << 4) | ((y & 0xF) << 8))
+	data := section.Data[idx>>1]
+	if idx&1 == 0 {
+		section.Data[idx>>1] = (data & 0xF0) | (d & 0xF)
+		return
+	}
+	section.Data[idx>>1] = (data & 0xF) | ((d & 0xF) << 4)
+}
+
+//Gets the block at the coordinates
+func (c *Chunk) Data(x, y, z int) byte {
+	section := c.Sections[y>>4]
+	if section == nil {
+		return 0
+	}
+	idx := (x | (z << 4) | ((y & 0xF) << 8))
+	d := section.Data[idx>>1]
+	if idx&1 == 0 {
+		return d & 0xF
+	}
+	return d >> 4
+}
+
 func (c *Chunk) genPacketData(cache cachedCompressor) ([]byte, uint16) {
 	var mask uint16
 	buf, zl := cache.buf, cache.zl
