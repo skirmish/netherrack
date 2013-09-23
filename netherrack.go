@@ -58,8 +58,9 @@ type Server struct {
 
 	event struct {
 		sync.RWMutex
-		oldPingEvent chan<- OldPingEvent
-		pingEvent    chan<- PingEvent
+		oldPingEvent    chan<- OldPingEvent
+		pingEvent       chan<- PingEvent
+		playerJoinEvent chan<- PlayerJoinEvent
 	}
 }
 
@@ -301,6 +302,19 @@ func (server *Server) handleConnection(conn net.Conn) {
 	}
 
 	p := player.NewPlayer(uuid, username, mcConn, server)
+
+	server.event.RLock()
+	if server.event.playerJoinEvent != nil {
+		res := make(chan struct{}, 1)
+		event := PlayerJoinEvent{
+			Player: p,
+			Return: res,
+		}
+		server.event.playerJoinEvent <- event
+		<-res
+	}
+	server.event.RUnlock()
+
 	p.Start()
 }
 

@@ -17,6 +17,7 @@
 package netherrack
 
 import (
+	"github.com/NetherrackDev/netherrack/entity/player"
 	"net"
 )
 
@@ -42,5 +43,16 @@ type PingEvent struct {
 func (server *Server) SetPingEvent(event chan<- PingEvent) {
 	server.event.Lock()
 	server.event.pingEvent = event
+	server.event.Unlock()
+}
+
+type PlayerJoinEvent struct {
+	Player *player.Player
+	Return chan<- struct{}
+}
+
+func (server *Server) SetPlayerJoinEvent(event chan<- PlayerJoinEvent) {
+	server.event.Lock()
+	server.event.playerJoinEvent = event
 	server.event.Unlock()
 }
