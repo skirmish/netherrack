@@ -22,10 +22,12 @@ import (
 )
 
 type OldPingEvent struct {
-	Addr     net.Addr
+	Addr net.Addr
+	//The disconnect to send
 	Response chan<- string
 }
 
+//Sets a channel to handle server list pings from older clients
 func (server *Server) SetOldPingEvent(event chan<- OldPingEvent) {
 	server.event.Lock()
 	server.event.oldPingEvent = event
@@ -37,9 +39,11 @@ type PingEvent struct {
 	ProtocolVersion byte
 	TargetHost      string
 	TargetPort      int
-	Response        chan<- string
+	//The disconnect to send
+	Response chan<- string
 }
 
+//Sets a channel to handle server list pings
 func (server *Server) SetPingEvent(event chan<- PingEvent) {
 	server.event.Lock()
 	server.event.pingEvent = event
@@ -48,9 +52,11 @@ func (server *Server) SetPingEvent(event chan<- PingEvent) {
 
 type PlayerJoinEvent struct {
 	Player *player.Player
-	Return chan<- struct{}
+	//If not blank then the player will be disconnected with the message
+	Return chan<- string
 }
 
+//Sets a channel to handle the player joining (before entering the world)
 func (server *Server) SetPlayerJoinEvent(event chan<- PlayerJoinEvent) {
 	server.event.Lock()
 	server.event.playerJoinEvent = event

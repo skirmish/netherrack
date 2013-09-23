@@ -305,13 +305,16 @@ func (server *Server) handleConnection(conn net.Conn) {
 
 	server.event.RLock()
 	if server.event.playerJoinEvent != nil {
-		res := make(chan struct{}, 1)
+		res := make(chan string, 1)
 		event := PlayerJoinEvent{
 			Player: p,
 			Return: res,
 		}
 		server.event.playerJoinEvent <- event
-		<-res
+		if msg := <-res; msg != "" {
+			mcConn.WritePacket(protocol.Disconnect{msg})
+			return
+		}
 	}
 	server.event.RUnlock()
 
