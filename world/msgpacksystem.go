@@ -155,6 +155,7 @@ check:
 	reg.SectionCounts[idx] = count
 	reg.needsSave = true
 	mw.needsSave = true
+	reg.chunkcount++
 	reg.Unlock()
 
 	n, err := reg.file.WriteAt(buf.Bytes(), int64(offset)*regionSectionSize)
@@ -174,6 +175,7 @@ type region struct {
 	usedLocations []bool   `msgpack:"ignore"`
 	sync.RWMutex  `msgpack:"ignore"`
 	needsSave     bool `msgpack:"ignore"`
+	chunkcount    uint `msgpack:"ignore"`
 }
 
 func (r *region) Save() {
@@ -226,7 +228,16 @@ func (mw *MsgpackSystem) region(x, z int) *region {
 
 //Closes the chunk in the system
 func (mw *MsgpackSystem) CloseChunk(x, z int, chunk *Chunk) {
-
+	reg := mw.region(x>>5, z>>5)
+	mw.regionLock.Lock()
+	reg.Lock()
+	reg.chunkcount--
+	if reg.chunkcount == 0 {
+		//Unload
+		delete(mw.regions, (uint64(int32(x>>5))&0xFFFFFFFF)|((uint64(int32(z>>5))&0xFFFFFFFF)<<32))
+	}
+	reg.Unlock()
+	mw.regionLock.Unlock()
 }
 
 func (mw *MsgpackSystem) readLevel(level string) {
