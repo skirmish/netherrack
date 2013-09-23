@@ -23,6 +23,7 @@ import (
 	"github.com/NetherrackDev/netherrack/world"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -49,9 +50,13 @@ type Player struct {
 	errorChannel  chan error
 	closedChannel chan struct{}
 
-	rand *rand.Rand
-
+	rand   *rand.Rand
 	pingID int32
+
+	event struct {
+		sync.RWMutex
+		blockPlace chan<- BlockPlacement
+	}
 }
 
 func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Player {
@@ -160,6 +165,17 @@ func (lp *Player) Start() {
 //Acts on the passed packet
 func (lp *Player) processPacket(packet protocol.Packet) {
 	switch packet := packet.(type) {
+	case protocol.PlayerBlockPlacement:
+		lp.event.RLock()
+		if lp.event.blockPlace != nil {
+			res := make(chan struct{}, 1)
+			lp.event.blockPlace <- BlockPlacement{
+				Packet: &packet,
+				Return: res,
+			}
+			<-res
+		}
+		lp.event.RUnlock()
 	case protocol.PlayerLook:
 		lp.Yaw = packet.Yaw
 		lp.Pitch = packet.Pitch
