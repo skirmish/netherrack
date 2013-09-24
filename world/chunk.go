@@ -260,7 +260,9 @@ func (c *Chunk) genPacketData(cache cachedCompressor) ([]byte, uint16) {
 	}
 	zl.Write(c.Biome[:])
 	zl.Flush()
-	return buf.Bytes(), mask
+	ret := make([]byte, buf.Len())
+	copy(ret, buf.Bytes())
+	return ret, mask
 }
 
 func (c *Chunk) Close() bool {
