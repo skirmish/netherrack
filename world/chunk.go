@@ -47,9 +47,10 @@ type Chunk struct {
 	HeightMap [16 * 16]byte
 	needsSave bool `ignore:"true"`
 
-	join       chan Watcher    `ignore:"true"`
-	leave      chan Watcher    `ignore:"true"`
-	blockPlace chan blockPlace `ignore:"true"`
+	join        chan Watcher     `ignore:"true"`
+	leave       chan Watcher     `ignore:"true"`
+	blockPlace  chan blockPlace  `ignore:"true"`
+	chunkPacket chan chunkPacket `ignore:"true"`
 
 	watchers     map[string]Watcher `ignore:"true"`
 	closeChannel chan chan bool     `ignore:"true"`
@@ -70,6 +71,7 @@ func (c *Chunk) Init(world *World, gen Generator, system System) {
 	c.join = make(chan Watcher, 20)
 	c.leave = make(chan Watcher, 20)
 	c.blockPlace = make(chan blockPlace, 50)
+	c.chunkPacket = make(chan chunkPacket, 50)
 	c.watchers = make(map[string]Watcher)
 	c.closeChannel = make(chan chan bool)
 	go c.run(gen)
@@ -133,6 +135,18 @@ func (c *Chunk) run(gen Generator) {
 			x, z := bp.X&0xF, bp.Z&0xF
 			c.SetBlock(x, bp.Y, z, bp.Block)
 			c.SetData(x, bp.Y, z, bp.Data)
+		case packet := <-c.chunkPacket:
+			if packet.UUID != "" {
+				for _, w := range c.watchers {
+					if w.UUID() != packet.UUID {
+						w.QueuePacket(packet.Packet)
+					}
+				}
+			} else {
+				for _, w := range c.watchers {
+					w.QueuePacket(packet.Packet)
+				}
+			}
 		case ret := <-c.closeChannel:
 			if len(c.watchers) == 0 && len(c.join) == 0 && !c.needsSave {
 				c.system.CloseChunk(c.X, c.Z, c)

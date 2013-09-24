@@ -19,6 +19,7 @@ package world
 import (
 	"bytes"
 	"compress/zlib"
+	"github.com/NetherrackDev/netherrack/protocol"
 )
 
 //Dimensions normally control the lighting and skycolour
@@ -38,9 +39,10 @@ type World struct {
 
 	loadedChunks map[uint64]*Chunk
 
-	joinChunk  chan joinChunk
-	leaveChunk chan joinChunk
-	placeBlock chan blockPlace
+	joinChunk   chan joinChunk
+	leaveChunk  chan joinChunk
+	placeBlock  chan blockPlace
+	chunkPacket chan chunkPacket
 
 	//The limiters were added because trying to send/save all the chunks
 	//at once caused large amounts of memory usage
@@ -62,6 +64,7 @@ func (world *World) init() {
 	world.joinChunk = make(chan joinChunk, 500)
 	world.leaveChunk = make(chan joinChunk, 500)
 	world.placeBlock = make(chan blockPlace, 1000)
+	world.chunkPacket = make(chan chunkPacket, 1000)
 	world.RequestClose = make(chan *Chunk, 20)
 }
 
@@ -86,6 +89,8 @@ func (world *World) run() {
 		case bp := <-world.placeBlock:
 			cx, cz := bp.X>>4, bp.Z>>4
 			world.chunk(cx, cz).blockPlace <- bp
+		case cp := <-world.chunkPacket:
+			world.chunk(cp.X, cp.Z).chunkPacket <- cp
 		case chunk := <-world.RequestClose:
 			if chunk.Close() {
 				delete(world.loadedChunks, chunkKey(chunk.X, chunk.Z))
@@ -97,6 +102,22 @@ func (world *World) run() {
 type blockPlace struct {
 	X, Y, Z     int
 	Block, Data byte
+}
+
+type chunkPacket struct {
+	Packet protocol.Packet
+	UUID   string
+	X, Z   int
+}
+
+//Sends the packet to all watchers of the chunk apart from the watcher with
+//the passed uuid (leave blank to send to all)
+func (world *World) QueuePacket(x, z int, uuid string, packet protocol.Packet) {
+	world.chunkPacket <- chunkPacket{
+		packet,
+		uuid,
+		x, z,
+	}
 }
 
 //Sets the block and data at the location
