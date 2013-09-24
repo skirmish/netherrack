@@ -17,6 +17,7 @@
 package world
 
 import (
+	"encoding/binary"
 	"github.com/NetherrackDev/netherrack/protocol"
 	"time"
 )
@@ -47,9 +48,11 @@ type Chunk struct {
 	HeightMap [16 * 16]byte
 	needsSave bool `ignore:"true"`
 
+	blockChanges []blockChange `ignore:"true"`
+
 	join        chan Watcher     `ignore:"true"`
 	leave       chan Watcher     `ignore:"true"`
-	blockPlace  chan blockPlace  `ignore:"true"`
+	blockPlace  chan blockChange `ignore:"true"`
 	chunkPacket chan chunkPacket `ignore:"true"`
 
 	watchers     map[string]Watcher `ignore:"true"`
@@ -70,7 +73,7 @@ func (c *Chunk) Init(world *World, gen Generator, system System) {
 	c.system = system
 	c.join = make(chan Watcher, 20)
 	c.leave = make(chan Watcher, 20)
-	c.blockPlace = make(chan blockPlace, 50)
+	c.blockPlace = make(chan blockChange, 50)
 	c.chunkPacket = make(chan chunkPacket, 50)
 	c.watchers = make(map[string]Watcher)
 	c.closeChannel = make(chan chan bool)
@@ -85,9 +88,30 @@ func (c *Chunk) run(gen Generator) {
 		c.world.SaveLimiter <- struct{}{}
 	}
 	t := time.NewTicker(5 * time.Minute)
+	var blockUpdate <-chan time.Time
 	defer t.Stop()
 	for {
 		select {
+		case <-blockUpdate:
+			blockUpdate = nil
+			data := make([]byte, len(c.blockChanges)*4)
+			for i, bc := range c.blockChanges {
+				binary.BigEndian.PutUint32(data[i*4:],
+					(uint32(bc.Data)&0xf)|
+						(uint32(bc.Block)<<4)|
+						(uint32(bc.Y)<<16)|
+						(uint32(bc.Z&0xF)<<24)|
+						(uint32(bc.X&0xF)<<28))
+			}
+			packet := protocol.MultiBlockChange{
+				X: int32(c.X), Z: int32(c.Z),
+				RecordCount: int16(len(c.blockChanges)),
+				Data:        data,
+			}
+			for _, w := range c.watchers {
+				w.QueuePacket(packet)
+			}
+			c.blockChanges = nil
 		case <-t.C:
 			if c.needsSave {
 				<-c.world.SaveLimiter
@@ -135,6 +159,10 @@ func (c *Chunk) run(gen Generator) {
 			x, z := bp.X&0xF, bp.Z&0xF
 			c.SetBlock(x, bp.Y, z, bp.Block)
 			c.SetData(x, bp.Y, z, bp.Data)
+			c.blockChanges = append(c.blockChanges, bp)
+			if blockUpdate == nil {
+				blockUpdate = time.After(time.Second / 10) //Allow for multiple block changes to be grouped
+			}
 		case packet := <-c.chunkPacket:
 			if packet.UUID != "" {
 				for _, w := range c.watchers {

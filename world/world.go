@@ -41,7 +41,7 @@ type World struct {
 
 	joinChunk   chan joinChunk
 	leaveChunk  chan joinChunk
-	placeBlock  chan blockPlace
+	placeBlock  chan blockChange
 	chunkPacket chan chunkPacket
 
 	//The limiters were added because trying to send/save all the chunks
@@ -63,7 +63,7 @@ type cachedCompressor struct {
 func (world *World) init() {
 	world.joinChunk = make(chan joinChunk, 500)
 	world.leaveChunk = make(chan joinChunk, 500)
-	world.placeBlock = make(chan blockPlace, 1000)
+	world.placeBlock = make(chan blockChange, 1000)
 	world.chunkPacket = make(chan chunkPacket, 1000)
 	world.RequestClose = make(chan *Chunk, 20)
 }
@@ -99,7 +99,7 @@ func (world *World) run() {
 	}
 }
 
-type blockPlace struct {
+type blockChange struct {
 	X, Y, Z     int
 	Block, Data byte
 }
@@ -122,7 +122,7 @@ func (world *World) QueuePacket(x, z int, uuid string, packet protocol.Packet) {
 
 //Sets the block and data at the location
 func (world *World) SetBlock(x, y, z int, block, data byte) {
-	world.placeBlock <- blockPlace{
+	world.placeBlock <- blockChange{
 		x, y, z, block, data,
 	}
 }

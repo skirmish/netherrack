@@ -576,7 +576,7 @@ type MultiBlockChange struct {
 	X           int32
 	Z           int32
 	RecordCount int16
-	Data        []int32 `ltype:"int32"`
+	Data        []byte `ltype:"int32"`
 }
 
 func (MultiBlockChange) ID() byte { return 0x34 }
