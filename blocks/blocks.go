@@ -35,7 +35,7 @@ var (
 	IronOre                  = Block{ID: 15, LightFiltered: 15, PlacementSound: "dig.stone"}
 	CoalOre                  = Block{ID: 16, LightFiltered: 15, PlacementSound: "dig.stone"}
 	Log                      = Block{ID: 17, LightFiltered: 15, PlacementSound: "dig.wood"}
-	Leaves                   = Block{ID: 18, StopsSkyLight: true, PlacementSound: "dig.grass"}
+	Leaves                   = Block{ID: 18, LightFiltered: 1, PlacementSound: "dig.grass"}
 	Sponge                   = Block{ID: 19, LightFiltered: 15, PlacementSound: "dig.grass"}
 	Glass                    = Block{ID: 20, LightFiltered: 15, PlacementSound: "step.stone"}
 	LapisLazuliOre           = Block{ID: 21, LightFiltered: 15, PlacementSound: "dig.stone"}
@@ -189,7 +189,6 @@ type Block struct {
 	ID             byte
 	LightEmitted   byte
 	LightFiltered  byte
-	StopsSkyLight  bool
 	PlacementSound string
 	Solid          bool
 }
