@@ -41,6 +41,7 @@ type World struct {
 
 	joinChunk   chan joinChunk
 	leaveChunk  chan joinChunk
+	entityChunk chan entityChunk
 	placeBlock  chan blockChange
 	getBlock    chan blockGet
 	chunkPacket chan chunkPacket
@@ -67,6 +68,7 @@ func (world *World) init() {
 	world.placeBlock = make(chan blockChange, 1000)
 	world.getBlock = make(chan blockGet, 1000)
 	world.chunkPacket = make(chan chunkPacket, 1000)
+	world.entityChunk = make(chan entityChunk, 500)
 	world.RequestClose = make(chan *Chunk, 20)
 }
 
@@ -96,12 +98,39 @@ func (world *World) run() {
 			world.chunk(cx, cz).blockGet <- bg
 		case cp := <-world.chunkPacket:
 			world.chunk(cp.X, cp.Z).chunkPacket <- cp
+		case ec := <-world.entityChunk:
+			world.chunk(ec.X, ec.Z).entity <- ec
 		case chunk := <-world.RequestClose:
 			if chunk.Close() {
 				delete(world.loadedChunks, chunkKey(chunk.X, chunk.Z))
 			}
 		}
 	}
+}
+
+type entityChunk struct {
+	Add    bool
+	X, Z   int
+	Entity Entity
+}
+
+func (world *World) AddEntity(x, z int, entity Entity) {
+	world.entityChunk <- entityChunk{
+		Add:    true,
+		X:      x,
+		Z:      z,
+		Entity: entity,
+	}
+}
+
+func (world *World) RemoveEntity(x, z int, entity Entity) {
+	world.entityChunk <- entityChunk{
+		Add:    false,
+		X:      x,
+		Z:      z,
+		Entity: entity,
+	}
+
 }
 
 type blockChange struct {

@@ -37,6 +37,17 @@ type Watcher interface {
 	UUID() string
 }
 
+type Entity interface {
+	//Returns the entity's UUID
+	UUID() string
+	//Spawns the entity for the watcher
+	SpawnFor(Watcher)
+	//Spawns the entity for the watcher
+	DespawnFor(Watcher)
+	//Returns wether the entity is saveable to the chunk
+	Saveable() bool
+}
+
 //A chunk loaded locally in a flat byte arrays
 type Chunk struct {
 	X, Z   int
@@ -55,9 +66,12 @@ type Chunk struct {
 	blockPlace  chan blockChange `ignore:"true"`
 	blockGet    chan blockGet    `ignore:"true"`
 	chunkPacket chan chunkPacket `ignore:"true"`
+	entity      chan entityChunk `ignore:"true"`
 
 	watchers     map[string]Watcher `ignore:"true"`
-	closeChannel chan chan bool     `ignore:"true"`
+	entities     map[string]Entity  `ignore:"true"`
+	Entities     map[string]Entity
+	closeChannel chan chan bool `ignore:"true"`
 }
 
 type ChunkSection struct {
@@ -77,7 +91,10 @@ func (c *Chunk) Init(world *World, gen Generator, system System) {
 	c.blockPlace = make(chan blockChange, 50)
 	c.blockGet = make(chan blockGet, 50)
 	c.chunkPacket = make(chan chunkPacket, 50)
+	c.entity = make(chan entityChunk, 50)
 	c.watchers = make(map[string]Watcher)
+	c.entities = make(map[string]Entity)
+	c.Entities = make(map[string]Entity)
 	c.closeChannel = make(chan chan bool)
 	go c.run(gen)
 }
@@ -145,6 +162,11 @@ func (c *Chunk) run(gen Generator) {
 			}
 			for _, watcher := range watchers {
 				watcher.QueuePacket(packet)
+				for uuid, e := range c.entities {
+					if watcher.UUID() != uuid {
+						e.SpawnFor(watcher)
+					}
+				}
 			}
 			c.world.SendLimiter <- zl
 		case watcher := <-c.leave:
@@ -154,6 +176,11 @@ func (c *Chunk) run(gen Generator) {
 				GroundUp:       true,
 				CompressedData: []byte{},
 			})
+			for uuid, e := range c.entities {
+				if watcher.UUID() != uuid {
+					e.DespawnFor(watcher)
+				}
+			}
 			if len(c.watchers) == 0 {
 				c.world.RequestClose <- c
 			}
@@ -180,6 +207,28 @@ func (c *Chunk) run(gen Generator) {
 			} else {
 				for _, w := range c.watchers {
 					w.QueuePacket(packet.Packet)
+				}
+			}
+		case ec := <-c.entity:
+			if ec.Add {
+				c.entities[ec.Entity.UUID()] = ec.Entity
+				if ec.Entity.Saveable() {
+					c.Entities[ec.Entity.UUID()] = ec.Entity
+				}
+				for _, w := range c.watchers {
+					if w.UUID() != ec.Entity.UUID() {
+						ec.Entity.SpawnFor(w)
+					}
+				}
+			} else {
+				delete(c.entities, ec.Entity.UUID())
+				if ec.Entity.Saveable() {
+					delete(c.Entities, ec.Entity.UUID())
+				}
+				for _, w := range c.watchers {
+					if w.UUID() != ec.Entity.UUID() {
+						ec.Entity.DespawnFor(w)
+					}
 				}
 			}
 		case ret := <-c.closeChannel:

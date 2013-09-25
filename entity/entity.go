@@ -16,11 +16,48 @@
 
 package entity
 
-import ()
+import (
+	"github.com/NetherrackDev/netherrack/world"
+	"sync"
+)
 
 type Entity interface {
+	//Returns the entity's UUID
+	UUID() string
+	//Spawns the entity for the watcher
+	SpawnFor(world.Watcher)
+	//Spawns the entity for the watcher
+	DespawnFor(world.Watcher)
+	//Returns wether the entity is saveable to the chunk
+	Saveable() bool
 }
 
 //Contains methods that a entity needs for a server
 type Server interface {
+}
+
+var (
+	usedEntityIDs = map[int32]bool{}
+	lastID        int32
+	ueiLock       sync.Mutex
+)
+
+func GetID() int32 {
+	ueiLock.Lock()
+	defer ueiLock.Unlock()
+	for {
+		if !usedEntityIDs[lastID] {
+			usedEntityIDs[lastID] = true
+			id := lastID
+			lastID++
+			return id
+		}
+		lastID++
+	}
+}
+
+func FreeID(id int32) {
+	ueiLock.Lock()
+	defer ueiLock.Unlock()
+	delete(usedEntityIDs, id)
 }

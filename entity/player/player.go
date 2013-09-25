@@ -50,6 +50,8 @@ type Player struct {
 	readPackets   chan protocol.Packet
 	errorChannel  chan error
 	closedChannel chan struct{}
+	spawnFor      chan world.Watcher
+	despawnFor    chan world.Watcher
 
 	rand   *rand.Rand
 	pingID int32
@@ -62,51 +64,54 @@ type Player struct {
 }
 
 func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Player {
-	lp := &Player{
-		uuid:          uuid,
+	p := &Player{
 		Username:      username,
 		Conn:          conn,
 		packetQueue:   make(chan protocol.Packet, 200),
 		readPackets:   make(chan protocol.Packet, 20),
 		errorChannel:  make(chan error, 1),
 		closedChannel: make(chan struct{}, 1),
+		spawnFor:      make(chan world.Watcher, 2),
+		despawnFor:    make(chan world.Watcher, 2),
 		Server:        server,
 		rand:          rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
-	lp.CommonEntity.Server = server
-	lp.pingID = -1
-	go lp.packetReader()
-	return lp
+	p.CommonEntity.Server = server
+	p.CommonEntity.ID = entity.GetID()
+	p.CommonEntity.Uuid = uuid
+	p.pingID = -1
+	go p.packetReader()
+	return p
 }
 
 //Queues a packet to be sent to the player
-func (lp *Player) QueuePacket(packet protocol.Packet) {
+func (p *Player) QueuePacket(packet protocol.Packet) {
 	select {
-	case lp.packetQueue <- packet:
-	case _, _ = <-lp.closedChannel:
+	case p.packetQueue <- packet:
+	case _, _ = <-p.closedChannel:
 	}
 }
 
 //Processes incomming and outgoing packets. Blocks until the player leaves
 //or is kicked.
-func (lp *Player) Start() {
-	defer lp.close()
+func (p *Player) Start() {
+	defer p.close()
 
-	lp.World = lp.Server.DefaultWorld()
+	p.World = p.Server.DefaultWorld()
 
-	lp.Conn.WritePacket(protocol.LoginRequest{
-		EntityID:   0,
+	p.Conn.WritePacket(protocol.LoginRequest{
+		EntityID:   p.ID,
 		LevelType:  "netherrack", //Not used by the client
 		Gamemode:   1,
-		Dimension:  int8(lp.World.Dimension()),
+		Dimension:  int8(p.World.Dimension()),
 		Difficulty: 3,
 		MaxPlayers: 127,
 	})
-	lp.Conn.WritePacket(protocol.PluginMessage{
+	p.Conn.WritePacket(protocol.PluginMessage{
 		Channel: "MC|Brand",
 		Data:    []byte("Netherrack"),
 	})
-	lp.Conn.WritePacket(protocol.PlayerPositionLook{
+	p.Conn.WritePacket(protocol.PlayerPositionLook{
 		X:        0,
 		Y:        90,
 		Stance:   90 + 1.6,
@@ -115,10 +120,12 @@ func (lp *Player) Start() {
 		Pitch:    0,
 		OnGround: true,
 	})
+	p.spawn()
+	defer p.despawn()
 
 	for x := -10; x <= 10; x++ {
 		for z := -10; z <= 10; z++ {
-			lp.World.JoinChunk(x, z, lp)
+			p.World.JoinChunk(x, z, p)
 		}
 	}
 	tick := time.NewTicker(time.Second / 10)
@@ -126,131 +133,179 @@ func (lp *Player) Start() {
 	defer tick.Stop()
 	for {
 		select {
-		case err := <-lp.errorChannel:
-			log.Printf("Player %s error: %s\n", lp.Username, err)
+		case err := <-p.errorChannel:
+			log.Printf("Player %s error: %s\n", p.Username, err)
 			return
 		case <-tick.C:
 			if currentTick%(15*10) == 0 { //Every 15 seconds
-				if lp.pingID != -1 {
-					lp.disconnect("Timed out")
+				if p.pingID != -1 {
+					p.disconnect("Timed out")
 					continue
 				}
-				lp.pingID = lp.rand.Int31()
-				lp.Conn.WritePacket(protocol.KeepAlive{lp.pingID})
+				p.pingID = p.rand.Int31()
+				p.Conn.WritePacket(protocol.KeepAlive{p.pingID})
 			}
-			lcx, lcz := lp.LastCX, lp.LastCZ
-			if lp.UpdateMovement(lp) {
+			lcx, lcz := p.LastCX, p.LastCZ
+			if p.UpdateMovement(p) {
 				for x := lcx - 10; x <= lcx+10; x++ {
 					for z := lcz - 10; z <= lcz+10; z++ {
-						if x < lp.CX-10 || x > lp.CX+10 || z < lp.CZ-10 || z > lp.CZ+10 {
-							lp.World.LeaveChunk(int(x), int(z), lp)
+						if x < p.CX-10 || x > p.CX+10 || z < p.CZ-10 || z > p.CZ+10 {
+							p.World.LeaveChunk(int(x), int(z), p)
 						}
 					}
 				}
-				for x := lp.CX - 10; x <= lp.CX+10; x++ {
-					for z := lp.CZ - 10; z <= lp.CZ+10; z++ {
+				for x := p.CX - 10; x <= p.CX+10; x++ {
+					for z := p.CZ - 10; z <= p.CZ+10; z++ {
 						if x < lcx-10 || x > lcx+10 || z < lcz-10 || z > lcz+10 {
-							lp.World.JoinChunk(int(x), int(z), lp)
+							p.World.JoinChunk(int(x), int(z), p)
 						}
 					}
 				}
 			}
 			currentTick++
-		case packet := <-lp.packetQueue:
-			lp.Conn.WritePacket(packet)
-		case packet := <-lp.readPackets:
-			lp.processPacket(packet)
+		case packet := <-p.packetQueue:
+			p.Conn.WritePacket(packet)
+		case packet := <-p.readPackets:
+			p.processPacket(packet)
+		case watcher := <-p.spawnFor:
+			packets := p.spawnPackets()
+			for _, packet := range packets {
+				watcher.QueuePacket(packet)
+			}
+		case watcher := <-p.despawnFor:
+			packets := p.despawnPackets()
+			for _, packet := range packets {
+				watcher.QueuePacket(packet)
+			}
 		}
 	}
 }
 
+func (p *Player) spawn() {
+	p.World.AddEntity(int(p.CX), int(p.CZ), p)
+}
+
+func (p *Player) despawn() {
+	p.World.RemoveEntity(int(p.CX), int(p.CZ), p)
+}
+
+func (p *Player) spawnPackets() []protocol.Packet {
+	return []protocol.Packet{
+		protocol.SpawnNamedEntity{
+			EntityID:    p.ID,
+			PlayerName:  p.Username,
+			X:           int32(p.X * 32),
+			Y:           int32(p.Y * 32),
+			Z:           int32(p.Z * 32),
+			Yaw:         int8((p.Yaw / 360) * 256),
+			Pitch:       int8((p.Pitch / 360) * 256),
+			CurrentItem: 0,
+			Metadata:    map[byte]interface{}{0: int8(0)},
+		},
+	}
+}
+
+func (p *Player) despawnPackets() []protocol.Packet {
+	return []protocol.Packet{
+		protocol.EntityDestroy{[]int32{p.ID}},
+	}
+}
+
+func (p *Player) Saveable() bool {
+	return false
+}
+
+func (p *Player) SpawnFor(watcher world.Watcher) {
+	p.spawnFor <- watcher
+}
+
+func (p *Player) DespawnFor(watcher world.Watcher) {
+	p.despawnFor <- watcher
+}
+
 //Acts on the passed packet
 //TODO: Kick player on wrong packet
-func (lp *Player) processPacket(packet protocol.Packet) {
+func (p *Player) processPacket(packet protocol.Packet) {
 	switch packet := packet.(type) {
 	case protocol.PlayerDigging:
-		lp.event.RLock()
-		if lp.event.blockDig != nil {
+		p.event.RLock()
+		if p.event.blockDig != nil {
 			res := make(chan struct{}, 1)
-			lp.event.blockDig <- BlockDig{
+			p.event.blockDig <- BlockDig{
 				Packet: packet,
 				Return: res,
 			}
 			<-res
 		}
-		lp.event.RUnlock()
+		p.event.RUnlock()
 	case protocol.PlayerBlockPlacement:
-		lp.event.RLock()
-		if lp.event.blockPlace != nil {
+		p.event.RLock()
+		if p.event.blockPlace != nil {
 			res := make(chan struct{}, 1)
-			lp.event.blockPlace <- BlockPlacement{
+			p.event.blockPlace <- BlockPlacement{
 				Packet: packet,
 				Return: res,
 			}
 			<-res
 		}
-		lp.event.RUnlock()
+		p.event.RUnlock()
 	case protocol.Player:
 	case protocol.PlayerLook:
 		yaw := math.Mod(float64(packet.Yaw), 360)
 		if yaw < 0 {
 			yaw = 360 + yaw
 		}
-		lp.Yaw = float32(yaw)
-		lp.Pitch = packet.Pitch
+		p.Yaw = float32(yaw)
+		p.Pitch = packet.Pitch
 	case protocol.PlayerPosition:
-		lp.X, lp.Y, lp.Z = packet.X, packet.Y, packet.Z
+		p.X, p.Y, p.Z = packet.X, packet.Y, packet.Z
 	case protocol.PlayerPositionLook:
-		lp.X, lp.Y, lp.Z = packet.X, packet.Y, packet.Z
+		p.X, p.Y, p.Z = packet.X, packet.Y, packet.Z
 		yaw := math.Mod(float64(packet.Yaw), 360)
 		if yaw < 0 {
 			yaw = 360 + yaw
 		}
-		lp.Yaw = float32(yaw)
-		lp.Pitch = packet.Pitch
+		p.Yaw = float32(yaw)
+		p.Pitch = packet.Pitch
 	case protocol.KeepAlive:
-		if lp.pingID == -1 {
+		if p.pingID == -1 {
 			return
 		}
-		if lp.pingID != packet.KeepAliveID {
-			lp.disconnect("Incorrect KeepAliveID")
+		if p.pingID != packet.KeepAliveID {
+			p.disconnect("Incorrect KeepAliveID")
 			return
 		}
-		lp.pingID = -1
+		p.pingID = -1
 	case protocol.Disconnect:
-		lp.disconnect(packet.Reason)
+		p.disconnect(packet.Reason)
 	}
 }
 
-func (lp *Player) disconnect(reason string) {
-	lp.Conn.WritePacket(protocol.Disconnect{reason})
-	lp.errorChannel <- errors.New(reason)
+func (p *Player) disconnect(reason string) {
+	p.Conn.WritePacket(protocol.Disconnect{reason})
+	p.errorChannel <- errors.New(reason)
 }
 
 //Close and cleanup the player. The packetReader will close
 //once the orginal net.Conn is closed.
-func (lp *Player) close() {
-	close(lp.closedChannel)
-	for x := lp.CX - 10; x <= lp.CX+10; x++ {
-		for z := lp.CZ - 10; z <= lp.CZ+10; z++ {
-			lp.World.LeaveChunk(int(x), int(z), lp)
+func (p *Player) close() {
+	close(p.closedChannel)
+	for x := p.CX - 10; x <= p.CX+10; x++ {
+		for z := p.CZ - 10; z <= p.CZ+10; z++ {
+			p.World.LeaveChunk(int(x), int(z), p)
 		}
 	}
+	entity.FreeID(p.ID)
 }
 
 //Reads incomming packets and passes them to the watcher
-func (lp *Player) packetReader() {
+func (p *Player) packetReader() {
 	for {
-		packet, err := lp.Conn.ReadPacket()
+		packet, err := p.Conn.ReadPacket()
 		if err != nil {
-			lp.errorChannel <- err
+			p.errorChannel <- err
 			return
 		}
-		lp.readPackets <- packet
+		p.readPackets <- packet
 	}
-}
-
-//Returns the player's UUID
-func (lp *Player) UUID() string {
-	return lp.uuid
 }
