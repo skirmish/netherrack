@@ -116,6 +116,10 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (usern
 		if uuid, err = authenticator.Authenticate(handshake, serverID, sharedSecret, publicKeyBytes); err != nil {
 			return handshake.Username, uuid, err
 		}
+	} else {
+		idBytes := make([]byte, 16)
+		rand.Read(idBytes)
+		uuid = hex.EncodeToString(idBytes)
 	}
 	conn.WritePacket(EncryptionKeyResponse{})
 
