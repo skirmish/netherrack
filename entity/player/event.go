@@ -21,12 +21,23 @@ import (
 )
 
 type BlockPlacement struct {
-	Packet *protocol.PlayerBlockPlacement
+	Packet protocol.PlayerBlockPlacement
 	Return chan<- struct{}
 }
 
 func (p *Player) SetBlockPlacementEvent(event chan<- BlockPlacement) {
 	p.event.Lock()
 	p.event.blockPlace = event
+	p.event.Unlock()
+}
+
+type BlockDig struct {
+	Packet protocol.PlayerDigging
+	Return chan<- struct{}
+}
+
+func (p *Player) SetBlockDigEvent(event chan<- BlockDig) {
+	p.event.Lock()
+	p.event.blockDig = event
 	p.event.Unlock()
 }

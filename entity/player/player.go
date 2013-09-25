@@ -56,6 +56,7 @@ type Player struct {
 	event struct {
 		sync.RWMutex
 		blockPlace chan<- BlockPlacement
+		blockDig   chan<- BlockDig
 	}
 }
 
@@ -165,12 +166,23 @@ func (lp *Player) Start() {
 //Acts on the passed packet
 func (lp *Player) processPacket(packet protocol.Packet) {
 	switch packet := packet.(type) {
+	case protocol.PlayerDigging:
+		lp.event.RLock()
+		if lp.event.blockDig != nil {
+			res := make(chan struct{}, 1)
+			lp.event.blockDig <- BlockDig{
+				Packet: packet,
+				Return: res,
+			}
+			<-res
+		}
+		lp.event.RUnlock()
 	case protocol.PlayerBlockPlacement:
 		lp.event.RLock()
 		if lp.event.blockPlace != nil {
 			res := make(chan struct{}, 1)
 			lp.event.blockPlace <- BlockPlacement{
-				Packet: &packet,
+				Packet: packet,
 				Return: res,
 			}
 			<-res
