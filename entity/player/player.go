@@ -22,6 +22,7 @@ import (
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/world"
 	"log"
+	"math"
 	"math/rand"
 	"sync"
 	"time"
@@ -164,6 +165,7 @@ func (lp *Player) Start() {
 }
 
 //Acts on the passed packet
+//TODO: Kick player on wrong packet
 func (lp *Player) processPacket(packet protocol.Packet) {
 	switch packet := packet.(type) {
 	case protocol.PlayerDigging:
@@ -188,14 +190,23 @@ func (lp *Player) processPacket(packet protocol.Packet) {
 			<-res
 		}
 		lp.event.RUnlock()
+	case protocol.Player:
 	case protocol.PlayerLook:
-		lp.Yaw = packet.Yaw
+		yaw := math.Mod(float64(packet.Yaw), 360)
+		if yaw < 0 {
+			yaw = 360 + yaw
+		}
+		lp.Yaw = float32(yaw)
 		lp.Pitch = packet.Pitch
 	case protocol.PlayerPosition:
 		lp.X, lp.Y, lp.Z = packet.X, packet.Y, packet.Z
 	case protocol.PlayerPositionLook:
 		lp.X, lp.Y, lp.Z = packet.X, packet.Y, packet.Z
-		lp.Yaw = packet.Yaw
+		yaw := math.Mod(float64(packet.Yaw), 360)
+		if yaw < 0 {
+			yaw = 360 + yaw
+		}
+		lp.Yaw = float32(yaw)
 		lp.Pitch = packet.Pitch
 	case protocol.KeepAlive:
 		if lp.pingID == -1 {
