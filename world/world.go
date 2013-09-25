@@ -42,6 +42,7 @@ type World struct {
 	joinChunk   chan joinChunk
 	leaveChunk  chan joinChunk
 	placeBlock  chan blockChange
+	getBlock    chan blockGet
 	chunkPacket chan chunkPacket
 
 	//The limiters were added because trying to send/save all the chunks
@@ -64,6 +65,7 @@ func (world *World) init() {
 	world.joinChunk = make(chan joinChunk, 500)
 	world.leaveChunk = make(chan joinChunk, 500)
 	world.placeBlock = make(chan blockChange, 1000)
+	world.getBlock = make(chan blockGet, 1000)
 	world.chunkPacket = make(chan chunkPacket, 1000)
 	world.RequestClose = make(chan *Chunk, 20)
 }
@@ -89,6 +91,9 @@ func (world *World) run() {
 		case bp := <-world.placeBlock:
 			cx, cz := bp.X>>4, bp.Z>>4
 			world.chunk(cx, cz).blockPlace <- bp
+		case bg := <-world.getBlock:
+			cx, cz := bg.X>>4, bg.Z>>4
+			world.chunk(cx, cz).blockGet <- bg
 		case cp := <-world.chunkPacket:
 			world.chunk(cp.X, cp.Z).chunkPacket <- cp
 		case chunk := <-world.RequestClose:
@@ -120,11 +125,26 @@ func (world *World) QueuePacket(x, z int, uuid string, packet protocol.Packet) {
 	}
 }
 
+type blockGet struct {
+	X, Y, Z int
+	Ret     chan [2]byte
+}
+
 //Sets the block and data at the location
 func (world *World) SetBlock(x, y, z int, block, data byte) {
 	world.placeBlock <- blockChange{
 		x, y, z, block, data,
 	}
+}
+
+//Gets the block and data at the location
+func (world *World) Block(x, y, z int) (block, data byte) {
+	ret := make(chan [2]byte, 1)
+	world.getBlock <- blockGet{
+		x, y, z, ret,
+	}
+	d := <-ret
+	return d[0], d[1]
 }
 
 type joinChunk struct {

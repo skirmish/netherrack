@@ -53,6 +53,7 @@ type Chunk struct {
 	join        chan Watcher     `ignore:"true"`
 	leave       chan Watcher     `ignore:"true"`
 	blockPlace  chan blockChange `ignore:"true"`
+	blockGet    chan blockGet    `ignore:"true"`
 	chunkPacket chan chunkPacket `ignore:"true"`
 
 	watchers     map[string]Watcher `ignore:"true"`
@@ -74,6 +75,7 @@ func (c *Chunk) Init(world *World, gen Generator, system System) {
 	c.join = make(chan Watcher, 20)
 	c.leave = make(chan Watcher, 20)
 	c.blockPlace = make(chan blockChange, 50)
+	c.blockGet = make(chan blockGet, 50)
 	c.chunkPacket = make(chan chunkPacket, 50)
 	c.watchers = make(map[string]Watcher)
 	c.closeChannel = make(chan chan bool)
@@ -163,6 +165,11 @@ func (c *Chunk) run(gen Generator) {
 			if blockUpdate == nil {
 				blockUpdate = time.After(time.Second / 10) //Allow for multiple block changes to be grouped
 			}
+		case bg := <-c.blockGet:
+			x, z := bg.X&0xF, bg.Z&0xF
+			block := c.Block(x, bg.Y, z)
+			data := c.Data(x, bg.Y, z)
+			bg.Ret <- [2]byte{block, data}
 		case packet := <-c.chunkPacket:
 			if packet.UUID != "" {
 				for _, w := range c.watchers {
