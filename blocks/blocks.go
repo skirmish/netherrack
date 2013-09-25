@@ -60,8 +60,8 @@ var (
 	RedMushroom              = Block{ID: 40, PlacementSound: "dig.grass"}
 	GoldBlock                = Block{ID: 41, LightFiltered: 15, PlacementSound: "dig.stone"}
 	IronBlock                = Block{ID: 42, LightFiltered: 15, PlacementSound: "dig.stone"}
-	DoubleSlabs              = Block{ID: 43, LightFiltered: 15, PlacementSound: "dig.stone"}
-	Slabs                    = Block{ID: 44, LightFiltered: 1, PlacementSound: "dig.stone"}
+	DoubleSlab               = Block{ID: 43, LightFiltered: 15, PlacementSound: "dig.stone"}
+	Slab                     = Block{ID: 44, LightFiltered: 1, PlacementSound: "dig.stone"}
 	Bricks                   = Block{ID: 45, LightFiltered: 15, PlacementSound: "dig.stone"}
 	TNT                      = Block{ID: 46, LightFiltered: 15, PlacementSound: "dig.grass"}
 	Bookshelf                = Block{ID: 47, LightFiltered: 15, PlacementSound: "dig.wood"}
