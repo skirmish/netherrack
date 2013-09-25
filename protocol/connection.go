@@ -660,7 +660,7 @@ func encodeBool(conn *Conn, field reflect.Value) {
 	if field.Bool() {
 		bs[0] = 1
 	} else {
-		bs[1] = 0
+		bs[0] = 0
 	}
 	conn.Out.Write(bs)
 }
