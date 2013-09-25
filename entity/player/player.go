@@ -19,6 +19,7 @@ package player
 import (
 	"errors"
 	"github.com/NetherrackDev/netherrack/entity"
+	"github.com/NetherrackDev/netherrack/message"
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/world"
 	"log"
@@ -35,6 +36,10 @@ type Server interface {
 	DefaultWorld() *world.World
 	//Gets the world by name, loads the world if it isn't loaded
 	World(name string) *world.World
+	//Sends the packet to every player on the server
+	QueuePacket(packet protocol.Packet)
+	//Sends the message to every player on the server
+	SendMessage(msg *message.Message)
 }
 
 //A local player is a player connected directly to this server

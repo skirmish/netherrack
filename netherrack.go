@@ -20,6 +20,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/NetherrackDev/netherrack/entity/player"
+	"github.com/NetherrackDev/netherrack/message"
 	"github.com/NetherrackDev/netherrack/protocol"
 	"github.com/NetherrackDev/netherrack/protocol/auth"
 	"github.com/NetherrackDev/netherrack/world"
@@ -62,12 +63,16 @@ type Server struct {
 		pingEvent       chan<- PingEvent
 		playerJoinEvent chan<- PlayerJoinEvent
 	}
+
+	playersLock sync.RWMutex
+	players     map[string]*player.Player
 }
 
 //Creates a server
 func NewServer() *Server {
 	server := &Server{
 		authenticator: auth.Instance,
+		players:       map[string]*player.Player{},
 	}
 	server.worlds.m = make(map[string]*world.World)
 	server.worlds.waitMap = make(map[string]*sync.WaitGroup)
@@ -303,6 +308,10 @@ func (server *Server) handleConnection(conn net.Conn) {
 
 	p := player.NewPlayer(uuid, username, mcConn, server)
 
+	server.playersLock.Lock()
+	server.players[p.UUID()] = p
+	server.playersLock.Unlock()
+
 	server.event.RLock()
 	if server.event.playerJoinEvent != nil {
 		res := make(chan string, 1)
@@ -313,12 +322,33 @@ func (server *Server) handleConnection(conn net.Conn) {
 		server.event.playerJoinEvent <- event
 		if msg := <-res; msg != "" {
 			mcConn.WritePacket(protocol.Disconnect{msg})
+			server.playersLock.Lock()
+			delete(server.players, p.UUID())
+			server.playersLock.Unlock()
 			return
 		}
 	}
 	server.event.RUnlock()
 
 	p.Start()
+
+	server.playersLock.Lock()
+	delete(server.players, p.UUID())
+	server.playersLock.Unlock()
+}
+
+//Sends the packet to every player on the server
+func (server *Server) QueuePacket(packet protocol.Packet) {
+	server.playersLock.RLock()
+	for _, p := range server.players {
+		p.QueuePacket(packet)
+	}
+	server.playersLock.RUnlock()
+}
+
+//Sends the message to every player on the server
+func (server *Server) SendMessage(msg *message.Message) {
+	server.QueuePacket(protocol.ChatMessage{msg.JSONString()})
 }
 
 func (server *Server) buildServerPing() string {
