@@ -76,9 +76,12 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (usern
 	verifyToken := make([]byte, 16) //Used by the server to check encryption is working correctly
 	rand.Read(verifyToken)
 
-	serverBytes := make([]byte, 10)
-	rand.Read(serverBytes)
-	serverID := hex.EncodeToString(serverBytes)
+	var serverID = "-"
+	if authenticator != nil {
+		serverBytes := make([]byte, 10)
+		rand.Read(serverBytes)
+		serverID = hex.EncodeToString(serverBytes)
+	}
 
 	conn.WritePacket(EncryptionKeyRequest{
 		ServerID:    serverID,
@@ -109,8 +112,10 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (usern
 		return handshake.Username, uuid, ErrorVerifyFailed
 	}
 
-	if uuid, err = authenticator.Authenticate(handshake, serverID, sharedSecret, publicKeyBytes); err != nil {
-		return handshake.Username, uuid, err
+	if authenticator != nil {
+		if uuid, err = authenticator.Authenticate(handshake, serverID, sharedSecret, publicKeyBytes); err != nil {
+			return handshake.Username, uuid, err
+		}
 	}
 	conn.WritePacket(EncryptionKeyResponse{})
 
