@@ -275,6 +275,7 @@ func (EntityAction) ID() byte { return 0x13 }
 //Server --> Client
 type SpawnNamedEntity struct {
 	EntityID    int32
+	PlayerUUID  string
 	PlayerName  string
 	X           int32
 	Y           int32
@@ -699,7 +700,7 @@ func (Particle) ID() byte { return 0x3F }
 //Server --> Client
 type GameState struct {
 	Reason   int8
-	Gamemode int8
+	Gamemode float32
 }
 
 func (GameState) ID() byte { return 0x46 }

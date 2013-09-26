@@ -199,6 +199,7 @@ func (p *Player) spawnPackets() []protocol.Packet {
 		protocol.SpawnNamedEntity{
 			EntityID:    p.ID,
 			PlayerName:  p.Username,
+			PlayerUUID:  p.Uuid,
 			X:           int32(p.X * 32),
 			Y:           int32(p.Y * 32),
 			Z:           int32(p.Z * 32),
