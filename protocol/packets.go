@@ -699,8 +699,8 @@ func (Particle) ID() byte { return 0x3F }
 //
 //Server --> Client
 type GameState struct {
-	Reason   int8
-	Gamemode float32
+	Reason int8
+	Value  float32
 }
 
 func (GameState) ID() byte { return 0x46 }
