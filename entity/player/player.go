@@ -68,6 +68,11 @@ type Player struct {
 		enterWorld chan<- EnterWorld
 		chat       chan<- Chat
 	}
+
+	LockChan chan chan struct{}
+
+	//Extra data storage
+	Storage map[string][]byte
 }
 
 func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Player {
@@ -82,6 +87,8 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 		despawnFor:    make(chan world.Watcher, 2),
 		Server:        server,
 		rand:          rand.New(rand.NewSource(time.Now().UnixNano())),
+		LockChan:      make(chan chan struct{}),
+		Storage:       map[string][]byte{},
 	}
 	p.CommonEntity.Server = server
 	p.CommonEntity.ID = entity.GetID()
@@ -199,6 +206,8 @@ func (p *Player) Start() {
 			for _, packet := range packets {
 				watcher.QueuePacket(packet)
 			}
+		case lock := <-p.LockChan:
+			<-lock
 		}
 	}
 }
