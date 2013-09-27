@@ -191,6 +191,7 @@ func (p *Player) spawn() {
 }
 
 func (p *Player) despawn() {
+	entity.FreeID(p.ID)
 	p.World.RemoveEntity(int(p.CX), int(p.CZ), p)
 }
 
