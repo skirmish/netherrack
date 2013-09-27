@@ -65,6 +65,7 @@ type Player struct {
 		sync.RWMutex
 		blockPlace chan<- BlockPlacement
 		blockDig   chan<- BlockDig
+		enterWorld chan<- EnterWorld
 	}
 }
 
@@ -103,26 +104,40 @@ func (p *Player) Start() {
 	defer p.close()
 
 	p.World = p.Server.DefaultWorld()
+	p.X, p.Y, p.Z = 0, 70, 0
 
-	p.Conn.WritePacket(protocol.LoginRequest{
+	login := &protocol.LoginRequest{
 		EntityID:   p.ID,
 		LevelType:  "netherrack", //Not used by the client
-		Gamemode:   1,
+		Gamemode:   0,
 		Dimension:  int8(p.World.Dimension()),
-		Difficulty: 3,
-		MaxPlayers: 127,
-	})
+		Difficulty: 0,
+		MaxPlayers: 0,
+	}
+
+	p.event.RLock()
+	if p.event.enterWorld != nil {
+		res := make(chan struct{}, 1)
+		p.event.enterWorld <- EnterWorld{
+			Packet: login,
+			Return: res,
+		}
+		<-res
+	}
+	p.event.RUnlock()
+
+	p.Conn.WritePacket(*login)
 	p.Conn.WritePacket(protocol.PluginMessage{
 		Channel: "MC|Brand",
 		Data:    []byte("Netherrack"),
 	})
 	p.Conn.WritePacket(protocol.PlayerPositionLook{
-		X:        0,
-		Y:        90,
-		Stance:   90 + 1.6,
-		Z:        0,
-		Yaw:      0,
-		Pitch:    0,
+		X:        p.X,
+		Y:        p.Y,
+		Stance:   p.Y + 1.6,
+		Z:        p.Z,
+		Yaw:      p.Yaw,
+		Pitch:    p.Pitch,
 		OnGround: true,
 	})
 	p.spawn()
@@ -133,6 +148,7 @@ func (p *Player) Start() {
 			p.World.JoinChunk(x, z, p)
 		}
 	}
+
 	tick := time.NewTicker(time.Second / 10)
 	var currentTick uint64
 	defer tick.Stop()

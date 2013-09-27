@@ -41,3 +41,14 @@ func (p *Player) SetBlockDigEvent(event chan<- BlockDig) {
 	p.event.blockDig = event
 	p.event.Unlock()
 }
+
+type EnterWorld struct {
+	Packet *protocol.LoginRequest
+	Return chan<- struct{}
+}
+
+func (p *Player) SetEnterWorldEvent(event chan<- EnterWorld) {
+	p.event.Lock()
+	p.event.enterWorld = event
+	p.event.Unlock()
+}
