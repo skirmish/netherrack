@@ -52,3 +52,14 @@ func (p *Player) SetEnterWorldEvent(event chan<- EnterWorld) {
 	p.event.enterWorld = event
 	p.event.Unlock()
 }
+
+type Chat struct {
+	Message string
+	Return  chan<- struct{}
+}
+
+func (p *Player) SetChatEvent(event chan<- Chat) {
+	p.event.Lock()
+	p.event.chat = event
+	p.event.Unlock()
+}

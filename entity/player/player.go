@@ -54,7 +54,7 @@ type Player struct {
 	packetQueue   chan protocol.Packet
 	readPackets   chan protocol.Packet
 	errorChannel  chan error
-	closedChannel chan struct{}
+	ClosedChannel chan struct{}
 	spawnFor      chan world.Watcher
 	despawnFor    chan world.Watcher
 
@@ -66,6 +66,7 @@ type Player struct {
 		blockPlace chan<- BlockPlacement
 		blockDig   chan<- BlockDig
 		enterWorld chan<- EnterWorld
+		chat       chan<- Chat
 	}
 }
 
@@ -76,7 +77,7 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 		packetQueue:   make(chan protocol.Packet, 200),
 		readPackets:   make(chan protocol.Packet, 20),
 		errorChannel:  make(chan error, 1),
-		closedChannel: make(chan struct{}, 1),
+		ClosedChannel: make(chan struct{}, 1),
 		spawnFor:      make(chan world.Watcher, 2),
 		despawnFor:    make(chan world.Watcher, 2),
 		Server:        server,
@@ -94,7 +95,7 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 func (p *Player) QueuePacket(packet protocol.Packet) {
 	select {
 	case p.packetQueue <- packet:
-	case _, _ = <-p.closedChannel:
+	case _, _ = <-p.ClosedChannel:
 	}
 }
 
@@ -250,6 +251,17 @@ func (p *Player) DespawnFor(watcher world.Watcher) {
 //TODO: Kick player on wrong packet
 func (p *Player) processPacket(packet protocol.Packet) {
 	switch packet := packet.(type) {
+	case protocol.ChatMessage:
+		p.event.RLock()
+		if p.event.chat != nil {
+			res := make(chan struct{}, 1)
+			p.event.chat <- Chat{
+				Message: packet.Message,
+				Return:  res,
+			}
+			<-res
+		}
+		p.event.RUnlock()
 	case protocol.PlayerDigging:
 		p.event.RLock()
 		if p.event.blockDig != nil {
@@ -312,7 +324,7 @@ func (p *Player) disconnect(reason string) {
 //Close and cleanup the player. The packetReader will close
 //once the orginal net.Conn is closed.
 func (p *Player) close() {
-	close(p.closedChannel)
+	close(p.ClosedChannel)
 	for x := p.CX - 10; x <= p.CX+10; x++ {
 		for z := p.CZ - 10; z <= p.CZ+10; z++ {
 			p.World.LeaveChunk(int(x), int(z), p)
