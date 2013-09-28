@@ -46,7 +46,7 @@ type Server interface {
 type Player struct {
 	entity.CommonEntity
 
-	Conn     *protocol.Conn
+	conn     *protocol.Conn
 	uuid     string
 	Username string
 	Server   Server
@@ -78,7 +78,7 @@ type Player struct {
 func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Player {
 	p := &Player{
 		Username:      username,
-		Conn:          conn,
+		conn:          conn,
 		packetQueue:   make(chan protocol.Packet, 200),
 		readPackets:   make(chan protocol.Packet, 20),
 		errorChannel:  make(chan error, 1),
@@ -95,6 +95,7 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 	p.CommonEntity.Uuid = uuid
 	p.pingID = -1
 	go p.packetReader()
+	go p.packetWriter()
 	return p
 }
 
@@ -102,7 +103,7 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 func (p *Player) QueuePacket(packet protocol.Packet) {
 	select {
 	case p.packetQueue <- packet:
-	case _, _ = <-p.ClosedChannel:
+	case <-p.ClosedChannel:
 	}
 }
 
@@ -134,12 +135,12 @@ func (p *Player) Start() {
 	}
 	p.event.RUnlock()
 
-	p.Conn.WritePacket(*login)
-	p.Conn.WritePacket(protocol.PluginMessage{
+	p.QueuePacket(*login)
+	p.QueuePacket(protocol.PluginMessage{
 		Channel: "MC|Brand",
 		Data:    []byte("Netherrack"),
 	})
-	p.Conn.WritePacket(protocol.PlayerPositionLook{
+	p.QueuePacket(protocol.PlayerPositionLook{
 		X:        p.X,
 		Y:        p.Y,
 		Stance:   p.Y + 1.6,
@@ -172,7 +173,7 @@ func (p *Player) Start() {
 					continue
 				}
 				p.pingID = p.rand.Int31()
-				p.Conn.WritePacket(protocol.KeepAlive{p.pingID})
+				p.QueuePacket(protocol.KeepAlive{p.pingID})
 			}
 			lcx, lcz := p.LastCX, p.LastCZ
 			if p.UpdateMovement(p) {
@@ -192,8 +193,6 @@ func (p *Player) Start() {
 				}
 			}
 			currentTick++
-		case packet := <-p.packetQueue:
-			p.Conn.WritePacket(packet)
 		case packet := <-p.readPackets:
 			p.processPacket(packet)
 		case watcher := <-p.spawnFor:
@@ -325,7 +324,7 @@ func (p *Player) processPacket(packet protocol.Packet) {
 }
 
 func (p *Player) disconnect(reason string) {
-	p.Conn.WritePacket(protocol.Disconnect{reason})
+	p.QueuePacket(protocol.Disconnect{reason})
 	p.errorChannel <- errors.New(reason)
 }
 
@@ -344,13 +343,24 @@ func (p *Player) close() {
 //Reads incomming packets and passes them to the watcher
 func (p *Player) packetReader() {
 	for {
-		packet, err := p.Conn.ReadPacket()
+		packet, err := p.conn.ReadPacket()
 		if err != nil {
 			p.errorChannel <- err
 			return
 		}
 		select {
 		case p.readPackets <- packet:
+		case <-p.ClosedChannel:
+			return
+		}
+	}
+}
+
+func (p *Player) packetWriter() {
+	for {
+		select {
+		case packet := <-p.packetQueue:
+			p.conn.WritePacket(packet)
 		case <-p.ClosedChannel:
 			return
 		}
