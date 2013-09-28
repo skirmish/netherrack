@@ -82,9 +82,9 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 		packetQueue:   make(chan protocol.Packet, 200),
 		readPackets:   make(chan protocol.Packet, 20),
 		errorChannel:  make(chan error, 1),
-		ClosedChannel: make(chan struct{}, 1),
-		spawnFor:      make(chan world.Watcher, 2),
-		despawnFor:    make(chan world.Watcher, 2),
+		ClosedChannel: make(chan struct{}),
+		spawnFor:      make(chan world.Watcher, 20),
+		despawnFor:    make(chan world.Watcher, 20),
 		Server:        server,
 		rand:          rand.New(rand.NewSource(time.Now().UnixNano())),
 		LockChan:      make(chan chan struct{}),
@@ -217,7 +217,6 @@ func (p *Player) spawn() {
 }
 
 func (p *Player) despawn() {
-	entity.FreeID(p.ID)
 	p.World.RemoveEntity(int(p.CX), int(p.CZ), p)
 }
 
@@ -350,6 +349,10 @@ func (p *Player) packetReader() {
 			p.errorChannel <- err
 			return
 		}
-		p.readPackets <- packet
+		select {
+		case p.readPackets <- packet:
+		case <-p.ClosedChannel:
+			return
+		}
 	}
 }
