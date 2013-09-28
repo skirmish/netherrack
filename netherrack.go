@@ -64,19 +64,23 @@ type Server struct {
 		playerJoinEvent chan<- PlayerJoinEvent
 	}
 
-	playersLock sync.RWMutex
-	players     map[string]*player.Player
+	chat struct {
+		packet chan protocol.Packet
+		add    chan *player.Player
+		remove chan *player.Player
+	}
 }
 
 //Creates a server
 func NewServer() *Server {
 	server := &Server{
 		authenticator: auth.Instance,
-		players:       map[string]*player.Player{},
 	}
 	server.worlds.m = make(map[string]*world.World)
 	server.worlds.waitMap = make(map[string]*sync.WaitGroup)
-
+	server.chat.packet = make(chan protocol.Packet, 200)
+	server.chat.add = make(chan *player.Player, 20)
+	server.chat.remove = make(chan *player.Player, 20)
 	return server
 }
 
@@ -94,12 +98,29 @@ func (server *Server) Start(address string) error {
 	}
 	server.listener = listen
 
+	go server.chatServer()
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
 			return err
 		}
 		go server.handleConnection(conn)
+	}
+}
+
+func (server *Server) chatServer() {
+	players := map[string]*player.Player{}
+	for {
+		select {
+		case packet := <-server.chat.packet:
+			for _, p := range players {
+				p.QueuePacket(packet)
+			}
+		case p := <-server.chat.add:
+			players[p.UUID()] = p
+		case p := <-server.chat.remove:
+			players[p.UUID()] = p
+		}
 	}
 }
 
@@ -308,9 +329,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 
 	p := player.NewPlayer(uuid, username, mcConn, server)
 
-	server.playersLock.Lock()
-	server.players[p.UUID()] = p
-	server.playersLock.Unlock()
+	server.chat.add <- p
 
 	server.event.RLock()
 	if server.event.playerJoinEvent != nil {
@@ -322,9 +341,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 		server.event.playerJoinEvent <- event
 		if msg := <-res; msg != "" {
 			mcConn.WritePacket(protocol.Disconnect{msg})
-			server.playersLock.Lock()
-			delete(server.players, p.UUID())
-			server.playersLock.Unlock()
+			server.chat.remove <- p
 			return
 		}
 	}
@@ -332,18 +349,12 @@ func (server *Server) handleConnection(conn net.Conn) {
 
 	p.Start()
 
-	server.playersLock.Lock()
-	delete(server.players, p.UUID())
-	server.playersLock.Unlock()
+	server.chat.remove <- p
 }
 
 //Sends the packet to every player on the server
 func (server *Server) QueuePacket(packet protocol.Packet) {
-	server.playersLock.RLock()
-	for _, p := range server.players {
-		p.QueuePacket(packet)
-	}
-	server.playersLock.RUnlock()
+	server.chat.packet <- packet
 }
 
 //Sends the message to every player on the server
