@@ -608,7 +608,7 @@ type BlockAction struct {
 
 func (BlockAction) ID() byte { return 0x36 }
 
-//Block Break Animation
+//Block Break Animation (0x37)
 //
 //Server --> Client
 type BlockBreakAnimation struct {
@@ -621,10 +621,24 @@ type BlockBreakAnimation struct {
 
 func (BlockBreakAnimation) ID() byte { return 0x37 }
 
-//Map Chunk Bulk
+//Map Chunk Bulk (0x38)
 //
 //Server --> Client
-//Currently not supported
+type MapChunkBulk struct {
+	ChunkCount int16
+	DataLength int32
+	SkyLight   byte
+	Data       []byte      `ltype:"nil"`
+	Meta       []ChunkMeta `ltype:"nil"`
+}
+
+type ChunkMeta struct {
+	X, Z       int32
+	PrimaryBit uint16
+	AddBitmap  uint16
+}
+
+func (MapChunkBulk) ID() byte { return 0x38 }
 
 //Explosion (0x3C)
 //

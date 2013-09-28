@@ -62,6 +62,14 @@ type Conn struct {
 	rb [8]byte
 }
 
+type fullReader struct {
+	io.Reader
+}
+
+func (f fullReader) Read(p []byte) (int, error) {
+	return io.ReadFull(f.Reader, p)
+}
+
 type Deadliner interface {
 	SetReadDeadline(t time.Time) error
 	SetWriteDeadline(t time.Time) error
@@ -76,6 +84,21 @@ func (conn *Conn) ReadPacket() (Packet, error) {
 	_, err := conn.In.Read(bs)
 	if err != nil {
 		return nil, err
+	}
+
+	conn.In = fullReader{conn.In}
+
+	if bs[0] == 0x38 { //Its hard to parse normaly
+		p := MapChunkBulk{}
+		binary.Read(conn.In, binary.BigEndian, &p.ChunkCount)
+		binary.Read(conn.In, binary.BigEndian, &p.DataLength)
+		binary.Read(conn.In, binary.BigEndian, &p.SkyLight)
+		p.Data = make([]byte, p.DataLength)
+		p.Meta = make([]ChunkMeta, p.ChunkCount)
+		conn.In.Read(p.Data)
+		binary.Read(conn.In, binary.BigEndian, p.Meta)
+		conn.In = conn.In.(fullReader).Reader
+		return p, nil
 	}
 
 	ty := packets[bs[0]]
@@ -94,6 +117,7 @@ func (conn *Conn) ReadPacket() (Packet, error) {
 			}
 		}
 	}
+	conn.In = conn.In.(fullReader).Reader
 
 	return val.Interface().(Packet), nil
 }
@@ -104,6 +128,16 @@ func (conn *Conn) WritePacket(packet Packet) {
 		conn.Deadliner.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	}
 	conn.Out.Write([]byte{packet.ID()})
+
+	if packet.ID() == 0x38 { //Its hard to parse normal
+		p := packet.(MapChunkBulk)
+		binary.Write(conn.Out, binary.BigEndian, &p.ChunkCount)
+		binary.Write(conn.Out, binary.BigEndian, &p.DataLength)
+		binary.Write(conn.Out, binary.BigEndian, &p.SkyLight)
+		binary.Write(conn.Out, binary.BigEndian, p.Data)
+		binary.Write(conn.Out, binary.BigEndian, p.Meta)
+		return
+	}
 
 	val := reflect.ValueOf(packet)
 	fs := fields(val.Type())
@@ -331,6 +365,7 @@ func getSliceCoders(e reflect.Type, sf reflect.StructField) (encoder, decoder) {
 					return err
 				}
 				l = int(int32(binary.BigEndian.Uint32(bs)))
+			case "nil":
 			default:
 				panic("Unknown length type")
 			}
@@ -428,11 +463,12 @@ func getSliceCoders(e reflect.Type, sf reflect.StructField) (encoder, decoder) {
 					return err
 				}
 				l = int(int32(binary.BigEndian.Uint32(bs)))
+			case "nil":
 			default:
 				panic("Unknown length type")
 			}
 			if l != nilValue {
-				slice := reflect.MakeSlice(e, l, l)
+				slice := reflect.MakeSlice(sf.Type, l, l)
 				for i := 0; i < l; i++ {
 					if err := loopRead(conn, slice.Index(i)); err != nil {
 						return err
@@ -462,6 +498,7 @@ func getSliceCoders(e reflect.Type, sf reflect.StructField) (encoder, decoder) {
 		case "int32":
 			bs = conn.b[:4]
 			binary.BigEndian.PutUint32(bs, uint32(l))
+		case "nil":
 		default:
 			panic("Unknown length type")
 		}

@@ -71,6 +71,7 @@ var packets = [256]reflect.Type{
 	0x35: reflect.TypeOf((*BlockChange)(nil)).Elem(),
 	0x36: reflect.TypeOf((*BlockAction)(nil)).Elem(),
 	0x37: reflect.TypeOf((*BlockBreakAnimation)(nil)).Elem(),
+	0x38: reflect.TypeOf((*MapChunkBulk)(nil)).Elem(),
 
 	0x3C: reflect.TypeOf((*Explosion)(nil)).Elem(),
 	0x3D: reflect.TypeOf((*Effect)(nil)).Elem(),
