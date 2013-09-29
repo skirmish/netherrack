@@ -95,6 +95,11 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 	return p
 }
 
+//Sends a message to the player
+func (p *Player) SendMessage(msg *message.Message) {
+	p.QueuePacket(protocol.ChatMessage{msg.JSONString()})
+}
+
 //Queues a packet to be sent to the player
 func (p *Player) QueuePacket(packet protocol.Packet) {
 	select {
