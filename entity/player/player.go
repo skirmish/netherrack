@@ -55,8 +55,6 @@ type Player struct {
 	readPackets   chan protocol.Packet
 	errorChannel  chan error
 	ClosedChannel chan struct{}
-	spawnFor      chan world.Watcher
-	despawnFor    chan world.Watcher
 
 	rand   *rand.Rand
 	pingID int32
@@ -83,8 +81,6 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 		readPackets:   make(chan protocol.Packet, 20),
 		errorChannel:  make(chan error, 1),
 		ClosedChannel: make(chan struct{}),
-		spawnFor:      make(chan world.Watcher, 20),
-		despawnFor:    make(chan world.Watcher, 20),
 		Server:        server,
 		rand:          rand.New(rand.NewSource(time.Now().UnixNano())),
 		LockChan:      make(chan chan struct{}),
@@ -195,16 +191,6 @@ func (p *Player) Start() {
 			currentTick++
 		case packet := <-p.readPackets:
 			p.processPacket(packet)
-		case watcher := <-p.spawnFor:
-			packets := p.spawnPackets()
-			for _, packet := range packets {
-				watcher.QueuePacket(packet)
-			}
-		case watcher := <-p.despawnFor:
-			packets := p.despawnPackets()
-			for _, packet := range packets {
-				watcher.QueuePacket(packet)
-			}
 		case lock := <-p.LockChan:
 			<-lock
 		}
@@ -212,14 +198,14 @@ func (p *Player) Start() {
 }
 
 func (p *Player) spawn() {
-	p.World.AddEntity(int(p.CX), int(p.CZ), p)
+	p.World.AddEntity(int(p.CX), int(p.CZ), p, p.SpawnPackets(), p.DespawnPackets())
 }
 
 func (p *Player) despawn() {
 	p.World.RemoveEntity(int(p.CX), int(p.CZ), p)
 }
 
-func (p *Player) spawnPackets() []protocol.Packet {
+func (p *Player) SpawnPackets() []protocol.Packet {
 	return []protocol.Packet{
 		protocol.SpawnNamedEntity{
 			EntityID:    p.ID,
@@ -236,7 +222,7 @@ func (p *Player) spawnPackets() []protocol.Packet {
 	}
 }
 
-func (p *Player) despawnPackets() []protocol.Packet {
+func (p *Player) DespawnPackets() []protocol.Packet {
 	return []protocol.Packet{
 		protocol.EntityDestroy{[]int32{p.ID}},
 	}
@@ -244,14 +230,6 @@ func (p *Player) despawnPackets() []protocol.Packet {
 
 func (p *Player) Saveable() bool {
 	return false
-}
-
-func (p *Player) SpawnFor(watcher world.Watcher) {
-	p.spawnFor <- watcher
-}
-
-func (p *Player) DespawnFor(watcher world.Watcher) {
-	p.despawnFor <- watcher
 }
 
 //Acts on the passed packet

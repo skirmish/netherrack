@@ -40,10 +40,6 @@ type Watcher interface {
 type Entity interface {
 	//Returns the entity's UUID
 	UUID() string
-	//Spawns the entity for the watcher
-	SpawnFor(Watcher)
-	//Spawns the entity for the watcher
-	DespawnFor(Watcher)
 	//Returns wether the entity is saveable to the chunk
 	Saveable() bool
 }
@@ -61,17 +57,19 @@ type Chunk struct {
 
 	blockChanges []blockChange `ignore:"true"`
 
-	join        chan Watcher     `ignore:"true"`
-	leave       chan Watcher     `ignore:"true"`
-	blockPlace  chan blockChange `ignore:"true"`
-	blockGet    chan blockGet    `ignore:"true"`
-	chunkPacket chan chunkPacket `ignore:"true"`
-	entity      chan entityChunk `ignore:"true"`
+	join              chan Watcher      `ignore:"true"`
+	leave             chan Watcher      `ignore:"true"`
+	blockPlace        chan blockChange  `ignore:"true"`
+	blockGet          chan blockGet     `ignore:"true"`
+	chunkPacket       chan chunkPacket  `ignore:"true"`
+	entity            chan entityChunk  `ignore:"true"`
+	entitySpawnUpdate chan packetUpdate `ignore:"true"`
 
-	watchers     map[string]Watcher `ignore:"true"`
-	entities     map[string]Entity  `ignore:"true"`
-	Entities     map[string]Entity
-	closeChannel chan chan bool `ignore:"true"`
+	watchers        map[string]Watcher `ignore:"true"`
+	entities        map[string]Entity  `ignore:"true"`
+	Entities        map[string]Entity
+	entitySpawnData map[string]spawnData `ignore:"true"`
+	closeChannel    chan chan bool       `ignore:"true"`
 }
 
 type ChunkSection struct {
@@ -80,6 +78,11 @@ type ChunkSection struct {
 	BlockLight [(16 * 16 * 16) / 2]byte
 	SkyLight   [(16 * 16 * 16) / 2]byte
 	BlockCount uint
+}
+
+type spawnData struct {
+	spawn   []protocol.Packet
+	despawn []protocol.Packet
 }
 
 //Inits the chunk. Should only be called by the world
@@ -92,8 +95,10 @@ func (c *Chunk) Init(world *World, gen Generator, system System) {
 	c.blockGet = make(chan blockGet, 50)
 	c.chunkPacket = make(chan chunkPacket, 50)
 	c.entity = make(chan entityChunk, 50)
+	c.entitySpawnUpdate = make(chan packetUpdate, 50)
 	c.watchers = make(map[string]Watcher)
 	c.entities = make(map[string]Entity)
+	c.entitySpawnData = make(map[string]spawnData)
 	c.Entities = make(map[string]Entity)
 	c.closeChannel = make(chan chan bool)
 	go c.run(gen)
@@ -162,9 +167,11 @@ func (c *Chunk) run(gen Generator) {
 			}
 			for _, watcher := range watchers {
 				watcher.QueuePacket(packet)
-				for uuid, e := range c.entities {
+				for uuid, e := range c.entitySpawnData {
 					if watcher.UUID() != uuid {
-						e.SpawnFor(watcher)
+						for _, p := range e.spawn {
+							watcher.QueuePacket(p)
+						}
 					}
 				}
 			}
@@ -176,9 +183,11 @@ func (c *Chunk) run(gen Generator) {
 				GroundUp:       true,
 				CompressedData: []byte{},
 			})
-			for uuid, e := range c.entities {
+			for uuid, e := range c.entitySpawnData {
 				if watcher.UUID() != uuid {
-					e.DespawnFor(watcher)
+					for _, p := range e.despawn {
+						watcher.QueuePacket(p)
+					}
 				}
 			}
 			if len(c.watchers) == 0 {
@@ -215,19 +224,30 @@ func (c *Chunk) run(gen Generator) {
 				if ec.Entity.Saveable() {
 					c.Entities[ec.Entity.UUID()] = ec.Entity
 				}
+				sData := spawnData{
+					spawn:   ec.Spawn,
+					despawn: ec.Despawn,
+				}
+				c.entitySpawnData[ec.Entity.UUID()] = sData
 				for _, w := range c.watchers {
 					if w.UUID() != ec.Entity.UUID() {
-						ec.Entity.SpawnFor(w)
+						for _, p := range sData.spawn {
+							w.QueuePacket(p)
+						}
 					}
 				}
 			} else {
 				delete(c.entities, ec.Entity.UUID())
+				sData := c.entitySpawnData[ec.Entity.UUID()]
+				delete(c.entitySpawnData, ec.Entity.UUID())
 				if ec.Entity.Saveable() {
 					delete(c.Entities, ec.Entity.UUID())
 				}
 				for _, w := range c.watchers {
 					if w.UUID() != ec.Entity.UUID() {
-						ec.Entity.DespawnFor(w)
+						for _, p := range sData.despawn {
+							w.QueuePacket(p)
+						}
 					}
 				}
 			}
@@ -242,6 +262,14 @@ func (c *Chunk) run(gen Generator) {
 				t.Stop()
 				t = time.NewTicker(100 * time.Millisecond)
 			}
+		case update := <-c.entitySpawnUpdate:
+			sData := c.entitySpawnData[update.entity.UUID()]
+			if update.spawn {
+				sData.spawn = update.packets
+			} else {
+				sData.despawn = update.packets
+			}
+			c.entitySpawnData[update.entity.UUID()] = sData
 		}
 	}
 }

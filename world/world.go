@@ -39,12 +39,13 @@ type World struct {
 
 	loadedChunks map[uint64]*Chunk
 
-	joinChunk   chan joinChunk
-	leaveChunk  chan joinChunk
-	entityChunk chan entityChunk
-	placeBlock  chan blockChange
-	getBlock    chan blockGet
-	chunkPacket chan chunkPacket
+	joinChunk       chan joinChunk
+	leaveChunk      chan joinChunk
+	entityChunk     chan entityChunk
+	placeBlock      chan blockChange
+	getBlock        chan blockGet
+	chunkPacket     chan chunkPacket
+	updateSpawnData chan packetUpdate
 
 	//The limiters were added because trying to send/save all the chunks
 	//at once caused large amounts of memory usage
@@ -70,6 +71,7 @@ func (world *World) init() {
 	world.chunkPacket = make(chan chunkPacket, 1000)
 	world.entityChunk = make(chan entityChunk, 500)
 	world.RequestClose = make(chan *Chunk, 20)
+	world.updateSpawnData = make(chan packetUpdate, 200)
 }
 
 func (world *World) run() {
@@ -104,22 +106,44 @@ func (world *World) run() {
 			if chunk.Close() {
 				delete(world.loadedChunks, chunkKey(chunk.X, chunk.Z))
 			}
+		case pu := <-world.updateSpawnData:
+			world.chunk(pu.X, pu.Z).entitySpawnUpdate <- pu
 		}
 	}
 }
 
-type entityChunk struct {
-	Add    bool
-	X, Z   int
-	Entity Entity
+type packetUpdate struct {
+	entity  Entity
+	X, Z    int
+	spawn   bool
+	packets []protocol.Packet
 }
 
-func (world *World) AddEntity(x, z int, entity Entity) {
+func (world *World) UpdateSpawnData(x, z int, entity Entity, spawn bool, packets []protocol.Packet) {
+	world.updateSpawnData <- packetUpdate{
+		X: z, Z: z,
+		entity:  entity,
+		spawn:   spawn,
+		packets: packets,
+	}
+}
+
+type entityChunk struct {
+	Add     bool
+	X, Z    int
+	Entity  Entity
+	Spawn   []protocol.Packet
+	Despawn []protocol.Packet
+}
+
+func (world *World) AddEntity(x, z int, entity Entity, spawn []protocol.Packet, despawn []protocol.Packet) {
 	world.entityChunk <- entityChunk{
-		Add:    true,
-		X:      x,
-		Z:      z,
-		Entity: entity,
+		Add:     true,
+		X:       x,
+		Z:       z,
+		Entity:  entity,
+		Spawn:   spawn,
+		Despawn: despawn,
 	}
 }
 

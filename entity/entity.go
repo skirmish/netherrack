@@ -17,19 +17,19 @@
 package entity
 
 import (
-	"github.com/NetherrackDev/netherrack/world"
+	"github.com/NetherrackDev/netherrack/protocol"
 	"sync"
 )
 
 type Entity interface {
 	//Returns the entity's UUID
 	UUID() string
-	//Spawns the entity for the watcher
-	SpawnFor(world.Watcher)
-	//Spawns the entity for the watcher
-	DespawnFor(world.Watcher)
 	//Returns wether the entity is saveable to the chunk
 	Saveable() bool
+	//
+	SpawnPackets() []protocol.Packet
+	//
+	DespawnPackets() []protocol.Packet
 }
 
 //Contains methods that a entity needs for a server

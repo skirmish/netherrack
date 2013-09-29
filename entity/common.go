@@ -48,7 +48,9 @@ func (ce *CommonEntity) UpdateMovement(super Entity) (movedChunk bool) {
 	ce.LastCX, ce.LastCZ = ce.CX, ce.CZ
 
 	if ce.currentTick%2 == 0 {
+		moved := false
 		if ce.currentTick%(10*5) == 0 {
+			moved = true
 			ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityTeleport{
 				EntityID: ce.ID,
 				X:        int32(ce.X * 32),
@@ -64,6 +66,7 @@ func (ce *CommonEntity) UpdateMovement(super Entity) (movedChunk bool) {
 			dyaw := ce.Yaw - ce.LastYaw
 			dpitch := ce.Pitch - ce.LastPitch
 			if dx >= 4 || dy >= 4 || dz >= 4 {
+				moved = true
 				ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityTeleport{
 					EntityID: ce.ID,
 					X:        int32(ce.X * 32),
@@ -77,6 +80,7 @@ func (ce *CommonEntity) UpdateMovement(super Entity) (movedChunk bool) {
 					HeadYaw:  int8((ce.Yaw / 360) * 256),
 				})
 			} else if (dx != 0 || dy != 0 || dz != 0) && (dyaw != 0 || dpitch != 0) {
+				moved = true
 				ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityLookMove{
 					EntityID: ce.ID,
 					DX:       int8(dx * 32),
@@ -90,6 +94,7 @@ func (ce *CommonEntity) UpdateMovement(super Entity) (movedChunk bool) {
 					HeadYaw:  int8((ce.Yaw / 360) * 256),
 				})
 			} else if dx != 0 || dy != 0 || dz != 0 {
+				moved = true
 				ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityMove{
 					EntityID: ce.ID,
 					DX:       int8(dx * 32),
@@ -97,6 +102,7 @@ func (ce *CommonEntity) UpdateMovement(super Entity) (movedChunk bool) {
 					DZ:       int8(dz * 32),
 				})
 			} else if dyaw != 0 || dpitch != 0 {
+				moved = true
 				ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityLook{
 					EntityID: ce.ID,
 					Yaw:      int8((ce.Yaw / 360) * 256),
@@ -106,6 +112,9 @@ func (ce *CommonEntity) UpdateMovement(super Entity) (movedChunk bool) {
 					EntityID: ce.ID,
 					HeadYaw:  int8((ce.Yaw / 360) * 256),
 				})
+			}
+			if moved {
+				ce.World.UpdateSpawnData(int(ce.CX), int(ce.CZ), super, true, super.SpawnPackets())
 			}
 		}
 
