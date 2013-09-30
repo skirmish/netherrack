@@ -19,6 +19,7 @@ package command
 
 import (
 	"fmt"
+	"github.com/NetherrackDev/netherrack/message"
 	"reflect"
 	"strconv"
 	"strings"
@@ -38,18 +39,10 @@ var (
 	callerType = reflect.TypeOf((*Caller)(nil)).Elem()
 )
 
-func init() {
-	RegisterCommand("echo #string", command_echo)
-}
-
-func command_echo(caller Caller, msg string) (string, string) {
-	return msg, ""
-}
-
 //The format is a follows:
 //    command #argType1 const2
 //Must not be called after init
-func RegisterCommand(def string, callback interface{}) {
+func Register(def string, callback interface{}) {
 	l := lex(def)
 
 	cb := reflect.ValueOf(callback)
@@ -138,6 +131,7 @@ parse:
 //
 type Caller interface {
 	CanCall(string) bool
+	SendMessage(*message.Message)
 }
 
 //The format of the command is as follows:

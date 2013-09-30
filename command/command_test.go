@@ -17,6 +17,7 @@
 package command
 
 import (
+	"github.com/NetherrackDev/netherrack/message"
 	"strings"
 	"testing"
 )
@@ -24,13 +25,8 @@ import (
 type testCaller struct{}
 
 func init() {
-	RegisterCommand("echo_num #number", test_echo)
-	RegisterCommand("echo upper #string", test_subecho)
-	RegisterCommand("echo upper #string smile", test_subecho_smile)
-}
-
-func test_echo(caller Caller, msg float64) (float64, string) {
-	return msg, ""
+	Register("echo upper #string", test_subecho)
+	Register("echo upper #string smile", test_subecho_smile)
 }
 
 func test_subecho(caller Caller, msg string) (string, string) {
@@ -41,7 +37,8 @@ func test_subecho_smile(caller Caller, msg string) (string, string) {
 	return strings.ToUpper(msg) + " :)", ""
 }
 
-func (testCaller) CanCall(string) bool { return true }
+func (testCaller) CanCall(string) bool          { return true }
+func (testCaller) SendMessage(*message.Message) {}
 
 func TestBasic(t *testing.T) {
 	val, err := Exec(testCaller{}, "echo hello")
@@ -55,7 +52,7 @@ func TestBasic(t *testing.T) {
 }
 
 func TestNumber(t *testing.T) {
-	val, err := Exec(testCaller{}, "echo_num 5456")
+	val, err := Exec(testCaller{}, "echo 5456")
 	if err != "" {
 		t.Fatal(err)
 	}
