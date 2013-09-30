@@ -69,8 +69,7 @@ type Player struct {
 
 	LockChan chan chan struct{}
 
-	//Extra data storage
-	Storage map[string][]byte
+	permission map[string]bool
 }
 
 func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Player {
@@ -84,7 +83,7 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 		Server:        server,
 		rand:          rand.New(rand.NewSource(time.Now().UnixNano())),
 		LockChan:      make(chan chan struct{}),
-		Storage:       map[string][]byte{},
+		permission:    map[string]bool{},
 	}
 	p.CommonEntity.Server = server
 	p.CommonEntity.ID = entity.GetID()
@@ -106,6 +105,15 @@ func (p *Player) QueuePacket(packet protocol.Packet) {
 	case p.packetQueue <- packet:
 	case <-p.ClosedChannel:
 	}
+}
+
+func (p *Player) CanCall(command string) bool {
+	//thinkofdeath's uuid. Gives all permissions for testing
+	//reasons. May be remove in a later version
+	if p.Uuid == "4566e69fc90748ee8d71d7ba5aa00d20" {
+		return true
+	}
+	return p.permission[command]
 }
 
 //Processes incomming and outgoing packets. Blocks until the player leaves
