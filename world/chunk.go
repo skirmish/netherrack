@@ -47,29 +47,29 @@ type Entity interface {
 //A chunk loaded locally in a flat byte arrays
 type Chunk struct {
 	X, Z   int
-	world  *World `ignore:"true"`
-	system System `ignore:"true"`
+	world  *World
+	system System
 
 	Sections  [16]*ChunkSection
 	Biome     [16 * 16]byte
 	HeightMap [16 * 16]byte
-	needsSave bool `ignore:"true"`
+	needsSave bool
 
-	blockChanges []blockChange `ignore:"true"`
+	blockChanges []blockChange
 
-	join              chan Watcher      `ignore:"true"`
-	leave             chan Watcher      `ignore:"true"`
-	blockPlace        chan blockChange  `ignore:"true"`
-	blockGet          chan blockGet     `ignore:"true"`
-	chunkPacket       chan chunkPacket  `ignore:"true"`
-	entity            chan entityChunk  `ignore:"true"`
-	entitySpawnUpdate chan packetUpdate `ignore:"true"`
+	join              chan Watcher
+	leave             chan Watcher
+	blockPlace        chan blockChange
+	blockGet          chan blockGet
+	chunkPacket       chan chunkPacket
+	entity            chan entityChunk
+	entitySpawnUpdate chan packetUpdate
 
-	watchers        map[string]Watcher `ignore:"true"`
-	entities        map[string]Entity  `ignore:"true"`
+	watchers        map[string]Watcher
+	entities        map[string]Entity
 	Entities        map[string]Entity
-	entitySpawnData map[string]spawnData `ignore:"true"`
-	closeChannel    chan chan bool       `ignore:"true"`
+	entitySpawnData map[string]spawnData
+	closeChannel    chan chan bool
 }
 
 type ChunkSection struct {

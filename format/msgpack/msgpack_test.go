@@ -19,6 +19,7 @@ package msgpack
 import (
 	"bytes"
 	"reflect"
+	"runtime"
 	"testing"
 )
 
@@ -34,18 +35,18 @@ func TestPtr(t *testing.T) {
 	v := typePointer{Val2: &temp, Val3: &temp2}
 
 	var buf bytes.Buffer
-	err := Write(&buf, &v)
+	err := NewEncoder(&buf).Encode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 	v = typePointer{new(bool), nil, nil}
-	err = Read(&buf, &v)
+	err = NewDecoder(&buf).Decode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if v.Val != nil || *v.Val2 != true || *v.Val3 != temp2 {
-		t.Fail()
+		t.Fatal(*v.Val3)
 	}
 }
 
@@ -57,12 +58,13 @@ func TestBool(t *testing.T) {
 	v := typeBool{true}
 
 	var buf bytes.Buffer
-	err := Write(&buf, &v)
+	err := NewEncoder(&buf).Encode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	v = typeBool{}
-	err = Read(&buf, &v)
+	err = NewDecoder(&buf).Decode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,13 +89,13 @@ func TestInt(t *testing.T) {
 	v := typeInt{-1, 2, -3, 4, -5, 6, -7, 8}
 
 	var buf bytes.Buffer
-	err := Write(&buf, &v)
+	err := NewEncoder(&buf).Encode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	v = typeInt{}
-	err = Read(&buf, &v)
+	err = NewDecoder(&buf).Decode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,13 +113,13 @@ func TestString(t *testing.T) {
 	v := typeString{"Hello world"}
 
 	var buf bytes.Buffer
-	err := Write(&buf, &v)
+	err := NewEncoder(&buf).Encode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	v = typeString{}
-	err = Read(&buf, &v)
+	err = NewDecoder(&buf).Decode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,13 +139,13 @@ func TestFloat(t *testing.T) {
 	org := v
 
 	var buf bytes.Buffer
-	err := Write(&buf, &v)
+	err := NewEncoder(&buf).Encode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	v = typeFloat{}
-	err = Read(&buf, &v)
+	err = NewDecoder(&buf).Decode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,12 +198,18 @@ var mapData = testDataMap{map[string]interface{}{
 }}
 
 func TestMap(t *testing.T) {
-	t.Skip("Currently broken")
 	var buf bytes.Buffer
-	Write(&buf, mapData)
-	out := testDataMap{map[string]interface{}{}}
-	Read(&buf, &out)
-	if !reflect.DeepEqual(mapData, out) {
+	err := NewEncoder(&buf).Encode(&mapData)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out := &testDataMap{map[string]interface{}{}}
+	err = NewDecoder(&buf).Decode(&out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(&mapData, out) {
 		t.Errorf("Wanted: %v", mapData)
 		t.Errorf("Got: %v", out)
 		t.Fail()
@@ -217,13 +225,13 @@ func TestSliceBytes(t *testing.T) {
 	org := v
 
 	var buf bytes.Buffer
-	err := Write(&buf, &v)
+	err := NewEncoder(&buf).Encode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	v = testSliceBytes{}
-	err = Read(&buf, &v)
+	err = NewDecoder(&buf).Decode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,13 +250,13 @@ func TestArrayBytes(t *testing.T) {
 	org := v
 
 	var buf bytes.Buffer
-	err := Write(&buf, &v)
+	err := NewEncoder(&buf).Encode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	v = testArrayBytes{}
-	err = Read(&buf, &v)
+	err = NewDecoder(&buf).Decode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -288,19 +296,26 @@ func TestSlice(t *testing.T) {
 	org := v
 
 	var buf bytes.Buffer
-	err := Write(&buf, &v)
+	err := NewEncoder(&buf).Encode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	v = testSlice{}
-	err = Read(&buf, &v)
+	err = NewDecoder(&buf).Decode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if !reflect.DeepEqual(v, org) {
 		t.Fail()
+	}
+
+	for i := 0; i < 10; i++ {
+		runtime.GC()
+		if !reflect.DeepEqual(v, org) {
+			t.Fatal("GC error")
+		}
 	}
 }
 
@@ -317,6 +332,7 @@ type testArrayStruct struct {
 }
 
 func TestArray(t *testing.T) {
+
 	v := testArray{
 		[6]int{5, -6, 7, -8, 9, -22},
 		[6]uint{5, 363, 73, 7, 784, 6},
@@ -334,13 +350,13 @@ func TestArray(t *testing.T) {
 	org := v
 
 	var buf bytes.Buffer
-	err := Write(&buf, &v)
+	err := NewEncoder(&buf).Encode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	v = testArray{}
-	err = Read(&buf, &v)
+	err = NewDecoder(&buf).Decode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -355,7 +371,6 @@ type testSliceInterface struct {
 }
 
 func TestSliceInterface(t *testing.T) {
-	t.Skip("Currently broken")
 	v := testSliceInterface{
 		[]interface{}{
 			"Hello",
@@ -366,13 +381,13 @@ func TestSliceInterface(t *testing.T) {
 	org := v
 
 	var buf bytes.Buffer
-	err := Write(&buf, &v)
+	err := NewEncoder(&buf).Encode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	v = testSliceInterface{}
-	err = Read(&buf, &v)
+	err = NewDecoder(&buf).Decode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -396,13 +411,13 @@ func TestEmbeded(t *testing.T) {
 	org := v
 
 	var buf bytes.Buffer
-	err := Write(&buf, &v)
+	err := NewEncoder(&buf).Encode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	v = testEmbeded{}
-	err = Read(&buf, &v)
+	err = NewDecoder(&buf).Decode(&v)
 	if err != nil {
 		t.Fatal(err)
 	}

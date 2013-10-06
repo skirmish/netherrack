@@ -24,10 +24,10 @@ import (
 
 func BenchmarkWriteMap(b *testing.B) {
 	var buf bytes.Buffer
-	Write(&buf, mapData)
+	NewEncoder(&buf).Encode(&mapData)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Write(ioutil.Discard, mapData)
+		NewEncoder(ioutil.Discard).Encode(&mapData)
 	}
 	b.SetBytes(int64(buf.Len()))
 }
@@ -63,7 +63,7 @@ type testStruct3 struct {
 
 func BenchmarkWriteStruct(b *testing.B) {
 	var buf bytes.Buffer
-	data := testStruct{
+	data := &testStruct{
 		NestedCompoundTest: testStruct2{
 			Egg: testStruct2Value{
 				Name:  "Eggbert",
@@ -100,11 +100,11 @@ func BenchmarkWriteStruct(b *testing.B) {
 		ByteArrayTest: []byte{1, 2, 3, 4, 5, 6, 7, 8, 10},
 		ShortTest:     32767,
 	}
-	Write(&buf, data)
+	NewEncoder(&buf).Encode(data)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Write(ioutil.Discard, data)
+		NewEncoder(ioutil.Discard).Encode(data)
 	}
 	b.SetBytes(int64(buf.Len()))
 }
@@ -115,29 +115,30 @@ type benchSlice struct {
 
 func BenchmarkByteSliceWrite(b *testing.B) {
 	var buf bytes.Buffer
-	data := benchSlice{
+	data := &benchSlice{
 		Val: make([]byte, 16*16*256),
 	}
-	Write(&buf, data)
+	NewEncoder(&buf).Encode(data)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Write(ioutil.Discard, data)
+		NewEncoder(ioutil.Discard).Encode(data)
 	}
 	b.SetBytes(int64(buf.Len()))
 }
 
 func BenchmarkByteSliceRead(b *testing.B) {
 	var buf bytes.Buffer
-	data := benchSlice{
+	data := &benchSlice{
 		Val: make([]byte, 16*16*256),
 	}
-	Write(&buf, data)
+	NewEncoder(&buf).Encode(data)
 
 	reader := bytes.NewReader(buf.Bytes())
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Read(reader, &data)
+		NewDecoder(reader).Decode(&data)
+		reader.Seek(0, 0)
 	}
 	b.SetBytes(int64(buf.Len()))
 }
@@ -149,11 +150,11 @@ type benchArray struct {
 func BenchmarkByteArrayWrite(b *testing.B) {
 	var buf bytes.Buffer
 	data := &benchArray{}
-	Write(&buf, data)
+	NewEncoder(&buf).Encode(data)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Write(ioutil.Discard, data)
+		NewEncoder(ioutil.Discard).Encode(data)
 	}
 	b.SetBytes(int64(buf.Len()))
 }
@@ -161,12 +162,13 @@ func BenchmarkByteArrayWrite(b *testing.B) {
 func BenchmarkByteArrayRead(b *testing.B) {
 	var buf bytes.Buffer
 	data := &benchArray{}
-	Write(&buf, data)
+	NewEncoder(&buf).Encode(data)
 
 	reader := bytes.NewReader(buf.Bytes())
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Read(reader, data)
+		NewDecoder(reader).Decode(data)
+		reader.Seek(0, 0)
 	}
 	b.SetBytes(int64(buf.Len()))
 }

@@ -75,7 +75,7 @@ func LoadWorld(name string, system System, gen Generator, dimension Dimension) *
 		panic(err)
 	}
 	defer f.Close()
-	msgpack.Write(f, meta)
+	msgpack.NewEncoder(f).Encode(&meta)
 
 	w := &World{
 		name:      name,
@@ -107,7 +107,7 @@ func GetWorld(name string) *World {
 	defer f.Close()
 
 	meta := netherrackMeta{}
-	msgpack.Read(f, &meta)
+	msgpack.NewDecoder(f).Decode(&meta)
 
 	sys, ok := systems[meta.SystemName]
 	if !ok {

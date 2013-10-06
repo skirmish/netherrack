@@ -38,11 +38,11 @@ func init() {
 
 type MsgpackSystem struct {
 	Name string
-	path string `msgpack:"ignore"`
+	path string
 
-	regionLock sync.RWMutex       `msgpack:"ignore"`
-	regions    map[uint64]*region `msgpack:"ignore"`
-	needsSave  bool               `msgpack:"ignore"`
+	regionLock sync.RWMutex
+	regions    map[uint64]*region
+	needsSave  bool
 }
 
 //Loads or creates the system
@@ -100,7 +100,7 @@ func (mw *MsgpackSystem) Chunk(x, z int) (*Chunk, bool) {
 		panic(err)
 	}
 	chunk := &Chunk{}
-	err = msgpack.Read(gz, chunk)
+	err = msgpack.NewDecoder(gz).Decode(chunk)
 	gz.Close()
 
 	if err != nil {
@@ -125,7 +125,7 @@ func (mw *MsgpackSystem) SaveChunk(x, z int, chunk *Chunk) {
 
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
-	msgpack.Write(gz, chunk)
+	msgpack.NewEncoder(gz).Encode(chunk)
 	gz.Close()
 
 	reg.Lock()
@@ -171,16 +171,16 @@ type region struct {
 	Offsets       [32 * 32]int
 	SectionCounts [32 * 32]int
 
-	file          *os.File `msgpack:"ignore"`
-	usedLocations []bool   `msgpack:"ignore"`
-	sync.RWMutex  `msgpack:"ignore"`
-	needsSave     bool `msgpack:"ignore"`
-	chunkcount    uint `msgpack:"ignore"`
+	file          *os.File
+	usedLocations []bool
+	sync.RWMutex
+	needsSave  bool
+	chunkcount uint
 }
 
 func (r *region) Save() {
 	r.file.Seek(0, 0)
-	msgpack.Write(r.file, r)
+	msgpack.NewEncoder(r.file).Encode(r)
 }
 
 func (mw *MsgpackSystem) region(x, z int) *region {
@@ -202,7 +202,7 @@ func (mw *MsgpackSystem) region(x, z int) *region {
 	if err != nil {
 		panic(err)
 	}
-	msgpack.Read(file, reg)
+	msgpack.NewDecoder(file).Decode(reg)
 	reg.file = file
 	reg.usedLocations = []bool{true, true, true}
 	for i, off := range reg.Offsets {
@@ -246,7 +246,7 @@ func (mw *MsgpackSystem) readLevel(level string) {
 		panic(err)
 	}
 	defer f.Close()
-	err = msgpack.Read(f, mw)
+	err = msgpack.NewDecoder(f).Decode(mw)
 	if err != nil {
 		panic(err)
 	}
@@ -258,7 +258,7 @@ func (mw *MsgpackSystem) writeLevel(level string) {
 		panic(err)
 	}
 	defer f.Close()
-	err = msgpack.Write(f, mw)
+	err = msgpack.NewEncoder(f).Encode(mw)
 	if err != nil {
 		panic(err)
 	}
@@ -277,7 +277,7 @@ func (mw *MsgpackSystem) Write(key string, v interface{}) error {
 		return err
 	}
 	defer f.Close()
-	return msgpack.Write(f, v)
+	return msgpack.NewEncoder(f).Encode(v)
 }
 
 //Reads key into the passed struct pointer
@@ -287,5 +287,5 @@ func (mw *MsgpackSystem) Read(key string, v interface{}) error {
 		return err
 	}
 	defer f.Close()
-	return msgpack.Read(f, v)
+	return msgpack.NewDecoder(f).Decode(v)
 }

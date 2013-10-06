@@ -187,5 +187,5 @@ func (sf *SuperFlat) Load(w *world.World) {
 //Saves the generator's settings to the world's storage
 func (sf *SuperFlat) Save(w *world.World) {
 	sav := savableGenerator{sf.GenerationCode()}
-	w.Write(saveKey, sav)
+	w.Write(saveKey, &sav)
 }
