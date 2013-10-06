@@ -25,7 +25,6 @@ import (
 var (
 	engines     = map[reflect.Type]*engine{}
 	enginesById = map[string]*engine{}
-	enginesWait = map[reflect.Type]*sync.WaitGroup{}
 	engineLock  sync.RWMutex
 )
 
