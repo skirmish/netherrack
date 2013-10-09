@@ -44,7 +44,8 @@ type Server interface {
 
 //A local player is a player connected directly to this server
 type Player struct {
-	entity.CommonEntity
+	entity.Common
+	entity.Moving
 
 	conn     *protocol.Conn
 	uuid     string
@@ -85,9 +86,9 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 		LockChan:      make(chan chan struct{}),
 		permission:    map[string]bool{},
 	}
-	p.CommonEntity.Server = server
-	p.CommonEntity.ID = entity.GetID()
-	p.CommonEntity.Uuid = uuid
+	p.Common.Server = server
+	p.Common.ID = entity.GetID()
+	p.Common.Uuid = uuid
 	p.pingID = -1
 	go p.packetReader()
 	go p.packetWriter()
@@ -168,7 +169,6 @@ func (p *Player) Start() {
 	}
 
 	tick := time.NewTicker(time.Second / 10)
-	var currentTick uint64
 	defer tick.Stop()
 	for {
 		select {
@@ -176,7 +176,7 @@ func (p *Player) Start() {
 			log.Printf("Player %s error: %s\n", p.Username, err)
 			return
 		case <-tick.C:
-			if currentTick%(15*10) == 0 { //Every 15 seconds
+			if p.CurrentTick%(15*10) == 0 { //Every 15 seconds
 				if p.pingID != -1 {
 					p.disconnect("Timed out")
 					continue
@@ -185,7 +185,7 @@ func (p *Player) Start() {
 				p.QueuePacket(protocol.KeepAlive{p.pingID})
 			}
 			lcx, lcz := p.LastCX, p.LastCZ
-			if p.UpdateMovement(p) {
+			if p.UpdateMovement(p, &p.Common) {
 				for x := lcx - 10; x <= lcx+10; x++ {
 					for z := lcz - 10; z <= lcz+10; z++ {
 						if x < p.CX-10 || x > p.CX+10 || z < p.CZ-10 || z > p.CZ+10 {
@@ -201,7 +201,7 @@ func (p *Player) Start() {
 					}
 				}
 			}
-			currentTick++
+			p.Common.Update()
 		case packet := <-p.readPackets:
 			p.processPacket(packet)
 		case lock := <-p.LockChan:
