@@ -105,14 +105,14 @@ func decodeStruct(t reflect.Type) interface{} {
 			l = int(b & 0xF)
 		case b == 0xDE:
 			bs := dec.b[:2]
-			_, err := dec.r.Read(bs)
+			_, err := dec.fr.Read(bs)
 			if err != nil {
 				return err
 			}
 			l = int(binary.BigEndian.Uint16(bs))
 		case b == 0xDF:
 			bs := dec.b[:4]
-			_, err := dec.r.Read(bs)
+			_, err := dec.fr.Read(bs)
 			if err != nil {
 				return err
 			}
@@ -164,14 +164,14 @@ func _decodeString(dec *Decoder, p unsafe.Pointer) error {
 		l = int(c)
 	case b == 0xDA:
 		bs := dec.b[:2]
-		_, err := dec.r.Read(bs)
+		_, err := dec.fr.Read(bs)
 		if err != nil {
 			return err
 		}
 		l = int(binary.BigEndian.Uint16(bs))
 	case b == 0xDB:
 		bs := dec.b[:4]
-		_, err := dec.r.Read(bs)
+		_, err := dec.fr.Read(bs)
 		if err != nil {
 			return err
 		}
@@ -180,7 +180,7 @@ func _decodeString(dec *Decoder, p unsafe.Pointer) error {
 		return ErrorIncorrectType{"string", b}
 	}
 	by := make([]byte, l)
-	_, err = dec.r.Read(by)
+	_, err = dec.fr.Read(by)
 	if err != nil {
 		return err
 	}
@@ -255,15 +255,15 @@ func readInt(dec *Decoder) (int64, error) {
 		return int64(int8(b)), err
 	case 0xD1:
 		bs := dec.b[:2]
-		_, err := dec.r.Read(bs)
+		_, err := dec.fr.Read(bs)
 		return int64(int16(binary.BigEndian.Uint16(bs))), err
 	case 0xD2:
 		bs := dec.b[:4]
-		_, err := dec.r.Read(bs)
+		_, err := dec.fr.Read(bs)
 		return int64(int32(binary.BigEndian.Uint32(bs))), err
 	case 0xD3:
 		bs := dec.b[:8]
-		_, err := dec.r.Read(bs)
+		_, err := dec.fr.Read(bs)
 		return int64(binary.BigEndian.Uint64(bs)), err
 	default:
 		return 0, ErrorIncorrectType{"int", b}
@@ -322,15 +322,15 @@ func readUint(dec *Decoder) (uint64, error) {
 		return uint64(b), err
 	case 0xCD:
 		bs := dec.b[:2]
-		_, err := dec.r.Read(bs)
+		_, err := dec.fr.Read(bs)
 		return uint64(binary.BigEndian.Uint16(bs)), err
 	case 0xCE:
 		bs := dec.b[:4]
-		_, err := dec.r.Read(bs)
+		_, err := dec.fr.Read(bs)
 		return uint64(binary.BigEndian.Uint32(bs)), err
 	case 0xCF:
 		bs := dec.b[:8]
-		_, err := dec.r.Read(bs)
+		_, err := dec.fr.Read(bs)
 		return uint64(binary.BigEndian.Uint64(bs)), err
 	default:
 		return 0, ErrorIncorrectType{"uint", b}
@@ -384,7 +384,7 @@ func decodeFloat32(t reflect.Type) interface{} {
 
 func _decodeFloat32(dec *Decoder, p unsafe.Pointer) error {
 	b := dec.b[:5]
-	_, err := dec.r.Read(b)
+	_, err := dec.fr.Read(b)
 	if err != nil {
 		return err
 	}
@@ -401,7 +401,7 @@ func decodeFloat64(t reflect.Type) interface{} {
 
 func _decodeFloat64(dec *Decoder, p unsafe.Pointer) error {
 	b := dec.b[:9]
-	_, err := dec.r.Read(b)
+	_, err := dec.fr.Read(b)
 	if err != nil {
 		return err
 	}
@@ -431,14 +431,14 @@ func decodeSlice(t reflect.Type) interface{} {
 			l = int(b & 0xF)
 		case b == 0xDC:
 			bs := dec.b[:2]
-			_, err := dec.r.Read(bs)
+			_, err := dec.fr.Read(bs)
 			if err != nil {
 				return err
 			}
 			l = int(binary.BigEndian.Uint16(bs))
 		case b == 0xDD:
 			bs := dec.b[:4]
-			_, err := dec.r.Read(bs)
+			_, err := dec.fr.Read(bs)
 			if err != nil {
 				return err
 			}
@@ -493,21 +493,21 @@ func _decodeByteSlice(dec *Decoder, p unsafe.Pointer) error {
 	switch b {
 	case 0xC4:
 		bs := dec.b[:1]
-		_, err := dec.r.Read(bs)
+		_, err := dec.fr.Read(bs)
 		if err != nil {
 			return err
 		}
 		l = int(bs[0])
 	case 0xC5:
 		bs := dec.b[:2]
-		_, err := dec.r.Read(bs)
+		_, err := dec.fr.Read(bs)
 		if err != nil {
 			return err
 		}
 		l = int(binary.BigEndian.Uint16(bs))
 	case 0xC6:
 		bs := dec.b[:4]
-		_, err := dec.r.Read(bs)
+		_, err := dec.fr.Read(bs)
 		if err != nil {
 			return err
 		}
@@ -519,7 +519,7 @@ func _decodeByteSlice(dec *Decoder, p unsafe.Pointer) error {
 	if len(by) != l {
 		by = make([]byte, l)
 	}
-	_, err = dec.r.Read(by)
+	_, err = dec.fr.Read(by)
 	*(*[]byte)(p) = by
 	return err
 }
@@ -575,14 +575,14 @@ func decodeMap(t reflect.Type) interface{} {
 			l = int(b & 0xF)
 		case b == 0xDE:
 			bs := dec.b[:2]
-			_, err := dec.r.Read(bs)
+			_, err := dec.fr.Read(bs)
 			if err != nil {
 				return err
 			}
 			l = int(binary.BigEndian.Uint16(bs))
 		case b == 0xDF:
 			bs := dec.b[:4]
-			_, err := dec.r.Read(bs)
+			_, err := dec.fr.Read(bs)
 			if err != nil {
 				return err
 			}
@@ -638,22 +638,22 @@ func _decodeInterface(dec *Decoder, v reflect.Value) error {
 	switch b {
 	case 0xC7:
 		bs := dec.b[:2]
-		dec.r.Read(bs)
+		dec.fr.Read(bs)
 		l = int(bs[0])
 	case 0xC8:
 		bs := dec.b[:3]
-		dec.r.Read(bs)
+		dec.fr.Read(bs)
 		l = int(binary.BigEndian.Uint16(bs))
 	case 0xC9:
 		bs := dec.b[:5]
-		dec.r.Read(bs)
+		dec.fr.Read(bs)
 		l = int(binary.BigEndian.Uint32(bs))
 	default:
 		panic((ErrorIncorrectType{"interface{}", b}).Error())
 		return ErrorIncorrectType{"interface{}", b}
 	}
 	by := make([]byte, l)
-	dec.r.Read(by)
+	dec.fr.Read(by)
 	iDec := &Decoder{
 		r: bufio.NewReader(bytes.NewReader(by)),
 	}

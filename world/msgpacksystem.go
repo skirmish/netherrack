@@ -173,9 +173,9 @@ type region struct {
 
 	file          *os.File
 	usedLocations []bool
-	sync.RWMutex
-	needsSave  bool
-	chunkcount uint
+	sync.RWMutex  `msgpack:"ignore"`
+	needsSave     bool
+	chunkcount    uint
 }
 
 func (r *region) Save() {

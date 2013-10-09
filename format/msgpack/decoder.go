@@ -24,8 +24,9 @@ import (
 )
 
 type Decoder struct {
-	r *bufio.Reader
-	b [9]byte //A buffer to save allocations
+	r  *bufio.Reader
+	fr io.Reader
+	b  [9]byte //A buffer to save allocations
 }
 
 type fullReader struct{ io.Reader }
@@ -36,8 +37,10 @@ func (fr fullReader) Read(b []byte) (int, error) {
 
 //Creates a new decoder that will read to the reader
 func NewDecoder(r io.Reader) *Decoder {
+	b := bufio.NewReader(r)
 	return &Decoder{
-		r: bufio.NewReader(fullReader{r}),
+		r:  b,
+		fr: fullReader{b},
 	}
 }
 
