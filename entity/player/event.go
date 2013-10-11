@@ -31,7 +31,6 @@ func (p *Player) SetBlockPlacementEvent(event chan<- BlockPlacement) {
 	p.event.Unlock()
 }
 
-/*
 type BlockDig struct {
 	Packet protocol.PlayerDigging
 	Return chan<- struct{}
@@ -41,7 +40,7 @@ func (p *Player) SetBlockDigEvent(event chan<- BlockDig) {
 	p.event.Lock()
 	p.event.blockDig = event
 	p.event.Unlock()
-}*/
+}
 
 type EnterWorld struct {
 	Packet *protocol.JoinGame

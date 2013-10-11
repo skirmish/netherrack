@@ -41,7 +41,7 @@ var packets = [4][]reflect.Type{
 		0x04: reflect.TypeOf((*ClientPlayerPosition)(nil)).Elem(),
 		0x05: reflect.TypeOf((*ClientPlayerLook)(nil)).Elem(),
 		0x06: reflect.TypeOf((*ClientPlayerPositionLook)(nil)).Elem(),
-		0x07: reflect.TypeOf((*ClientUseBed)(nil)).Elem(),
+		0x07: reflect.TypeOf((*PlayerDigging)(nil)).Elem(),
 		0x08: reflect.TypeOf((*PlayerBlockPlacement)(nil)).Elem(),
 		0x09: reflect.TypeOf((*ClientHeldItemChange)(nil)).Elem(),
 		0x0A: reflect.TypeOf((*ClientAnimation)(nil)).Elem(),

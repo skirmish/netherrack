@@ -63,7 +63,7 @@ type Player struct {
 	event struct {
 		sync.RWMutex
 		blockPlace chan<- BlockPlacement
-		// blockDig   chan<- BlockDig
+		blockDig   chan<- BlockDig
 		enterWorld chan<- EnterWorld
 		chat       chan<- Chat
 	}

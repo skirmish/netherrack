@@ -65,15 +65,15 @@ type ClientPlayerPositionLook struct {
 
 func (ClientPlayerPositionLook) ID() byte { return 0x06 }
 
-type ClientUseBed struct {
-	EntityID int32
-	Unknown  byte
-	X        int32
-	Y        byte
-	Z        int32
+type PlayerDigging struct {
+	Status byte
+	X      int32
+	Y      byte
+	Z      int32
+	Face   byte
 }
 
-func (ClientUseBed) ID() byte { return 0x07 }
+func (PlayerDigging) ID() byte { return 0x07 }
 
 type PlayerBlockPlacement struct {
 	X               int32
@@ -207,16 +207,6 @@ type ClientPluginMessage struct {
 func (ClientPluginMessage) ID() byte { return 0x17 }
 
 /*MIA
-type PlayerDigging struct {
-	Status int8
-	X      int32
-	Y      byte
-	Z      int32
-	Face   int8
-}
-
-func (PlayerDigging) ID() byte { return 0x0E }
-
 
 
 type UseEntity struct {
