@@ -17,6 +17,7 @@
 package protocol
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -32,6 +33,8 @@ func init() {
 	fieldCache.m = make(map[reflect.Type][]field)
 	fieldCache.create = make(map[reflect.Type]*sync.WaitGroup)
 }
+
+type VarInt int
 
 //Conn has WritePacket and ReadPacket methods that allow
 //Go structs to be used in sending and recieving minecraft
@@ -50,6 +53,7 @@ func init() {
 //    structs              //Not struct pointers
 //    []type               //Above are the supported types
 //    map[byte]interface{} //Encoded as entity metadata
+//    VarInt
 type Conn struct {
 	In  io.Reader
 	Out io.Writer
@@ -60,14 +64,8 @@ type Conn struct {
 	b [8]byte
 	//Used on the read goroutine
 	rb [8]byte
-}
 
-type fullReader struct {
-	io.Reader
-}
-
-func (f fullReader) Read(p []byte) (int, error) {
-	return io.ReadFull(f.Reader, p)
+	State State
 }
 
 type Deadliner interface {
@@ -80,15 +78,25 @@ func (conn *Conn) ReadPacket() (Packet, error) {
 	if conn.Deadliner != nil {
 		conn.Deadliner.SetReadDeadline(time.Now().Add(10 * time.Second))
 	}
-	bs := conn.rb[:1]
-	_, err := conn.In.Read(bs)
+
+	l, err := readVarInt(conn)
+	if err != nil {
+		return nil, err
+	}
+	buf := make([]byte, l)
+	_, err = io.ReadFull(conn.In, buf)
 	if err != nil {
 		return nil, err
 	}
 
-	conn.In = fullReader{conn.In}
+	temp := conn.In
+	conn.In = bytes.NewReader(buf)
 
-	if bs[0] == 0x38 { //Its hard to parse normaly
+	id, err := readVarInt(conn)
+	if err != nil {
+		return nil, err
+	}
+	if id == 0x29 { //Its hard to parse normaly
 		p := MapChunkBulk{}
 		binary.Read(conn.In, binary.BigEndian, &p.ChunkCount)
 		binary.Read(conn.In, binary.BigEndian, &p.DataLength)
@@ -97,14 +105,23 @@ func (conn *Conn) ReadPacket() (Packet, error) {
 		p.Meta = make([]ChunkMeta, p.ChunkCount)
 		conn.In.Read(p.Data)
 		binary.Read(conn.In, binary.BigEndian, p.Meta)
-		conn.In = conn.In.(fullReader).Reader
+		conn.In = temp
 		return p, nil
 	}
 
-	ty := packets[bs[0]]
-	if ty == nil {
-		return nil, fmt.Errorf("Invalid packet %02X", bs[0])
+	if conn.State < 0 || int(conn.State) > len(packets) {
+		return nil, fmt.Errorf("Invalid state %01X", conn.State)
 	}
+
+	st := packets[conn.State]
+	if id < 0 || int(id) >= len(st) {
+		return nil, fmt.Errorf("Invalid packet %02X", id)
+	}
+	ty := st[id]
+	if ty == nil {
+		return nil, fmt.Errorf("Invalid packet %02X", id)
+	}
+
 	val := reflect.New(ty).Elem()
 
 	fs := fields(val.Type())
@@ -117,8 +134,7 @@ func (conn *Conn) ReadPacket() (Packet, error) {
 			}
 		}
 	}
-	conn.In = conn.In.(fullReader).Reader
-
+	conn.In = temp
 	return val.Interface().(Packet), nil
 }
 
@@ -127,19 +143,28 @@ func (conn *Conn) WritePacket(packet Packet) {
 	if conn.Deadliner != nil {
 		conn.Deadliner.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	}
-	conn.Out.Write([]byte{packet.ID()})
 
-	if packet.ID() == 0x38 { //Its hard to parse normal
+	var buf bytes.Buffer
+	temp := conn.Out
+	conn.Out = &buf
+
+	writeVarInt(conn, VarInt(packet.ID()))
+
+	if packet.ID() == 0x29 { //Its hard to parse normal
 		p := packet.(MapChunkBulk)
 		binary.Write(conn.Out, binary.BigEndian, &p.ChunkCount)
 		binary.Write(conn.Out, binary.BigEndian, &p.DataLength)
 		binary.Write(conn.Out, binary.BigEndian, &p.SkyLight)
 		binary.Write(conn.Out, binary.BigEndian, p.Data)
 		binary.Write(conn.Out, binary.BigEndian, p.Meta)
+		conn.Out = temp
+		writeVarInt(conn, VarInt(buf.Len()))
+		buf.WriteTo(conn.Out)
 		return
 	}
 
 	val := reflect.ValueOf(packet)
+
 	fs := fields(val.Type())
 	for _, f := range fs {
 		if f.condition(val) {
@@ -147,6 +172,9 @@ func (conn *Conn) WritePacket(packet Packet) {
 			f.write(conn, v)
 		}
 	}
+	conn.Out = temp
+	writeVarInt(conn, VarInt(buf.Len()))
+	buf.WriteTo(conn.Out)
 }
 
 var fieldCache struct {
@@ -191,7 +219,7 @@ func fields(t reflect.Type) []field {
 //Loops through the fields of the struct and returns a slice of fields.
 //ind is the offset of the struct in the root struct.
 func compileStruct(t reflect.Type, ind []int) []field {
-	var fs []field
+	var fs []field = []field{}
 	count := t.NumField()
 	for i := 0; i < count; i++ {
 		f := t.Field(i)
@@ -310,6 +338,9 @@ func compileField(sf reflect.StructField, t reflect.Type, ind []int) []field {
 		}
 	case reflect.Struct:
 		return compileStruct(sf.Type, sf.Index)
+	case reflect.Int: //VarInt
+		f.write = encodeVarInt
+		f.read = decodeVarInt
 	default:
 		panic(fmt.Errorf("Unhandled type %s for %s", sf.Type.Kind().String(), sf.Name))
 	}
@@ -650,8 +681,8 @@ func encodeByteSlice(conn *Conn, field reflect.Value) {
 }
 
 func encodeString(conn *Conn, field reflect.Value) {
-	val := []rune(field.String())
-	writeRunes(conn, val)
+	writeVarInt(conn, VarInt(field.Len()))
+	conn.Out.Write([]byte(field.String()))
 }
 
 func writeRunes(conn *Conn, val []rune) {
@@ -665,12 +696,14 @@ func writeRunes(conn *Conn, val []rune) {
 }
 
 func decodeString(conn *Conn, field reflect.Value) error {
-	val, err := readRunes(conn)
+	l, err := readVarInt(conn)
 	if err != nil {
 		return err
 	}
-	field.SetString(string(val))
-	return nil
+	b := make([]byte, l)
+	_, err = conn.In.Read(b)
+	field.SetString(string(b))
+	return err
 }
 
 func readRunes(conn *Conn) ([]rune, error) {
@@ -840,6 +873,47 @@ func decodeFloat64(conn *Conn, field reflect.Value) error {
 	}
 	field.SetFloat(math.Float64frombits(binary.BigEndian.Uint64(bs)))
 	return nil
+}
+
+//Modified from encoding/binary
+func readVarInt(conn *Conn) (VarInt, error) {
+	var ux uint64
+	var s uint
+	bs := conn.rb[:1]
+	for i := 0; i <= 5; i++ {
+		_, err := conn.In.Read(bs)
+		if err != nil {
+			return 0, err
+		}
+		b := bs[0]
+		if b < 0x80 {
+			if i > 5 || i == 5 && b > 1 {
+				return 0, fmt.Errorf("VarInt too large")
+			}
+			ux = ux | uint64(b)<<s
+			break
+		}
+		ux |= uint64(b&0x7f) << s
+		s += 7
+	}
+	x := int64(ux)
+	return VarInt(x), nil
+}
+
+func writeVarInt(conn *Conn, i VarInt) {
+	bs := conn.b[:5]
+	n := binary.PutUvarint(bs, uint64(int64(i)))
+	conn.Out.Write(bs[:n])
+}
+
+func encodeVarInt(conn *Conn, field reflect.Value) {
+	writeVarInt(conn, VarInt(field.Int()))
+}
+
+func decodeVarInt(conn *Conn, field reflect.Value) error {
+	i, err := readVarInt(conn)
+	field.SetInt(int64(i))
+	return err
 }
 
 func condAlways(root reflect.Value) bool { return true }

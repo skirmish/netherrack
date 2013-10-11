@@ -33,7 +33,7 @@ var (
 	privateKey     *rsa.PrivateKey
 )
 
-const Version = 80
+const Version = 0
 
 func init() {
 	var err error
@@ -59,7 +59,7 @@ var (
 //An Authenticator should check if the user is who they say they are.
 //Normaly this involves checking against the Mojang servers.
 type Authenticator interface {
-	Authenticate(handshake Handshake, serverID string, sharedSecret, publicKey []byte) (uuid string, err error)
+	Authenticate(username string, serverID string, sharedSecret, publicKey []byte) (uuid string, err error)
 }
 
 //Auths the user and returns their username.
@@ -72,6 +72,19 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (usern
 			return "", uuid, ErrorOutOfDateServer
 		}
 	}
+
+	conn.State = Login
+
+	packet, err := conn.ReadPacket()
+	if err != nil {
+		return
+	}
+	lStart, ok := packet.(LoginStart)
+	if !ok {
+		err = fmt.Errorf("Unexpected packet: %x", packet.ID())
+		return
+	}
+	username = lStart.Username
 
 	verifyToken := make([]byte, 16) //Used by the server to check encryption is working correctly
 	rand.Read(verifyToken)
@@ -89,43 +102,43 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (usern
 		VerifyToken: verifyToken,
 	})
 
-	packet, err := conn.ReadPacket()
+	packet, err = conn.ReadPacket()
 	if err != nil {
-		return handshake.Username, uuid, err
+		return
 	}
 	encryptionResponse, ok := packet.(EncryptionKeyResponse)
 	if !ok {
 		err = fmt.Errorf("Unexpected packet: %x", packet.ID())
-		return handshake.Username, uuid, err
+		return
 	}
 
 	sharedSecret, err := rsa.DecryptPKCS1v15(rand.Reader, privateKey, encryptionResponse.SharedSecret)
 	if err != nil {
-		return handshake.Username, uuid, err
+		return
 	}
 
 	verifyTokenResponse, err := rsa.DecryptPKCS1v15(rand.Reader, privateKey, encryptionResponse.VerifyToken)
 	if err != nil {
-		return handshake.Username, uuid, err
+		return
 	}
 	if !bytes.Equal(verifyToken, verifyTokenResponse) {
-		return handshake.Username, uuid, ErrorVerifyFailed
+		return
 	}
 
 	if authenticator != nil {
-		if uuid, err = authenticator.Authenticate(handshake, serverID, sharedSecret, publicKeyBytes); err != nil {
-			return handshake.Username, uuid, err
+		if uuid, err = authenticator.Authenticate(username, serverID, sharedSecret, publicKeyBytes); err != nil {
+			return
 		}
 	} else {
 		idBytes := make([]byte, 16)
 		rand.Read(idBytes)
 		uuid = hex.EncodeToString(idBytes)
 	}
-	conn.WritePacket(EncryptionKeyResponse{})
+	//conn.WritePacket(EncryptionKeyResponse{})
 
 	aesCipher, err := aes.NewCipher(sharedSecret)
 	if err != nil {
-		return handshake.Username, uuid, err
+		return
 	}
 
 	conn.In = cipher.StreamReader{
@@ -136,20 +149,8 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (usern
 		W: conn.Out,
 		S: newCFB8Encrypt(aesCipher, sharedSecret),
 	}
+	conn.WritePacket(LoginSuccess{uuid, username})
+	conn.State = Play
 
-	packet, err = conn.ReadPacket()
-	if err != nil {
-		return handshake.Username, uuid, err
-	}
-	var clientStatuses ClientStatuses
-	clientStatuses, ok = packet.(ClientStatuses)
-	if !ok {
-		err = fmt.Errorf("Unexpected packet: %x", packet.ID())
-		return handshake.Username, uuid, err
-	}
-	if clientStatuses.Payload != 0x00 {
-		return handshake.Username, uuid, ErrorEncryption
-	}
-
-	return handshake.Username, uuid, nil
+	return
 }

@@ -18,7 +18,6 @@ package netherrack
 
 import (
 	"encoding/binary"
-	"errors"
 	"github.com/NetherrackDev/netherrack/entity/player"
 	"github.com/NetherrackDev/netherrack/message"
 	"github.com/NetherrackDev/netherrack/protocol"
@@ -38,7 +37,7 @@ const (
 	//The currently supported protocol verison
 	ProtocolVersion = protocol.Version
 	//The currently supported Minecraft version
-	MinecraftVersion = "13w39b"
+	MinecraftVersion = "13w41a"
 )
 
 var protocolVersionString = strconv.Itoa(ProtocolVersion) //Save int-string conversion in list ping
@@ -244,86 +243,45 @@ func (server *Server) handleConnection(conn net.Conn) {
 		Deadliner: conn,
 	}
 
+	log.Println("Connection")
+
 	packet, err := mcConn.ReadPacket()
 	if err != nil {
-		mcConn.WritePacket(protocol.Disconnect{"Protocol Error"})
 		return
 	}
-	if _, ok := packet.(protocol.ServerListPing); ok {
-		/*
-			In 1.6 extra data was added containing the clients
-			protocol version and the ip:port of the server they are
-			connected to. This infomation is not sent by older clients
-			so a custom read deadline should be set to prevent waiting
-			too long causing the client to see a large ping time.
-		*/
-		conn.SetReadDeadline(time.Now().Add(time.Millisecond))
-		mcConn.Deadliner = nil
+
+	handshake, ok := packet.(protocol.Handshake)
+	if !ok {
+		log.Println("Wrong packet")
+		return
+	}
+
+	if handshake.State == 1 {
+		mcConn.State = protocol.Status
 		packet, err := mcConn.ReadPacket()
-
-		var response string
-
-		if err == nil {
-			if extraData, ok := packet.(protocol.PluginMessage); ok {
-				if extraData.Channel != "MC|PingHost" {
-					err = errors.New("Incorrect channel")
-					goto oldPing
-				}
-				if len(extraData.Data) < 3 {
-					err = errors.New("Incorrect size")
-					goto oldPing
-				}
-				protoVersion := extraData.Data[0]
-				offset, host := readString(extraData.Data[1:])
-				if len(extraData.Data) < offset+1+4 {
-					err = errors.New("Incorrect size")
-					goto oldPing
-				}
-				port := binary.BigEndian.Uint32(extraData.Data[offset+1:])
-
-				server.event.RLock()
-				if server.event.pingEvent != nil {
-					res := make(chan string, 1)
-					pingEvent := PingEvent{
-						Addr:            conn.RemoteAddr(),
-						ProtocolVersion: protoVersion,
-						TargetHost:      host,
-						TargetPort:      int(port),
-						Response:        res,
-					}
-					server.event.pingEvent <- pingEvent
-					response = <-res
-				}
-				server.event.RUnlock()
-			}
+		if _, ok := packet.(protocol.StatusGet); !ok || err != nil {
+			return
 		}
-	oldPing:
+		//TODO: Unhard code this
+		mcConn.WritePacket(protocol.StatusResponse{`{"description":{"text":"A Minecraft Server","color":"red"},"players":{"max":20,"online":1,"sample":[{"name":"Thinkofdeath","id":""}]},"version":{"name":"13w41a","protocol":0}}`})
+		packet, err = mcConn.ReadPacket()
 		if err != nil {
-			server.event.RLock()
-			if server.event.oldPingEvent != nil {
-				res := make(chan string, 1)
-				event := OldPingEvent{conn.RemoteAddr(), res}
-				server.event.oldPingEvent <- event
-				response = <-res
-			}
-			server.event.RUnlock()
+			panic(err)
+			return
 		}
-		mcConn.Deadliner = conn
-		if response == "" {
-			response = server.buildServerPing()
-		}
-		mcConn.WritePacket(protocol.Disconnect{response})
+		mcConn.WritePacket(packet)
 		return
 	}
-	if _, ok := packet.(protocol.Handshake); !ok {
-		mcConn.WritePacket(protocol.Disconnect{"Protocol Error"})
+
+	if handshake.State != 2 {
+		log.Println("Invalid state")
 		return
 	}
 
 	username, uuid, err := mcConn.Login(packet.(protocol.Handshake), server.authenticator)
 	if err != nil {
 		log.Printf("Player %s(%s) login error: %s", uuid, username, err)
-		mcConn.WritePacket(protocol.Disconnect{err.Error()})
+		mcConn.WritePacket(protocol.LoginDisconnect{err.Error()})
 		return
 	}
 
@@ -359,7 +317,7 @@ func (server *Server) QueuePacket(packet protocol.Packet) {
 
 //Sends the message to every player on the server
 func (server *Server) SendMessage(msg *message.Message) {
-	server.QueuePacket(protocol.ChatMessage{msg.JSONString()})
+	server.QueuePacket(protocol.ServerMessage{msg.JSONString()})
 }
 
 func (server *Server) buildServerPing() string {

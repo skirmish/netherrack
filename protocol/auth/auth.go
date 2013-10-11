@@ -17,11 +17,13 @@
 package auth
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/NetherrackDev/netherrack/protocol"
 	"net/http"
+	"strings"
 )
 
 var Instance = Authenticator{}
@@ -35,9 +37,25 @@ type jsonResponse struct {
 }
 
 //Checks the users against the Mojang login servers
-func (Authenticator) Authenticate(handshake protocol.Handshake, serverID string, sharedSecret, publicKey []byte) (string, error) {
+func (Authenticator) Authenticate(username string, serverID string, sharedSecret, publicKey []byte) (string, error) {
+	sha := sha1.New()
+	sha.Write([]byte(serverID))
+	sha.Write(sharedSecret)
+	sha.Write(publicKey)
+	hash := sha.Sum(nil)
 
-	response, err := http.Get(fmt.Sprintf("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=%s&serverId=%s", handshake.Username, serverID))
+	negative := (hash[0] & 0x80) == 0x80
+	if negative {
+		twosCompliment(hash)
+	}
+
+	buf := hex.EncodeToString(hash)
+	if negative {
+		buf = "-" + buf
+	}
+	hashString := strings.TrimLeft(buf, "0")
+
+	response, err := http.Get(fmt.Sprintf("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=%s&serverId=%s", username, hashString))
 	if err != nil {
 		return "", err
 	}

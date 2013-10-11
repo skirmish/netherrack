@@ -63,7 +63,7 @@ type Player struct {
 	event struct {
 		sync.RWMutex
 		blockPlace chan<- BlockPlacement
-		blockDig   chan<- BlockDig
+		// blockDig   chan<- BlockDig
 		enterWorld chan<- EnterWorld
 		chat       chan<- Chat
 	}
@@ -97,7 +97,7 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 
 //Sends a message to the player
 func (p *Player) SendMessage(msg *message.Message) {
-	p.QueuePacket(protocol.ChatMessage{msg.JSONString()})
+	p.QueuePacket(protocol.ServerMessage{msg.JSONString()})
 }
 
 //Queues a packet to be sent to the player
@@ -125,9 +125,9 @@ func (p *Player) Start() {
 	p.World = p.Server.DefaultWorld()
 	p.X, p.Y, p.Z = 0, 70, 0
 
-	login := &protocol.LoginRequest{
+	login := &protocol.JoinGame{
 		EntityID:   p.ID,
-		LevelType:  "netherrack", //Not used by the client
+		LevelType:  "default",
 		Gamemode:   0,
 		Dimension:  int8(p.World.Dimension()),
 		Difficulty: 0,
@@ -220,7 +220,7 @@ func (p *Player) despawn() {
 
 func (p *Player) SpawnPackets() []protocol.Packet {
 	return []protocol.Packet{
-		protocol.SpawnNamedEntity{
+		protocol.SpawnPlayer{
 			EntityID:    p.ID,
 			PlayerName:  p.Username,
 			PlayerUUID:  p.Uuid,
@@ -260,17 +260,17 @@ func (p *Player) processPacket(packet protocol.Packet) {
 			<-res
 		}
 		p.event.RUnlock()
-	case protocol.PlayerDigging:
-		p.event.RLock()
-		if p.event.blockDig != nil {
-			res := make(chan struct{}, 1)
-			p.event.blockDig <- BlockDig{
-				Packet: packet,
-				Return: res,
-			}
-			<-res
-		}
-		p.event.RUnlock()
+	// case protocol.PlayerDigging:
+	// 	p.event.RLock()
+	// 	if p.event.blockDig != nil {
+	// 		res := make(chan struct{}, 1)
+	// 		p.event.blockDig <- BlockDig{
+	// 			Packet: packet,
+	// 			Return: res,
+	// 		}
+	// 		<-res
+	// 	}
+	// 	p.event.RUnlock()
 	case protocol.PlayerBlockPlacement:
 		p.event.RLock()
 		if p.event.blockPlace != nil {
@@ -282,17 +282,17 @@ func (p *Player) processPacket(packet protocol.Packet) {
 			<-res
 		}
 		p.event.RUnlock()
-	case protocol.Player:
-	case protocol.PlayerLook:
+	case protocol.ClientPlayer:
+	case protocol.ClientPlayerLook:
 		yaw := math.Mod(float64(packet.Yaw), 360)
 		if yaw < 0 {
 			yaw = 360 + yaw
 		}
 		p.Yaw = float32(yaw)
 		p.Pitch = packet.Pitch
-	case protocol.PlayerPosition:
+	case protocol.ClientPlayerPosition:
 		p.X, p.Y, p.Z = packet.X, packet.Y, packet.Z
-	case protocol.PlayerPositionLook:
+	case protocol.ClientPlayerPositionLook:
 		p.X, p.Y, p.Z = packet.X, packet.Y, packet.Z
 		yaw := math.Mod(float64(packet.Yaw), 360)
 		if yaw < 0 {
