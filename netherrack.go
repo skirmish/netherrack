@@ -262,8 +262,8 @@ func (server *Server) handleConnection(conn net.Conn) {
 		if _, ok := packet.(protocol.StatusGet); !ok || err != nil {
 			return
 		}
-		//TODO: Unhard code this
-		mcConn.WritePacket(protocol.StatusResponse{`{"description":{"text":"A Minecraft Server","color":"red"},"players":{"max":20,"online":1,"sample":[{"name":"Thinkofdeath","id":""}]},"version":{"name":"13w41a","protocol":0}}`})
+		//TODO: Un-hard code this
+		mcConn.WritePacket(protocol.StatusResponse{`{"description":{"text":"A Minecraft Server","color":"red"},"players":{"max":20,"online":1,"sample":[{"name":"Thinkofdeath","id":""}]},"version":{"name":"13w41b","protocol":0}}`})
 		packet, err = mcConn.ReadPacket()
 		if err != nil {
 			panic(err)

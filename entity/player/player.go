@@ -127,7 +127,6 @@ func (p *Player) Start() {
 
 	login := &protocol.JoinGame{
 		EntityID:   p.ID,
-		LevelType:  "default",
 		Gamemode:   0,
 		Dimension:  int8(p.World.Dimension()),
 		Difficulty: 0,
@@ -153,7 +152,6 @@ func (p *Player) Start() {
 	p.QueuePacket(protocol.PlayerPositionLook{
 		X:        p.X,
 		Y:        p.Y,
-		Stance:   p.Y + 1.6,
 		Z:        p.Z,
 		Yaw:      p.Yaw,
 		Pitch:    p.Pitch,

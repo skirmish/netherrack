@@ -96,7 +96,7 @@ func (conn *Conn) ReadPacket() (Packet, error) {
 	if err != nil {
 		return nil, err
 	}
-	if id == 0x29 { //Its hard to parse normaly
+	if byte(id) == (MapChunkBulk{}).ID() { //Its hard to parse normally
 		p := MapChunkBulk{}
 		binary.Read(conn.In, binary.BigEndian, &p.ChunkCount)
 		binary.Read(conn.In, binary.BigEndian, &p.DataLength)
@@ -124,7 +124,7 @@ func (conn *Conn) ReadPacket() (Packet, error) {
 
 	val := reflect.New(ty).Elem()
 
-	fs := fields(val.Type())
+	fs := fields(ty)
 	for _, f := range fs {
 		if f.condition(val) {
 			v := val.FieldByIndex(f.sField.Index)
@@ -150,7 +150,7 @@ func (conn *Conn) WritePacket(packet Packet) {
 
 	writeVarInt(conn, VarInt(packet.ID()))
 
-	if packet.ID() == 0x29 { //Its hard to parse normal
+	if byte(packet.ID()) == (MapChunkBulk{}).ID() { //Its hard to parse normally
 		p := packet.(MapChunkBulk)
 		binary.Write(conn.Out, binary.BigEndian, &p.ChunkCount)
 		binary.Write(conn.Out, binary.BigEndian, &p.DataLength)

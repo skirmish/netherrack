@@ -19,7 +19,7 @@ package protocol
 type Handshake struct {
 	ProtocolVersion VarInt
 	Address         string
-	Port            VarInt
+	Port            uint16
 	State           VarInt
 }
 

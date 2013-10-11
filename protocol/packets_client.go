@@ -216,14 +216,4 @@ type UseEntity struct {
 }
 
 func (UseEntity) ID() byte { return 0x07 }
-
-type BlockBreakAnimation struct {
-	EntityID     int32
-	X            int32
-	Y            int32
-	Z            int32
-	DestroyStage int8
-}
-
-func (BlockBreakAnimation) ID() byte { return 0x37 }
 */
