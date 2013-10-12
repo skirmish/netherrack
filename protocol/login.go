@@ -134,7 +134,6 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (usern
 		rand.Read(idBytes)
 		uuid = hex.EncodeToString(idBytes)
 	}
-	//conn.WritePacket(EncryptionKeyResponse{})
 
 	aesCipher, err := aes.NewCipher(sharedSecret)
 	if err != nil {

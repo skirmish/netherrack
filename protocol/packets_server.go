@@ -112,7 +112,7 @@ func (HeldItemChange) ID() byte { return 0x09 }
 
 type UseBed struct {
 	EntityID int32
-	unknown  byte
+	Unknown  byte
 	X        int32
 	Y        byte
 	Z        int32
