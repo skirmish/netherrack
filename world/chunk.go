@@ -128,7 +128,7 @@ func (c *Chunk) run(gen Generator) {
 						(uint32(bc.X&0xF)<<28))
 			}
 			packet := protocol.MultiBlockChange{
-				X: int32(c.X), Z: int32(c.Z),
+				X: protocol.VarInt(c.X), Z: protocol.VarInt(c.Z),
 				RecordCount: int16(len(c.blockChanges)),
 				Data:        data,
 			}

@@ -34,7 +34,7 @@ type KeepAlive struct {
 
 type JoinGame struct {
 	EntityID   int32
-	Gamemode   int8
+	Gamemode   byte
 	Dimension  int8
 	Difficulty byte
 	MaxPlayers byte
@@ -69,8 +69,8 @@ type UpdateHealth struct {
 
 type Respawn struct {
 	Dimension  int32
-	Difficulty int8
-	Gamemode   int8
+	Difficulty byte
+	Gamemode   byte
 }
 
 type PlayerPositionLook struct {
@@ -99,7 +99,7 @@ type Animation struct {
 }
 
 type SpawnPlayer struct {
-	EntityID    int32
+	EntityID    VarInt
 	PlayerUUID  string
 	PlayerName  string
 	X           int32
@@ -117,7 +117,7 @@ type CollectItem struct {
 }
 
 type SpawnObject struct {
-	EntityID  int32
+	EntityID  VarInt
 	Type      int8
 	X         int32
 	Y         int32
@@ -131,8 +131,8 @@ type SpawnObject struct {
 }
 
 type SpawnMob struct {
-	EntityID  int32
-	Type      int8
+	EntityID  VarInt
+	Type      byte
 	X         int32
 	Y         int32
 	Z         int32
@@ -146,7 +146,7 @@ type SpawnMob struct {
 }
 
 type SpawnPainting struct {
-	EntityID  int32
+	EntityID  VarInt
 	Title     string
 	X         int32
 	Y         int32
@@ -155,7 +155,7 @@ type SpawnPainting struct {
 }
 
 type SpawnExperienceOrb struct {
-	EntityID int32
+	EntityID VarInt
 	X        int32
 	Y        int32
 	Z        int32
@@ -277,8 +277,8 @@ type ChunkData struct {
 }
 
 type MultiBlockChange struct {
-	X           int32
-	Z           int32
+	X           VarInt
+	Z           VarInt
 	RecordCount int16
 	Data        []byte `ltype:"int32"`
 }
@@ -287,7 +287,7 @@ type BlockChange struct {
 	X    int32
 	Y    byte
 	Z    int32
-	Type int16
+	Type VarInt
 	Data byte
 }
 
@@ -296,11 +296,11 @@ type BlockAction struct {
 	Y            int16
 	Z            int32
 	Byte1, Byte2 byte
-	BlockID      int16
+	BlockID      VarInt
 }
 
 type BlockBreakAnimation struct {
-	EntityID     int32
+	EntityID     VarInt
 	X            int32
 	Y            int32
 	Z            int32
@@ -323,9 +323,9 @@ type ChunkMeta struct {
 }
 
 type Explosion struct {
-	X       float64
-	Y       float64
-	Z       float64
+	X       float32
+	Y       float32
+	Z       float32
 	Radius  float32
 	Records []Record `ltype:"int32"`
 	MotionX float32
@@ -355,7 +355,7 @@ type SoundEffect struct {
 	Y             int32
 	Z             int32
 	Volume        float32
-	Pitch         int8
+	Pitch         byte
 	SoundCategory byte
 }
 
@@ -372,12 +372,12 @@ type Particle struct {
 }
 
 type GameState struct {
-	Reason int8
+	Reason byte
 	Value  float32
 }
 
 type SpawnGlobalEntity struct {
-	EntityID int32
+	EntityID VarInt
 	Type     int8
 	X        int32
 	Y        int32
@@ -385,37 +385,37 @@ type SpawnGlobalEntity struct {
 }
 
 type WindowOpen struct {
-	WindowID int8
-	Type     int8
+	WindowID byte
+	Type     byte
 	Title    string
-	Slots    int8
+	Slots    byte
 	UseTitle bool
 	EntityID int32 `if:"Type,==,11"`
 }
 
 type WindowClose struct {
-	WindowID int8
+	WindowID byte
 }
 
 type WindowSetSlot struct {
-	WindowID int8
+	WindowID byte
 	Slot     int16
 	Item     Slot
 }
 
 type WindowItems struct {
-	WindowID int8
+	WindowID byte
 	Slots    []Slot `ltype:"int16"`
 }
 
 type WindowUpdateProperty struct {
-	WindowID int8
+	WindowID byte
 	Property int16
 	Value    int16
 }
 
 type WindowTransactionConfirm struct {
-	WindowID     int8
+	WindowID     byte
 	ActionNumber int16
 	Accepted     bool
 }
@@ -431,8 +431,7 @@ type UpdateSign struct {
 }
 
 type Maps struct {
-	ItemType int16
-	ItemData int16
+	ItemData VarInt
 	Data     []byte `ltype:"int16"`
 }
 
@@ -440,24 +439,23 @@ type UpdateBlockEntity struct {
 	X      int32
 	Y      int16
 	Z      int32
-	Action int8
+	Action byte
 	Data   []byte `ltype:"int16"`
 }
 
-type BlockEditorOpen struct {
-	TileEntityID int8
-	X            int32
-	Y            int32
-	Z            int32
+type SignEditorOpen struct {
+	X int32
+	Y int32
+	Z int32
 }
 
 type Statistics struct {
-	Statistics []Statistic `ltype:"int32"`
+	Statistics []Statistic `ltype:"varint"`
 }
 
 type Statistic struct {
 	Name   string
-	Amount int32
+	Amount VarInt
 }
 
 type PlayerListItem struct {
@@ -473,7 +471,7 @@ type PlayerAbilities struct {
 }
 
 type TabComplete struct {
-	Text string
+	Completions []string `ltype:"varint"`
 }
 
 type ScoreboardObjective struct {

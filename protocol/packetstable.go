@@ -100,7 +100,7 @@ var (
 				reflect.TypeOf((*UpdateSign)(nil)).Elem(),
 				reflect.TypeOf((*Maps)(nil)).Elem(),
 				reflect.TypeOf((*UpdateBlockEntity)(nil)).Elem(),
-				reflect.TypeOf((*BlockEditorOpen)(nil)).Elem(),
+				reflect.TypeOf((*SignEditorOpen)(nil)).Elem(),
 				reflect.TypeOf((*Statistics)(nil)).Elem(),
 				reflect.TypeOf((*PlayerListItem)(nil)).Elem(),
 				reflect.TypeOf((*PlayerAbilities)(nil)).Elem(),
@@ -115,7 +115,7 @@ var (
 			Serverbound: []reflect.Type{
 				reflect.TypeOf((*ClientKeepAlive)(nil)).Elem(),
 				reflect.TypeOf((*ChatMessage)(nil)).Elem(),
-				reflect.TypeOf((*Unknown)(nil)).Elem(),
+				reflect.TypeOf((*UseEntity)(nil)).Elem(),
 				reflect.TypeOf((*ClientPlayer)(nil)).Elem(),
 				reflect.TypeOf((*ClientPlayerPosition)(nil)).Elem(),
 				reflect.TypeOf((*ClientPlayerLook)(nil)).Elem(),

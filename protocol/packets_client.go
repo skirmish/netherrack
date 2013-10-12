@@ -24,9 +24,9 @@ type ChatMessage struct {
 	Message string
 }
 
-type Unknown struct {
-	A int32
-	B int8
+type UseEntity struct {
+	Target int32
+	Mouse  int8
 }
 
 type ClientPlayer struct {
@@ -163,15 +163,3 @@ type ClientPluginMessage struct {
 	Channel string
 	Data    []byte `ltype:"int16"`
 }
-
-/*MIA
-
-
-type UseEntity struct {
-	User        int32
-	Target      int32
-	MouseButton bool
-}
-
-
-*/

@@ -219,7 +219,7 @@ func (p *Player) despawn() {
 func (p *Player) SpawnPackets() []protocol.Packet {
 	return []protocol.Packet{
 		protocol.SpawnPlayer{
-			EntityID:    p.ID,
+			EntityID:    protocol.VarInt(p.ID),
 			PlayerName:  p.Username,
 			PlayerUUID:  p.Uuid,
 			X:           int32(p.X * 32),

@@ -400,6 +400,12 @@ func getSliceCoders(e reflect.Type, sf reflect.StructField) (encoder, decoder) {
 					return err
 				}
 				l = int(int32(binary.BigEndian.Uint32(bs)))
+			case "varint":
+				ll, err := readVarInt(conn)
+				if err != nil {
+					return err
+				}
+				l = int(ll)
 			case "nil":
 			default:
 				panic("Unknown length type")
@@ -498,6 +504,12 @@ func getSliceCoders(e reflect.Type, sf reflect.StructField) (encoder, decoder) {
 					return err
 				}
 				l = int(int32(binary.BigEndian.Uint32(bs)))
+			case "varint":
+				ll, err := readVarInt(conn)
+				if err != nil {
+					return err
+				}
+				l = int(ll)
 			case "nil":
 			default:
 				panic("Unknown length type")
@@ -533,6 +545,8 @@ func getSliceCoders(e reflect.Type, sf reflect.StructField) (encoder, decoder) {
 		case "int32":
 			bs = conn.b[:4]
 			binary.BigEndian.PutUint32(bs, uint32(l))
+		case "varint":
+			writeVarInt(conn, VarInt(l))
 		case "nil":
 		default:
 			panic("Unknown length type")
@@ -904,9 +918,10 @@ func readVarInt(conn *Conn) (VarInt, error) {
 	return VarInt(x), nil
 }
 
+//Modified from encoding/binary
 func writeVarInt(conn *Conn, i VarInt) {
-	bs := conn.b[:5]
-	n := binary.PutUvarint(bs, uint64(int64(i)))
+	bs := conn.b[:]
+	n := binary.PutUvarint(bs, uint64(uint32(i)))
 	conn.Out.Write(bs[:n])
 }
 
@@ -916,7 +931,7 @@ func encodeVarInt(conn *Conn, field reflect.Value) {
 
 func decodeVarInt(conn *Conn, field reflect.Value) error {
 	i, err := readVarInt(conn)
-	field.SetInt(int64(i))
+	field.SetInt(int64(int32(i)))
 	return err
 }
 
