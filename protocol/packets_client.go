@@ -16,24 +16,22 @@
 
 package protocol
 
+type ClientKeepAlive struct {
+	KeepAliveID int32
+}
+
 type ChatMessage struct {
 	Message string
 }
-
-func (ChatMessage) ID() byte { return 0x01 }
 
 type Unknown struct {
 	A int32
 	B int8
 }
 
-func (Unknown) ID() byte { return 0x02 }
-
 type ClientPlayer struct {
 	OnGround bool
 }
-
-func (ClientPlayer) ID() byte { return 0x03 }
 
 type ClientPlayerPosition struct {
 	X        float64
@@ -43,15 +41,11 @@ type ClientPlayerPosition struct {
 	OnGround bool
 }
 
-func (ClientPlayerPosition) ID() byte { return 0x04 }
-
 type ClientPlayerLook struct {
 	Yaw      float32
 	Pitch    float32
 	OnGround bool
 }
-
-func (ClientPlayerLook) ID() byte { return 0x05 }
 
 type ClientPlayerPositionLook struct {
 	X        float64
@@ -63,8 +57,6 @@ type ClientPlayerPositionLook struct {
 	OnGround bool
 }
 
-func (ClientPlayerPositionLook) ID() byte { return 0x06 }
-
 type PlayerDigging struct {
 	Status byte
 	X      int32
@@ -72,8 +64,6 @@ type PlayerDigging struct {
 	Z      int32
 	Face   byte
 }
-
-func (PlayerDigging) ID() byte { return 0x07 }
 
 type PlayerBlockPlacement struct {
 	X               int32
@@ -86,28 +76,20 @@ type PlayerBlockPlacement struct {
 	CursorPositionZ int8
 }
 
-func (PlayerBlockPlacement) ID() byte { return 0x08 }
-
 type ClientHeldItemChange struct {
 	SlotID int16
 }
-
-func (ClientHeldItemChange) ID() byte { return 0x09 }
 
 type ClientAnimation struct {
 	EntityID  int32
 	Animation int8
 }
 
-func (ClientAnimation) ID() byte { return 0x0A }
-
 type EntityAction struct {
 	EntityID  int32
 	ActionID  int8
 	JumpBoost int32
 }
-
-func (EntityAction) ID() byte { return 0x0B }
 
 type SteerVehicle struct {
 	Sideways float32
@@ -116,13 +98,9 @@ type SteerVehicle struct {
 	Unmount  bool
 }
 
-func (SteerVehicle) ID() byte { return 0x0C }
-
 type ClientWindowClose struct {
 	WindowID int8
 }
-
-func (ClientWindowClose) ID() byte { return 0x0D }
 
 type WindowClick struct {
 	WindowID     int8
@@ -133,29 +111,21 @@ type WindowClick struct {
 	Item         Slot
 }
 
-func (WindowClick) ID() byte { return 0x0E }
-
 type ClientWindowTransactionConfirm struct {
 	WindowID     int8
 	ActionNumber int16
 	Accepted     bool
 }
 
-func (ClientWindowTransactionConfirm) ID() byte { return 0x0F }
-
 type CreativeInventoryAction struct {
 	Slot int16
 	Item Slot
 }
 
-func (CreativeInventoryAction) ID() byte { return 0x10 }
-
 type EnchantItem struct {
 	WindowID    int8
 	Enchantment int8
 }
-
-func (EnchantItem) ID() byte { return 0x11 }
 
 type ClientUpdateSign struct {
 	X     int32
@@ -167,21 +137,15 @@ type ClientUpdateSign struct {
 	Line4 string
 }
 
-func (ClientUpdateSign) ID() byte { return 0x12 }
-
 type ClientPlayerAbilities struct {
 	Flags        byte
 	FlyingSpeed  float32
 	WalkingSpeed float32
 }
 
-func (ClientPlayerAbilities) ID() byte { return 0x13 }
-
 type ClientTabComplete struct {
 	Text string
 }
-
-func (ClientTabComplete) ID() byte { return 0x14 }
 
 type ClientSettings struct {
 	Locale       string
@@ -191,20 +155,14 @@ type ClientSettings struct {
 	ShowCape     bool
 }
 
-func (ClientSettings) ID() byte { return 0x15 }
-
 type ClientStatuses struct {
 	Payload byte
 }
-
-func (ClientStatuses) ID() byte { return 0x16 }
 
 type ClientPluginMessage struct {
 	Channel string
 	Data    []byte `ltype:"int16"`
 }
-
-func (ClientPluginMessage) ID() byte { return 0x17 }
 
 /*MIA
 
@@ -215,5 +173,5 @@ type UseEntity struct {
 	MouseButton bool
 }
 
-func (UseEntity) ID() byte { return 0x07 }
+
 */

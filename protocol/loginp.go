@@ -20,32 +20,22 @@ type LoginDisconnect struct {
 	Data string
 }
 
-func (LoginDisconnect) ID() byte { return 0x00 }
-
-type EncryptionKeyResponse struct {
-	SharedSecret []byte `ltype:"int16"`
-	VerifyToken  []byte `ltype:"int16"`
-}
-
-func (EncryptionKeyResponse) ID() byte { return 0x01 }
-
-type LoginSuccess struct {
-	UUID     string
-	Username string
-}
-
-func (LoginSuccess) ID() byte { return 0x02 }
-
-type LoginStart struct {
-	Username string
-}
-
-func (LoginStart) ID() byte { return 0x00 }
-
 type EncryptionKeyRequest struct {
 	ServerID    string
 	PublicKey   []byte `ltype:"int16"`
 	VerifyToken []byte `ltype:"int16"`
 }
 
-func (EncryptionKeyRequest) ID() byte { return 0x01 }
+type LoginSuccess struct {
+	UUID     string
+	Username string
+}
+
+type LoginStart struct {
+	Username string
+}
+
+type EncryptionKeyResponse struct {
+	SharedSecret []byte `ltype:"int16"`
+	VerifyToken  []byte `ltype:"int16"`
+}

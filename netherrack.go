@@ -238,9 +238,11 @@ func (server *Server) handleConnection(conn net.Conn) {
 	defer time.Sleep(time.Second / 2) //Allow for last messages to be sent before closing
 
 	mcConn := &protocol.Conn{
-		Out:       conn,
-		In:        conn,
-		Deadliner: conn,
+		Out:            conn,
+		In:             conn,
+		Deadliner:      conn,
+		ReadDirection:  protocol.Serverbound,
+		WriteDirection: protocol.Clientbound,
 	}
 
 	log.Println("Connection")
@@ -266,10 +268,13 @@ func (server *Server) handleConnection(conn net.Conn) {
 		mcConn.WritePacket(protocol.StatusResponse{`{"description":{"text":"A Minecraft Server","color":"red"},"players":{"max":20,"online":1,"sample":[{"name":"Thinkofdeath","id":""}]},"version":{"name":"13w41b","protocol":0}}`})
 		packet, err = mcConn.ReadPacket()
 		if err != nil {
-			panic(err)
 			return
 		}
-		mcConn.WritePacket(packet)
+		cPing, ok := packet.(protocol.ClientStatusPing)
+		if !ok {
+			return
+		}
+		mcConn.WritePacket(protocol.StatusPing{Time: cPing.Time})
 		return
 	}
 

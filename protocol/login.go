@@ -81,7 +81,7 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (usern
 	}
 	lStart, ok := packet.(LoginStart)
 	if !ok {
-		err = fmt.Errorf("Unexpected packet: %x", packet.ID())
+		err = fmt.Errorf("Unexpected packet")
 		return
 	}
 	username = lStart.Username
@@ -108,7 +108,7 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (usern
 	}
 	encryptionResponse, ok := packet.(EncryptionKeyResponse)
 	if !ok {
-		err = fmt.Errorf("Unexpected packet: %x", packet.ID())
+		err = fmt.Errorf("Unexpected packet")
 		return
 	}
 

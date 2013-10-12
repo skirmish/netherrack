@@ -65,7 +65,9 @@ type Conn struct {
 	//Used on the read goroutine
 	rb [8]byte
 
-	State State
+	State          State
+	ReadDirection  Direction
+	WriteDirection Direction
 }
 
 type Deadliner interface {
@@ -96,7 +98,7 @@ func (conn *Conn) ReadPacket() (Packet, error) {
 	if err != nil {
 		return nil, err
 	}
-	if byte(id) == (MapChunkBulk{}).ID() { //Its hard to parse normally
+	if int(id) == _MapChunkBulkID { //Its hard to parse normally
 		p := MapChunkBulk{}
 		binary.Read(conn.In, binary.BigEndian, &p.ChunkCount)
 		binary.Read(conn.In, binary.BigEndian, &p.DataLength)
@@ -109,11 +111,7 @@ func (conn *Conn) ReadPacket() (Packet, error) {
 		return p, nil
 	}
 
-	if conn.State < 0 || int(conn.State) > len(packets) {
-		return nil, fmt.Errorf("Invalid state %01X", conn.State)
-	}
-
-	st := packets[conn.State]
+	st := packets[conn.State][conn.ReadDirection]
 	if id < 0 || int(id) >= len(st) {
 		return nil, fmt.Errorf("Invalid packet %02X", id)
 	}
@@ -148,9 +146,17 @@ func (conn *Conn) WritePacket(packet Packet) {
 	temp := conn.Out
 	conn.Out = &buf
 
-	writeVarInt(conn, VarInt(packet.ID()))
+	val := reflect.ValueOf(packet)
+	ty := val.Type()
 
-	if byte(packet.ID()) == (MapChunkBulk{}).ID() { //Its hard to parse normally
+	id, ok := packetsToID[conn.WriteDirection][ty]
+	if !ok {
+		panic("Invalid Packet")
+	}
+
+	writeVarInt(conn, VarInt(id))
+
+	if id == _MapChunkBulkID { //Its hard to parse normally
 		p := packet.(MapChunkBulk)
 		binary.Write(conn.Out, binary.BigEndian, &p.ChunkCount)
 		binary.Write(conn.Out, binary.BigEndian, &p.DataLength)
@@ -163,9 +169,7 @@ func (conn *Conn) WritePacket(packet Packet) {
 		return
 	}
 
-	val := reflect.ValueOf(packet)
-
-	fs := fields(val.Type())
+	fs := fields(ty)
 	for _, f := range fs {
 		if f.condition(val) {
 			v := val.FieldByIndex(f.sField.Index)

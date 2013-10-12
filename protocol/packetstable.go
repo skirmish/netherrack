@@ -29,42 +29,156 @@ const (
 	Status
 )
 
-var packets = [4][]reflect.Type{
-	0: []reflect.Type{
-		0x00: reflect.TypeOf((*Handshake)(nil)).Elem(),
-	},
-	1: []reflect.Type{
-		0x00: reflect.TypeOf((*KeepAlive)(nil)).Elem(),
-		0x01: reflect.TypeOf((*ChatMessage)(nil)).Elem(),
-		0x02: reflect.TypeOf((*Unknown)(nil)).Elem(),
-		0x03: reflect.TypeOf((*ClientPlayer)(nil)).Elem(),
-		0x04: reflect.TypeOf((*ClientPlayerPosition)(nil)).Elem(),
-		0x05: reflect.TypeOf((*ClientPlayerLook)(nil)).Elem(),
-		0x06: reflect.TypeOf((*ClientPlayerPositionLook)(nil)).Elem(),
-		0x07: reflect.TypeOf((*PlayerDigging)(nil)).Elem(),
-		0x08: reflect.TypeOf((*PlayerBlockPlacement)(nil)).Elem(),
-		0x09: reflect.TypeOf((*ClientHeldItemChange)(nil)).Elem(),
-		0x0A: reflect.TypeOf((*ClientAnimation)(nil)).Elem(),
-		0x0B: reflect.TypeOf((*EntityAction)(nil)).Elem(),
-		0x0C: reflect.TypeOf((*SteerVehicle)(nil)).Elem(),
-		0x0D: reflect.TypeOf((*ClientWindowClose)(nil)).Elem(),
-		0x0E: reflect.TypeOf((*WindowClick)(nil)).Elem(),
-		0x0F: reflect.TypeOf((*ClientWindowTransactionConfirm)(nil)).Elem(),
-		0x10: reflect.TypeOf((*CreativeInventoryAction)(nil)).Elem(),
-		0x11: reflect.TypeOf((*EnchantItem)(nil)).Elem(),
-		0x12: reflect.TypeOf((*ClientUpdateSign)(nil)).Elem(),
-		0x13: reflect.TypeOf((*ClientPlayerAbilities)(nil)).Elem(),
-		0x14: reflect.TypeOf((*ClientTabComplete)(nil)).Elem(),
-		0x15: reflect.TypeOf((*ClientSettings)(nil)).Elem(),
-		0x16: reflect.TypeOf((*ClientStatuses)(nil)).Elem(),
-		0x17: reflect.TypeOf((*ClientPluginMessage)(nil)).Elem(),
-	},
-	2: []reflect.Type{
-		0x00: reflect.TypeOf((*LoginStart)(nil)).Elem(),
-		0x01: reflect.TypeOf((*EncryptionKeyResponse)(nil)).Elem(),
-	},
-	3: []reflect.Type{
-		0x00: reflect.TypeOf((*StatusGet)(nil)).Elem(),
-		0x01: reflect.TypeOf((*StatusPing)(nil)).Elem(),
-	},
+type Direction int
+
+const (
+	Serverbound Direction = iota
+	Clientbound
+)
+
+var (
+	packets = [4][2][]reflect.Type{
+		Handshaking: [2][]reflect.Type{
+			Clientbound: []reflect.Type{},
+			Serverbound: []reflect.Type{
+				reflect.TypeOf((*Handshake)(nil)).Elem(),
+			},
+		},
+		Play: [2][]reflect.Type{
+			Clientbound: []reflect.Type{
+				reflect.TypeOf((*KeepAlive)(nil)).Elem(),
+				reflect.TypeOf((*JoinGame)(nil)).Elem(),
+				reflect.TypeOf((*ServerMessage)(nil)).Elem(),
+				reflect.TypeOf((*TimeUpdate)(nil)).Elem(),
+				reflect.TypeOf((*EntityEquipment)(nil)).Elem(),
+				reflect.TypeOf((*SpawnPosition)(nil)).Elem(),
+				reflect.TypeOf((*UpdateHealth)(nil)).Elem(),
+				reflect.TypeOf((*Respawn)(nil)).Elem(),
+				reflect.TypeOf((*PlayerPositionLook)(nil)).Elem(),
+				reflect.TypeOf((*HeldItemChange)(nil)).Elem(),
+				reflect.TypeOf((*UseBed)(nil)).Elem(),
+				reflect.TypeOf((*Animation)(nil)).Elem(),
+				reflect.TypeOf((*SpawnPlayer)(nil)).Elem(),
+				reflect.TypeOf((*CollectItem)(nil)).Elem(),
+				reflect.TypeOf((*SpawnObject)(nil)).Elem(),
+				reflect.TypeOf((*SpawnMob)(nil)).Elem(),
+				reflect.TypeOf((*SpawnPainting)(nil)).Elem(),
+				reflect.TypeOf((*SpawnExperienceOrb)(nil)).Elem(),
+				reflect.TypeOf((*EntityVelocity)(nil)).Elem(),
+				reflect.TypeOf((*EntityDestroy)(nil)).Elem(),
+				reflect.TypeOf((*Entity)(nil)).Elem(),
+				reflect.TypeOf((*EntityMove)(nil)).Elem(),
+				reflect.TypeOf((*EntityLook)(nil)).Elem(),
+				reflect.TypeOf((*EntityLookMove)(nil)).Elem(),
+				reflect.TypeOf((*EntityTeleport)(nil)).Elem(),
+				reflect.TypeOf((*EntityHeadLook)(nil)).Elem(),
+				reflect.TypeOf((*EntityStatus)(nil)).Elem(),
+				reflect.TypeOf((*EntityAttach)(nil)).Elem(),
+				reflect.TypeOf((*EntityMetadata)(nil)).Elem(),
+				reflect.TypeOf((*EntityEffect)(nil)).Elem(),
+				reflect.TypeOf((*EntityEffectRemove)(nil)).Elem(),
+				reflect.TypeOf((*SetExperience)(nil)).Elem(),
+				reflect.TypeOf((*EntityProperties)(nil)).Elem(),
+				reflect.TypeOf((*ChunkData)(nil)).Elem(),
+				reflect.TypeOf((*MultiBlockChange)(nil)).Elem(),
+				reflect.TypeOf((*BlockChange)(nil)).Elem(),
+				reflect.TypeOf((*BlockAction)(nil)).Elem(),
+				reflect.TypeOf((*BlockBreakAnimation)(nil)).Elem(),
+				reflect.TypeOf((*MapChunkBulk)(nil)).Elem(),
+				reflect.TypeOf((*Explosion)(nil)).Elem(),
+				reflect.TypeOf((*Effect)(nil)).Elem(),
+				reflect.TypeOf((*SoundEffect)(nil)).Elem(),
+				reflect.TypeOf((*Particle)(nil)).Elem(),
+				reflect.TypeOf((*GameState)(nil)).Elem(),
+				reflect.TypeOf((*SpawnGlobalEntity)(nil)).Elem(),
+				reflect.TypeOf((*WindowOpen)(nil)).Elem(),
+				reflect.TypeOf((*WindowClose)(nil)).Elem(),
+				reflect.TypeOf((*WindowSetSlot)(nil)).Elem(),
+				reflect.TypeOf((*WindowItems)(nil)).Elem(),
+				reflect.TypeOf((*WindowUpdateProperty)(nil)).Elem(),
+				reflect.TypeOf((*WindowTransactionConfirm)(nil)).Elem(),
+				reflect.TypeOf((*UpdateSign)(nil)).Elem(),
+				reflect.TypeOf((*Maps)(nil)).Elem(),
+				reflect.TypeOf((*UpdateBlockEntity)(nil)).Elem(),
+				reflect.TypeOf((*BlockEditorOpen)(nil)).Elem(),
+				reflect.TypeOf((*Statistics)(nil)).Elem(),
+				reflect.TypeOf((*PlayerListItem)(nil)).Elem(),
+				reflect.TypeOf((*PlayerAbilities)(nil)).Elem(),
+				reflect.TypeOf((*TabComplete)(nil)).Elem(),
+				reflect.TypeOf((*ScoreboardObjective)(nil)).Elem(),
+				reflect.TypeOf((*UpdateScore)(nil)).Elem(),
+				reflect.TypeOf((*DisplayScoreboard)(nil)).Elem(),
+				reflect.TypeOf((*Teams)(nil)).Elem(),
+				reflect.TypeOf((*PluginMessage)(nil)).Elem(),
+				reflect.TypeOf((*Disconnect)(nil)).Elem(),
+			},
+			Serverbound: []reflect.Type{
+				reflect.TypeOf((*ClientKeepAlive)(nil)).Elem(),
+				reflect.TypeOf((*ChatMessage)(nil)).Elem(),
+				reflect.TypeOf((*Unknown)(nil)).Elem(),
+				reflect.TypeOf((*ClientPlayer)(nil)).Elem(),
+				reflect.TypeOf((*ClientPlayerPosition)(nil)).Elem(),
+				reflect.TypeOf((*ClientPlayerLook)(nil)).Elem(),
+				reflect.TypeOf((*ClientPlayerPositionLook)(nil)).Elem(),
+				reflect.TypeOf((*PlayerDigging)(nil)).Elem(),
+				reflect.TypeOf((*PlayerBlockPlacement)(nil)).Elem(),
+				reflect.TypeOf((*ClientHeldItemChange)(nil)).Elem(),
+				reflect.TypeOf((*ClientAnimation)(nil)).Elem(),
+				reflect.TypeOf((*EntityAction)(nil)).Elem(),
+				reflect.TypeOf((*SteerVehicle)(nil)).Elem(),
+				reflect.TypeOf((*ClientWindowClose)(nil)).Elem(),
+				reflect.TypeOf((*WindowClick)(nil)).Elem(),
+				reflect.TypeOf((*ClientWindowTransactionConfirm)(nil)).Elem(),
+				reflect.TypeOf((*CreativeInventoryAction)(nil)).Elem(),
+				reflect.TypeOf((*EnchantItem)(nil)).Elem(),
+				reflect.TypeOf((*ClientUpdateSign)(nil)).Elem(),
+				reflect.TypeOf((*ClientPlayerAbilities)(nil)).Elem(),
+				reflect.TypeOf((*ClientTabComplete)(nil)).Elem(),
+				reflect.TypeOf((*ClientSettings)(nil)).Elem(),
+				reflect.TypeOf((*ClientStatuses)(nil)).Elem(),
+				reflect.TypeOf((*ClientPluginMessage)(nil)).Elem(),
+			},
+		},
+		Login: [2][]reflect.Type{
+			Clientbound: []reflect.Type{
+				reflect.TypeOf((*LoginDisconnect)(nil)).Elem(),
+				reflect.TypeOf((*EncryptionKeyRequest)(nil)).Elem(),
+				reflect.TypeOf((*LoginSuccess)(nil)).Elem(),
+			},
+			Serverbound: []reflect.Type{
+				reflect.TypeOf((*LoginStart)(nil)).Elem(),
+				reflect.TypeOf((*EncryptionKeyResponse)(nil)).Elem(),
+			},
+		},
+		Status: [2][]reflect.Type{
+			Clientbound: []reflect.Type{
+				reflect.TypeOf((*StatusResponse)(nil)).Elem(),
+				reflect.TypeOf((*StatusPing)(nil)).Elem(),
+			},
+			Serverbound: []reflect.Type{
+				reflect.TypeOf((*StatusGet)(nil)).Elem(),
+				reflect.TypeOf((*ClientStatusPing)(nil)).Elem(),
+			},
+		},
+	}
+	packetsToID = [2]map[reflect.Type]int{
+		Clientbound: map[reflect.Type]int{},
+		Serverbound: map[reflect.Type]int{},
+	}
+	//Needed because the packet passer struggles with this packet
+	_MapChunkBulkID int
+)
+
+func init() {
+	for _, st := range packets {
+		for d, dir := range st {
+			for i, p := range dir {
+				if _, ok := packetsToID[d][p]; ok {
+					panic("Duplicate packet " + p.Name())
+				}
+				packetsToID[d][p] = i
+			}
+		}
+	}
+	_MapChunkBulkID = packetsToID[Clientbound][reflect.TypeOf((*MapChunkBulk)(nil)).Elem()]
 }

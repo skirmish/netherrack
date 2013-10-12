@@ -258,17 +258,17 @@ func (p *Player) processPacket(packet protocol.Packet) {
 			<-res
 		}
 		p.event.RUnlock()
-	// case protocol.PlayerDigging:
-	// 	p.event.RLock()
-	// 	if p.event.blockDig != nil {
-	// 		res := make(chan struct{}, 1)
-	// 		p.event.blockDig <- BlockDig{
-	// 			Packet: packet,
-	// 			Return: res,
-	// 		}
-	// 		<-res
-	// 	}
-	// 	p.event.RUnlock()
+	case protocol.PlayerDigging:
+		p.event.RLock()
+		if p.event.blockDig != nil {
+			res := make(chan struct{}, 1)
+			p.event.blockDig <- BlockDig{
+				Packet: packet,
+				Return: res,
+			}
+			<-res
+		}
+		p.event.RUnlock()
 	case protocol.PlayerBlockPlacement:
 		p.event.RLock()
 		if p.event.blockPlace != nil {
@@ -298,7 +298,7 @@ func (p *Player) processPacket(packet protocol.Packet) {
 		}
 		p.Yaw = float32(yaw)
 		p.Pitch = packet.Pitch
-	case protocol.KeepAlive:
+	case protocol.ClientKeepAlive:
 		if p.pingID == -1 {
 			return
 		}

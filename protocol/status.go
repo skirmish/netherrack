@@ -20,15 +20,13 @@ type StatusResponse struct {
 	Data string
 }
 
-func (StatusResponse) ID() byte { return 0x00 }
-
 type StatusPing struct {
 	Time int64
 }
 
-func (StatusPing) ID() byte { return 0x01 }
-
 type StatusGet struct {
 }
 
-func (StatusGet) ID() byte { return 0x00 }
+type ClientStatusPing struct {
+	Time int64
+}

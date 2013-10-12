@@ -18,9 +18,7 @@ package protocol
 
 import ()
 
-type Packet interface {
-	ID() byte
-}
+type Packet interface{}
 
 //Contains infomation on an item
 type Slot struct {
@@ -34,8 +32,6 @@ type KeepAlive struct {
 	KeepAliveID int32
 }
 
-func (KeepAlive) ID() byte { return 0x00 }
-
 type JoinGame struct {
 	EntityID   int32
 	Gamemode   int8
@@ -44,20 +40,14 @@ type JoinGame struct {
 	MaxPlayers byte
 }
 
-func (JoinGame) ID() byte { return 0x01 }
-
 type ServerMessage struct {
 	Message string
 }
-
-func (ServerMessage) ID() byte { return 0x02 }
 
 type TimeUpdate struct {
 	AgeOfTheWorld int64
 	TimeOfDay     int64
 }
-
-func (TimeUpdate) ID() byte { return 0x03 }
 
 type EntityEquipment struct {
 	EntityID int32
@@ -65,15 +55,11 @@ type EntityEquipment struct {
 	Item     Slot
 }
 
-func (EntityEquipment) ID() byte { return 0x04 }
-
 type SpawnPosition struct {
 	X int32
 	Y int32
 	Z int32
 }
-
-func (SpawnPosition) ID() byte { return 0x05 }
 
 type UpdateHealth struct {
 	Health         float32
@@ -81,17 +67,11 @@ type UpdateHealth struct {
 	FoodSaturation float32
 }
 
-func (UpdateHealth) ID() byte { return 0x06 }
-
 type Respawn struct {
-	Dimension   int32
-	Difficulty  int8
-	Gamemode    int8
-	WorldHeight int16
-	LevelType   string
+	Dimension  int32
+	Difficulty int8
+	Gamemode   int8
 }
-
-func (Respawn) ID() byte { return 0x07 }
 
 type PlayerPositionLook struct {
 	X        float64
@@ -102,30 +82,21 @@ type PlayerPositionLook struct {
 	OnGround bool
 }
 
-func (PlayerPositionLook) ID() byte { return 0x08 }
-
 type HeldItemChange struct {
-	SlotID int16
+	SlotID byte
 }
-
-func (HeldItemChange) ID() byte { return 0x09 }
 
 type UseBed struct {
 	EntityID int32
-	Unknown  byte
 	X        int32
 	Y        byte
 	Z        int32
 }
 
-func (UseBed) ID() byte { return 0x0A }
-
 type Animation struct {
 	EntityID  int32
-	Animation int8
+	Animation byte
 }
-
-func (Animation) ID() byte { return 0x0B }
 
 type SpawnPlayer struct {
 	EntityID    int32
@@ -140,14 +111,10 @@ type SpawnPlayer struct {
 	Metadata    map[byte]interface{} `metadata:"true"`
 }
 
-func (SpawnPlayer) ID() byte { return 0x0C }
-
 type CollectItem struct {
 	CollectedEntityID int32
 	CollectorEntityID int32
 }
-
-func (CollectItem) ID() byte { return 0x0D }
 
 type SpawnObject struct {
 	EntityID  int32
@@ -162,8 +129,6 @@ type SpawnObject struct {
 	SpeedY    int16 `if:"ExtraData,!=,0"`
 	SpeedZ    int16 `if:"ExtraData,!=,0"`
 }
-
-func (SpawnObject) ID() byte { return 0x0E }
 
 type SpawnMob struct {
 	EntityID  int32
@@ -180,8 +145,6 @@ type SpawnMob struct {
 	Metadata  map[byte]interface{} `metadata:"true"`
 }
 
-func (SpawnMob) ID() byte { return 0x0F }
-
 type SpawnPainting struct {
 	EntityID  int32
 	Title     string
@@ -191,8 +154,6 @@ type SpawnPainting struct {
 	Direction int32
 }
 
-func (SpawnPainting) ID() byte { return 0x10 }
-
 type SpawnExperienceOrb struct {
 	EntityID int32
 	X        int32
@@ -201,8 +162,6 @@ type SpawnExperienceOrb struct {
 	Count    int16
 }
 
-func (SpawnExperienceOrb) ID() byte { return 0x11 }
-
 type EntityVelocity struct {
 	EntityID  int32
 	VelocityX int16
@@ -210,19 +169,13 @@ type EntityVelocity struct {
 	VelocityZ int16
 }
 
-func (EntityVelocity) ID() byte { return 0x12 }
-
 type EntityDestroy struct {
 	EntityIDs []int32 `ltype:"int8"`
 }
 
-func (EntityDestroy) ID() byte { return 0x13 }
-
 type Entity struct {
 	EntityID int32
 }
-
-func (Entity) ID() byte { return 0x14 }
 
 type EntityMove struct {
 	EntityID int32
@@ -231,15 +184,11 @@ type EntityMove struct {
 	DZ       int8
 }
 
-func (EntityMove) ID() byte { return 0x15 }
-
 type EntityLook struct {
 	EntityID int32
 	Yaw      int8
 	Pitch    int8
 }
-
-func (EntityLook) ID() byte { return 0x16 }
 
 type EntityLookMove struct {
 	EntityID int32
@@ -250,8 +199,6 @@ type EntityLookMove struct {
 	Pitch    int8
 }
 
-func (EntityLookMove) ID() byte { return 0x17 }
-
 type EntityTeleport struct {
 	EntityID int32
 	X        int32
@@ -261,21 +208,15 @@ type EntityTeleport struct {
 	Pitch    int8
 }
 
-func (EntityTeleport) ID() byte { return 0x18 }
-
 type EntityHeadLook struct {
 	EntityID int32
 	HeadYaw  int8
 }
 
-func (EntityHeadLook) ID() byte { return 0x19 }
-
 type EntityStatus struct {
 	EntityID int32
 	Status   int8
 }
-
-func (EntityStatus) ID() byte { return 0x1A }
 
 type EntityAttach struct {
 	EntityID  int32
@@ -283,14 +224,10 @@ type EntityAttach struct {
 	Leash     bool
 }
 
-func (EntityAttach) ID() byte { return 0x1B }
-
 type EntityMetadata struct {
 	EntityID int32
 	Metadata map[byte]interface{} `metadata:"true"`
 }
-
-func (EntityMetadata) ID() byte { return 0x1C }
 
 type EntityEffect struct {
 	EntityID  int32
@@ -299,22 +236,16 @@ type EntityEffect struct {
 	Duration  int16
 }
 
-func (EntityEffect) ID() byte { return 0x1D }
-
 type EntityEffectRemove struct {
 	EntityID int32
 	EffectID int8
 }
-
-func (EntityEffectRemove) ID() byte { return 0x1E }
 
 type SetExperience struct {
 	ExperienceBar   float32
 	Level           int16
 	TotalExperience int16
 }
-
-func (SetExperience) ID() byte { return 0x1F }
 
 type EntityProperties struct {
 	EntityID   int32
@@ -336,8 +267,6 @@ type Modifier struct {
 	Operation int8
 }
 
-func (EntityProperties) ID() byte { return 0x20 }
-
 type ChunkData struct {
 	X              int32
 	Z              int32
@@ -347,16 +276,12 @@ type ChunkData struct {
 	CompressedData []byte `ltype:"int32"`
 }
 
-func (ChunkData) ID() byte { return 0x21 }
-
 type MultiBlockChange struct {
 	X           int32
 	Z           int32
 	RecordCount int16
 	Data        []byte `ltype:"int32"`
 }
-
-func (MultiBlockChange) ID() byte { return 0x22 }
 
 type BlockChange struct {
 	X    int32
@@ -366,8 +291,6 @@ type BlockChange struct {
 	Data byte
 }
 
-func (BlockChange) ID() byte { return 0x23 }
-
 type BlockAction struct {
 	X            int32
 	Y            int16
@@ -375,8 +298,6 @@ type BlockAction struct {
 	Byte1, Byte2 byte
 	BlockID      int16
 }
-
-func (BlockAction) ID() byte { return 0x24 }
 
 type BlockBreakAnimation struct {
 	EntityID     int32
@@ -386,8 +307,6 @@ type BlockBreakAnimation struct {
 	DestroyStage int8
 }
 
-func (BlockBreakAnimation) ID() byte { return 0x25 }
-
 type MapChunkBulk struct {
 	ChunkCount int16
 	DataLength int32
@@ -396,13 +315,12 @@ type MapChunkBulk struct {
 	Meta       []ChunkMeta `ltype:"nil"`
 }
 
+//Part of MapChunkBulk
 type ChunkMeta struct {
 	X, Z       int32
 	PrimaryBit uint16
 	AddBitmap  uint16
 }
-
-func (MapChunkBulk) ID() byte { return 0x26 }
 
 type Explosion struct {
 	X       float64
@@ -422,8 +340,6 @@ type Record struct {
 	Z byte
 }
 
-func (Explosion) ID() byte { return 0x27 }
-
 type Effect struct {
 	EffectID        int32
 	X               int32
@@ -432,8 +348,6 @@ type Effect struct {
 	Data            int32
 	DisableRelative bool
 }
-
-func (Effect) ID() byte { return 0x28 }
 
 type SoundEffect struct {
 	Name          string
@@ -444,8 +358,6 @@ type SoundEffect struct {
 	Pitch         int8
 	SoundCategory byte
 }
-
-func (SoundEffect) ID() byte { return 0x29 }
 
 type Particle struct {
 	Name          string
@@ -459,14 +371,10 @@ type Particle struct {
 	Count         int32
 }
 
-func (Particle) ID() byte { return 0x2A }
-
 type GameState struct {
 	Reason int8
 	Value  float32
 }
-
-func (GameState) ID() byte { return 0x2B }
 
 type SpawnGlobalEntity struct {
 	EntityID int32
@@ -475,8 +383,6 @@ type SpawnGlobalEntity struct {
 	Y        int32
 	Z        int32
 }
-
-func (SpawnGlobalEntity) ID() byte { return 0x2C }
 
 type WindowOpen struct {
 	WindowID int8
@@ -487,13 +393,9 @@ type WindowOpen struct {
 	EntityID int32 `if:"Type,==,11"`
 }
 
-func (WindowOpen) ID() byte { return 0x2D }
-
 type WindowClose struct {
 	WindowID int8
 }
-
-func (WindowClose) ID() byte { return 0x2E }
 
 type WindowSetSlot struct {
 	WindowID int8
@@ -501,14 +403,10 @@ type WindowSetSlot struct {
 	Item     Slot
 }
 
-func (WindowSetSlot) ID() byte { return 0x2F }
-
 type WindowItems struct {
 	WindowID int8
 	Slots    []Slot `ltype:"int16"`
 }
-
-func (WindowItems) ID() byte { return 0x30 }
 
 type WindowUpdateProperty struct {
 	WindowID int8
@@ -516,15 +414,11 @@ type WindowUpdateProperty struct {
 	Value    int16
 }
 
-func (WindowUpdateProperty) ID() byte { return 0x31 }
-
 type WindowTransactionConfirm struct {
 	WindowID     int8
 	ActionNumber int16
 	Accepted     bool
 }
-
-func (WindowTransactionConfirm) ID() byte { return 0x32 }
 
 type UpdateSign struct {
 	X     int32
@@ -536,15 +430,11 @@ type UpdateSign struct {
 	Line4 string
 }
 
-func (UpdateSign) ID() byte { return 0x33 }
-
 type Maps struct {
 	ItemType int16
 	ItemData int16
 	Data     []byte `ltype:"int16"`
 }
-
-func (Maps) ID() byte { return 0x34 }
 
 type UpdateBlockEntity struct {
 	X      int32
@@ -554,16 +444,12 @@ type UpdateBlockEntity struct {
 	Data   []byte `ltype:"int16"`
 }
 
-func (UpdateBlockEntity) ID() byte { return 0x35 }
-
 type BlockEditorOpen struct {
 	TileEntityID int8
 	X            int32
 	Y            int32
 	Z            int32
 }
-
-func (BlockEditorOpen) ID() byte { return 0x36 }
 
 type Statistics struct {
 	Statistics []Statistic `ltype:"int32"`
@@ -574,15 +460,11 @@ type Statistic struct {
 	Amount int32
 }
 
-func (Statistics) ID() byte { return 0x37 }
-
 type PlayerListItem struct {
 	PlayerName string
 	Online     bool
 	Ping       int16
 }
-
-func (PlayerListItem) ID() byte { return 0x38 }
 
 type PlayerAbilities struct {
 	Flags        byte
@@ -590,21 +472,15 @@ type PlayerAbilities struct {
 	WalkingSpeed float32
 }
 
-func (PlayerAbilities) ID() byte { return 0x39 }
-
 type TabComplete struct {
 	Text string
 }
-
-func (TabComplete) ID() byte { return 0x3A }
 
 type ScoreboardObjective struct {
 	Name  string
 	Value string
 	Mode  int8
 }
-
-func (ScoreboardObjective) ID() byte { return 0x3B }
 
 type UpdateScore struct {
 	ObjectiveName string
@@ -613,14 +489,10 @@ type UpdateScore struct {
 	Value         int32
 }
 
-func (UpdateScore) ID() byte { return 0x3C }
-
 type DisplayScoreboard struct {
 	Position      int8
 	ObjectiveName string
 }
-
-func (DisplayScoreboard) ID() byte { return 0x3D }
 
 type Teams struct {
 	Name        string
@@ -632,17 +504,11 @@ type Teams struct {
 	Players     []string `if:"Mode,==,0|3|4" ltype:"int16"`
 }
 
-func (Teams) ID() byte { return 0x3E }
-
 type PluginMessage struct {
 	Channel string
 	Data    []byte `ltype:"int16"`
 }
 
-func (PluginMessage) ID() byte { return 0x3F }
-
 type Disconnect struct {
 	Reason string
 }
-
-func (Disconnect) ID() byte { return 0x40 }
