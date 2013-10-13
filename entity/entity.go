@@ -51,6 +51,29 @@ func (e *EntityComponent) Entity() *EntityComponent {
 	return e
 }
 
+func init() {
+	RegisterSystem(TickSystem{})
+}
+
+type TickSystem struct{}
+
+type tickable interface {
+	Entity() *EntityComponent
+}
+
+func (TickSystem) Valid(e interface{}) bool {
+	_, ok := e.(tickable)
+	return ok
+}
+
+func (TickSystem) Priority() Priority { return Highest }
+
+func (TickSystem) Update(entity interface{}) {
+	ti := entity.(tickable)
+	e := ti.Entity()
+	e.CurrentTick++
+}
+
 //Contains methods that a entity needs for a server
 type Server interface {
 }

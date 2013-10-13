@@ -21,11 +21,24 @@ type System interface {
 
 package entity
 
-import ()
+import (
+	"sort"
+)
+
+type Priority int
+
+const (
+	Highest Priority = iota
+	High
+	Normal
+	Low
+	Lowest
+)
 
 type System interface {
 	Update(e interface{})
 	Valid(e interface{}) bool
+	Priority() Priority
 }
 
 var systems = []System{}
@@ -42,5 +55,14 @@ func Systems(e interface{}) []System {
 			matches = append(matches, sys)
 		}
 	}
+	sort.Sort(systemSorter(matches))
 	return matches
 }
+
+type systemSorter []System
+
+func (sy systemSorter) Len() int { return len(sy) }
+
+func (sy systemSorter) Less(i, j int) bool { return sy[i].Priority() < sy[j].Priority() }
+
+func (sy systemSorter) Swap(i, j int) { sy[i], sy[j] = sy[j], sy[i] }

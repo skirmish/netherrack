@@ -61,6 +61,8 @@ func (SystemMovable) Valid(e interface{}) bool {
 	return ok
 }
 
+func (SystemMovable) Priority() Priority { return Normal }
+
 //Updates the entity's movement and moves the chunk its in if required
 func (SystemMovable) Update(entity interface{}) {
 	mov := entity.(movable)
