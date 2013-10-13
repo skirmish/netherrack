@@ -914,7 +914,7 @@ func readVarInt(conn *Conn) (VarInt, error) {
 		ux |= uint64(b&0x7f) << s
 		s += 7
 	}
-	x := int64(ux)
+	x := int64(uint32(ux))
 	return VarInt(x), nil
 }
 
@@ -931,7 +931,7 @@ func encodeVarInt(conn *Conn, field reflect.Value) {
 
 func decodeVarInt(conn *Conn, field reflect.Value) error {
 	i, err := readVarInt(conn)
-	field.SetInt(int64(int32(i)))
+	field.SetInt(int64(i))
 	return err
 }
 
