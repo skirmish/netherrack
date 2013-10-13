@@ -42,13 +42,18 @@ type MsgpackSystem struct {
 
 	regionLock sync.RWMutex
 	regions    map[uint64]*region
-	needsSave  bool
+
+	nsLock    sync.Mutex
+	needsSave bool
+
+	closeChan chan struct{}
 }
 
 //Loads or creates the system
 func (mw *MsgpackSystem) Init(path string) {
 	mw.path = path
 	mw.regions = make(map[uint64]*region)
+	mw.closeChan = make(chan struct{})
 	level := filepath.Join(path, "level.nether")
 	_, err := os.Stat(level)
 	if err == nil {
@@ -61,22 +66,41 @@ func (mw *MsgpackSystem) Init(path string) {
 }
 
 func (mw *MsgpackSystem) run() {
-	t := time.NewTicker(5 * time.Second)
+	t := time.NewTicker(20 * time.Second)
 	defer t.Stop()
 	for {
-		<-t.C
-		if mw.needsSave {
-			mw.needsSave = false
-			for _, reg := range mw.regions {
-				if reg.needsSave { //A bit racey but not an issue
-					reg.Lock()
-					reg.needsSave = false
-					reg.Save()
-					reg.Unlock()
+		select {
+		case <-t.C:
+			mw.nsLock.Lock()
+			if mw.needsSave {
+				mw.needsSave = false
+				for _, reg := range mw.regions {
+					reg.RLock()
+					if reg.needsSave {
+						reg.RUnlock()
+						reg.Lock()
+						reg.needsSave = false
+						reg.Save()
+						reg.Unlock()
+					} else {
+						reg.RUnlock()
+					}
 				}
 			}
+			mw.nsLock.Unlock()
+		case <-mw.closeChan:
+			for _, reg := range mw.regions {
+				reg.Lock()
+				reg.Save()
+				reg.Unlock()
+			}
+			return
 		}
 	}
+}
+
+func (mw *MsgpackSystem) Close() {
+	mw.closeChan <- struct{}{}
 }
 
 //Returns the chunk at the coordinates, also returns if the chunk existed
@@ -154,7 +178,11 @@ check:
 	reg.Offsets[idx] = offset
 	reg.SectionCounts[idx] = count
 	reg.needsSave = true
+
+	mw.nsLock.Lock()
 	mw.needsSave = true
+	mw.nsLock.Unlock()
+
 	reg.chunkcount++
 	reg.Unlock()
 
@@ -234,6 +262,7 @@ func (mw *MsgpackSystem) CloseChunk(x, z int, chunk *Chunk) {
 	reg.chunkcount--
 	if reg.chunkcount == 0 {
 		//Unload
+		reg.Save()
 		delete(mw.regions, (uint64(int32(x>>5))&0xFFFFFFFF)|((uint64(int32(z>>5))&0xFFFFFFFF)<<32))
 	}
 	reg.Unlock()

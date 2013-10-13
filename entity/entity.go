@@ -66,7 +66,7 @@ func (TickSystem) Valid(e interface{}) bool {
 	return ok
 }
 
-func (TickSystem) Priority() Priority { return Highest }
+func (TickSystem) Priority() Priority { return Lowest }
 
 func (TickSystem) Update(entity interface{}) {
 	ti := entity.(tickable)

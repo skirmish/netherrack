@@ -166,6 +166,11 @@ func (p *Player) Start() {
 			log.Printf("Player %s error: %s\n", p.Username, err)
 			return
 		case <-tick.C:
+			if p.CurrentTick%60 == 0 {
+				p.QueuePacket(protocol.TimeUpdate{
+					TimeOfDay: p.World.TimeOfDay(),
+				})
+			}
 			if p.CurrentTick%(15*10) == 0 { //Every 15 seconds
 				if p.pingID != -1 {
 					p.disconnect("Timed out")

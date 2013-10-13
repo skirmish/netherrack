@@ -49,9 +49,10 @@ type Server struct {
 
 	worlds struct {
 		sync.RWMutex
-		m       map[string]*world.World
-		waitMap map[string]*sync.WaitGroup
-		def     *world.World
+		m        map[string]*world.World
+		waitMap  map[string]*sync.WaitGroup
+		def      string
+		tryClose chan world.TryClose
 	}
 
 	authenticator protocol.Authenticator
@@ -72,6 +73,7 @@ func NewServer() *Server {
 	}
 	server.worlds.m = make(map[string]*world.World)
 	server.worlds.waitMap = make(map[string]*sync.WaitGroup)
+	server.worlds.tryClose = make(chan world.TryClose, 2)
 	server.chat.packet = make(chan protocol.Packet, 200)
 	server.chat.add = make(chan *player.Player, 20)
 	server.chat.remove = make(chan *player.Player, 20)
@@ -93,12 +95,27 @@ func (server *Server) Start(address string) error {
 	server.listener = listen
 
 	go server.chatServer()
+	go server.worldServer()
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
 			return err
 		}
 		go server.handleConnection(conn)
+	}
+}
+
+func (server *Server) worldServer() {
+	for {
+		tc := <-server.worlds.tryClose
+		server.worlds.Lock()
+		tc.Ret <- struct{}{}
+		if <-tc.Done {
+			log.Println("World closed " + tc.World.Name)
+			delete(server.worlds.m, tc.World.Name)
+			delete(server.worlds.waitMap, tc.World.Name)
+		}
+		server.worlds.Unlock()
 	}
 }
 
@@ -134,18 +151,13 @@ func (server *Server) SetAuthenticator(auth protocol.Authenticator) {
 }
 
 //Sets the default world for the server
-func (server *Server) SetDefaultWorld(world *world.World) {
-	server.worlds.Lock()
-	server.worlds.def = world
-	server.worlds.Unlock()
+func (server *Server) SetDefaultWorld(def string) {
+	server.worlds.def = def
 }
 
 //Returns the default world for the server
-func (server *Server) DefaultWorld() (world *world.World) {
-	server.worlds.RLock()
-	world = server.worlds.def
-	server.worlds.RUnlock()
-	return
+func (server *Server) DefaultWorld() *world.World {
+	return server.World(server.worlds.def)
 }
 
 //Gets the world by name. If the world isn't loaded but it exists
@@ -180,7 +192,7 @@ func (server *Server) LoadWorld(name string, system world.System, gen world.Gene
 	server.worlds.waitMap[name] = wait
 	wait.Add(1) //Force other goroutines to wait for this world
 	server.worlds.Unlock()
-	w = world.LoadWorld(name, system, gen, dimension)
+	w = world.LoadWorld(name, system, gen, dimension, server.worlds.tryClose)
 
 	server.worlds.Lock()
 	server.worlds.m[name] = w //Put the loaded world in the map
@@ -216,7 +228,7 @@ func (server *Server) World(name string) *world.World {
 		server.worlds.waitMap[name] = wait
 		wait.Add(1) //Force other goroutines to wait for this world
 		server.worlds.Unlock()
-		w = world.GetWorld(name)
+		w = world.GetWorld(name, server.worlds.tryClose)
 
 		server.worlds.Lock()
 		server.worlds.m[name] = w //Put the loaded world in the map
@@ -245,6 +257,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 
 	packet, err := mcConn.ReadPacket()
 	if err != nil {
+		log.Println(err)
 		return
 	}
 

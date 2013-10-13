@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"github.com/NetherrackDev/netherrack/protocol"
+	"time"
 )
 
 //Dimensions normally control the lighting and skycolour
@@ -32,10 +33,12 @@ const (
 )
 
 type World struct {
-	name string
+	Name string
 
 	system    System
 	generator Generator
+
+	tryClose chan TryClose
 
 	loadedChunks map[uint64]*Chunk
 
@@ -46,6 +49,7 @@ type World struct {
 	getBlock        chan blockGet
 	chunkPacket     chan chunkPacket
 	updateSpawnData chan packetUpdate
+	timeOfDay       chan chan int64
 
 	//The limiters were added because trying to send/save all the chunks
 	//at once caused large amounts of memory usage
@@ -54,8 +58,16 @@ type World struct {
 	RequestClose chan *Chunk
 
 	worldData struct {
-		Dimension Dimension
+		Dimension  Dimension
+		AgeOfWorld int64
+		TimeOfDay  int64
 	}
+}
+
+type TryClose struct {
+	Ret   chan struct{}
+	Done  chan bool
+	World *World
 }
 
 type cachedCompressor struct {
@@ -72,9 +84,13 @@ func (world *World) init() {
 	world.entityChunk = make(chan entityChunk, 500)
 	world.RequestClose = make(chan *Chunk, 20)
 	world.updateSpawnData = make(chan packetUpdate, 200)
+	world.timeOfDay = make(chan chan int64, 100)
 }
 
 func (world *World) run() {
+	var done chan bool
+	defer func() { done <- true }()
+	defer world.system.Close()
 	world.generator.Load(world)
 	world.loadedChunks = make(map[uint64]*Chunk)
 	world.SendLimiter = make(chan cachedCompressor, 20)
@@ -86,8 +102,35 @@ func (world *World) run() {
 	for i := 0; i < cap(world.SaveLimiter); i++ {
 		world.SaveLimiter <- struct{}{}
 	}
+	defer world.system.Write("levelData", &world.worldData)
+	tick := time.NewTicker(time.Second / 10)
+	defer tick.Stop()
+
 	for {
 		select {
+		case <-tick.C:
+			world.worldData.AgeOfWorld += 2
+			world.worldData.TimeOfDay += 2
+			if world.worldData.AgeOfWorld%(20*60*5) == 0 {
+				world.system.Write("levelData", &world.worldData)
+			}
+			if len(world.loadedChunks) == 0 {
+				ret := make(chan struct{})
+				done = make(chan bool)
+				world.tryClose <- TryClose{
+					Ret:   ret,
+					Done:  done,
+					World: world,
+				}
+				<-ret
+				if len(world.joinChunk) > 0 {
+					done <- false
+					continue
+				}
+				return
+			}
+		case ret := <-world.timeOfDay:
+			ret <- world.worldData.TimeOfDay
 		case jc := <-world.joinChunk:
 			world.chunk(jc.x, jc.z).Join(jc.watcher)
 		case lc := <-world.leaveChunk:
@@ -110,6 +153,12 @@ func (world *World) run() {
 			world.chunk(pu.X, pu.Z).entitySpawnUpdate <- pu
 		}
 	}
+}
+
+func (world *World) TimeOfDay() int64 {
+	ret := make(chan int64, 1)
+	world.timeOfDay <- ret
+	return <-ret
 }
 
 type packetUpdate struct {

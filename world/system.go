@@ -44,6 +44,8 @@ type System interface {
 	SaveChunk(x, z int, storage *Chunk)
 	//Closes the chunk in the system
 	CloseChunk(x, z int, storage *Chunk)
+	//Closes the system
+	Close()
 }
 
 var systems = map[string]func() System{}
@@ -56,12 +58,12 @@ func AddSystem(name string, f func() System) {
 
 //Loads the world by name using the passed system if
 //the world doesn't exists.
-func LoadWorld(name string, system System, gen Generator, dimension Dimension) *World {
+func LoadWorld(name string, system System, gen Generator, dimension Dimension, tryClose chan TryClose) *World {
 	metapath := filepath.Join("./worlds/", name, "netherrack.meta")
 	_, err := os.Stat(metapath)
 	if err == nil {
 		//Load the world
-		return GetWorld(name)
+		return GetWorld(name, tryClose)
 	}
 
 	//Create the world
@@ -78,13 +80,14 @@ func LoadWorld(name string, system System, gen Generator, dimension Dimension) *
 	msgpack.NewEncoder(f).Encode(&meta)
 
 	w := &World{
-		name:      name,
+		Name:      name,
 		system:    system,
 		generator: gen,
+		tryClose:  tryClose,
 	}
 	w.worldData.Dimension = dimension
 	w.init()
-	w.system.Init(filepath.Join("./worlds/", w.name))
+	w.system.Init(filepath.Join("./worlds/", w.Name))
 	w.generator.Save(w)
 	w.system.Write("levelData", &w.worldData)
 	go w.run()
@@ -98,7 +101,7 @@ type netherrackMeta struct {
 }
 
 //Loads the world by name
-func GetWorld(name string) *World {
+func GetWorld(name string, tryClose chan TryClose) *World {
 	root := filepath.Join("./worlds/", name)
 	f, err := os.Open(filepath.Join(root, "netherrack.meta"))
 	if err != nil {
@@ -122,12 +125,13 @@ func GetWorld(name string) *World {
 	generator := gen()
 
 	w := &World{
-		name:      name,
+		Name:      name,
 		system:    system,
 		generator: generator,
+		tryClose:  tryClose,
 	}
 	w.init()
-	w.system.Init(filepath.Join("./worlds/", w.name))
+	w.system.Init(filepath.Join("./worlds/", w.Name))
 	w.system.Read("levelData", &w.worldData)
 	go w.run()
 
