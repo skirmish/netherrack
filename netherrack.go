@@ -56,12 +56,7 @@ type Server struct {
 
 	authenticator protocol.Authenticator
 
-	event struct {
-		sync.RWMutex
-		oldPingEvent    chan<- OldPingEvent
-		pingEvent       chan<- PingEvent
-		playerJoinEvent chan<- PlayerJoinEvent
-	}
+	Handler ServerHandler
 
 	chat struct {
 		packet chan protocol.Packet
@@ -295,21 +290,12 @@ func (server *Server) handleConnection(conn net.Conn) {
 
 	server.chat.add <- p
 
-	server.event.RLock()
-	if server.event.playerJoinEvent != nil {
-		res := make(chan string, 1)
-		event := PlayerJoinEvent{
-			Player: p,
-			Return: res,
-		}
-		server.event.playerJoinEvent <- event
-		if msg := <-res; msg != "" {
-			mcConn.WritePacket(protocol.Disconnect{msg})
-			server.chat.remove <- p
-			return
-		}
+	ok, msg := server.Handler.PlayerJoin(p)
+	if ok {
+		mcConn.WritePacket(protocol.Disconnect{msg})
+		server.chat.remove <- p
+		return
 	}
-	server.event.RUnlock()
 
 	p.Start()
 

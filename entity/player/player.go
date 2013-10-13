@@ -25,7 +25,6 @@ import (
 	"log"
 	"math"
 	"math/rand"
-	"sync"
 	"time"
 )
 
@@ -62,13 +61,7 @@ type Player struct {
 	rand   *rand.Rand
 	pingID int32
 
-	event struct {
-		sync.RWMutex
-		blockPlace chan<- BlockPlacement
-		blockDig   chan<- BlockDig
-		enterWorld chan<- EnterWorld
-		chat       chan<- Chat
-	}
+	Handler PlayerHandler
 
 	LockChan chan chan struct{}
 
@@ -95,6 +88,10 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 	p.Init(p)
 	go p.packetReader()
 	go p.packetWriter()
+	return p
+}
+
+func (p *Player) Player() *Player {
 	return p
 }
 
@@ -136,16 +133,8 @@ func (p *Player) Start() {
 		MaxPlayers: 0,
 	}
 
-	p.event.RLock()
-	if p.event.enterWorld != nil {
-		res := make(chan struct{}, 1)
-		p.event.enterWorld <- EnterWorld{
-			Packet: login,
-			Return: res,
-		}
-		<-res
-	}
-	p.event.RUnlock()
+	p.Handler.EnterWorld(login)
+	defer p.Handler.Leave()
 
 	p.QueuePacket(*login)
 	p.QueuePacket(protocol.PluginMessage{
@@ -252,38 +241,11 @@ func (p *Player) Saveable() bool {
 func (p *Player) processPacket(packet protocol.Packet) {
 	switch packet := packet.(type) {
 	case protocol.ChatMessage:
-		p.event.RLock()
-		if p.event.chat != nil {
-			res := make(chan struct{}, 1)
-			p.event.chat <- Chat{
-				Message: packet.Message,
-				Return:  res,
-			}
-			<-res
-		}
-		p.event.RUnlock()
+		p.Handler.Chat(packet.Message)
 	case protocol.PlayerDigging:
-		p.event.RLock()
-		if p.event.blockDig != nil {
-			res := make(chan struct{}, 1)
-			p.event.blockDig <- BlockDig{
-				Packet: packet,
-				Return: res,
-			}
-			<-res
-		}
-		p.event.RUnlock()
+		p.Handler.BlockDig(packet)
 	case protocol.PlayerBlockPlacement:
-		p.event.RLock()
-		if p.event.blockPlace != nil {
-			res := make(chan struct{}, 1)
-			p.event.blockPlace <- BlockPlacement{
-				Packet: packet,
-				Return: res,
-			}
-			<-res
-		}
-		p.event.RUnlock()
+		p.Handler.BlockPlacement(packet)
 	case protocol.ClientPlayer:
 	case protocol.ClientPlayerLook:
 		yaw := math.Mod(float64(packet.Yaw), 360)

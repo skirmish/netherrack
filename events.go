@@ -18,47 +18,9 @@ package netherrack
 
 import (
 	"github.com/NetherrackDev/netherrack/entity/player"
-	"net"
 )
 
-type OldPingEvent struct {
-	Addr net.Addr
-	//The disconnect to send
-	Response chan<- string
-}
-
-//Sets a channel to handle server list pings from older clients
-func (server *Server) SetOldPingEvent(event chan<- OldPingEvent) {
-	server.event.Lock()
-	server.event.oldPingEvent = event
-	server.event.Unlock()
-}
-
-type PingEvent struct {
-	Addr            net.Addr
-	ProtocolVersion byte
-	TargetHost      string
-	TargetPort      int
-	//The disconnect to send
-	Response chan<- string
-}
-
-//Sets a channel to handle server list pings
-func (server *Server) SetPingEvent(event chan<- PingEvent) {
-	server.event.Lock()
-	server.event.pingEvent = event
-	server.event.Unlock()
-}
-
-type PlayerJoinEvent struct {
-	Player *player.Player
-	//If not blank then the player will be disconnected with the message
-	Return chan<- string
-}
-
-//Sets a channel to handle the player joining (before entering the world)
-func (server *Server) SetPlayerJoinEvent(event chan<- PlayerJoinEvent) {
-	server.event.Lock()
-	server.event.playerJoinEvent = event
-	server.event.Unlock()
+type ServerHandler interface {
+	//returns whether to disconnect and disconnect message
+	PlayerJoin(player *player.Player) (bool, string)
 }
