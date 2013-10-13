@@ -18,96 +18,135 @@ package entity
 
 import (
 	"github.com/NetherrackDev/netherrack/protocol"
+	"github.com/NetherrackDev/netherrack/world"
 )
 
-type Moving struct {
+type PositionComponent struct {
+	CX, CZ     int32
+	X, Y, Z    float64
+	Yaw, Pitch float32
+}
+
+func (p *PositionComponent) Position() *PositionComponent {
+	return p
+}
+
+type LastPositionComponent struct {
+	MovedChunk          bool
 	LastCX, LastCZ      int32
 	LastX, LastY, LastZ float64
 	LastYaw, LastPitch  float32
 }
 
+func (lp *LastPositionComponent) LastPosition() *LastPositionComponent {
+	return lp
+}
+
+func init() {
+	RegisterSystem(SystemMovable{})
+}
+
+type SystemMovable struct{}
+
+type movable interface {
+	world.Entity
+	Entity() *EntityComponent
+	Position() *PositionComponent
+	LastPosition() *LastPositionComponent
+	SpawnPackets() []protocol.Packet
+}
+
+func (SystemMovable) Valid(e interface{}) bool {
+	_, ok := e.(movable)
+	return ok
+}
+
 //Updates the entity's movement and moves the chunk its in if required
-func (me *Moving) UpdateMovement(super Entity, ce *Common) (movedChunk bool) {
-	ce.CX, ce.CZ = int32(ce.X)>>4, int32(ce.Z)>>4
-	if ce.CX != me.LastCX || ce.CZ != me.LastCZ {
-		movedChunk = true
+func (SystemMovable) Update(entity interface{}) {
+	mov := entity.(movable)
+	e := mov.Entity()
+	p := mov.Position()
+	m := mov.LastPosition()
+	p.CX, p.CZ = int32(p.X)>>4, int32(p.Z)>>4
+	if p.CX != m.LastCX || p.CZ != m.LastCZ {
+		m.MovedChunk = true
 		//TODO: Move the entity to the next chunk
 	}
-	me.LastCX, me.LastCZ = ce.CX, ce.CZ
+	m.LastCX, m.LastCZ = p.CX, p.CZ
 
-	if ce.CurrentTick%2 == 0 {
+	if e.CurrentTick%2 == 0 {
 		moved := false
-		if ce.CurrentTick%(10*5) == 0 {
+		if e.CurrentTick%(10*5) == 0 {
 			moved = true
-			ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityTeleport{
-				EntityID: ce.ID,
-				X:        int32(ce.X * 32),
-				Y:        int32(ce.Y * 32),
-				Z:        int32(ce.Z * 32),
-				Yaw:      int8((ce.Yaw / 360) * 256),
-				Pitch:    int8((ce.Pitch / 360) * 256),
+			e.World.QueuePacket(int(p.CX), int(p.CZ), e.Uuid, protocol.EntityTeleport{
+				EntityID: e.ID,
+				X:        int32(p.X * 32),
+				Y:        int32(p.Y * 32),
+				Z:        int32(p.Z * 32),
+				Yaw:      int8((p.Yaw / 360) * 256),
+				Pitch:    int8((p.Pitch / 360) * 256),
 			})
 		} else {
-			dx := ce.X - me.LastX
-			dy := ce.Y - me.LastY
-			dz := ce.Z - me.LastZ
-			dyaw := ce.Yaw - me.LastYaw
-			dpitch := ce.Pitch - me.LastPitch
+			dx := p.X - m.LastX
+			dy := p.Y - m.LastY
+			dz := p.Z - m.LastZ
+			dyaw := p.Yaw - m.LastYaw
+			dpitch := p.Pitch - m.LastPitch
 			if dx >= 4 || dy >= 4 || dz >= 4 {
 				moved = true
-				ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityTeleport{
-					EntityID: ce.ID,
-					X:        int32(ce.X * 32),
-					Y:        int32(ce.Y * 32),
-					Z:        int32(ce.Z * 32),
-					Yaw:      int8((ce.Yaw / 360) * 256),
-					Pitch:    int8((ce.Pitch / 360) * 256),
+				e.World.QueuePacket(int(p.CX), int(p.CZ), e.Uuid, protocol.EntityTeleport{
+					EntityID: e.ID,
+					X:        int32(p.X * 32),
+					Y:        int32(p.Y * 32),
+					Z:        int32(p.Z * 32),
+					Yaw:      int8((p.Yaw / 360) * 256),
+					Pitch:    int8((p.Pitch / 360) * 256),
 				})
-				ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityHeadLook{
-					EntityID: ce.ID,
-					HeadYaw:  int8((ce.Yaw / 360) * 256),
+				e.World.QueuePacket(int(p.CX), int(p.CZ), e.Uuid, protocol.EntityHeadLook{
+					EntityID: e.ID,
+					HeadYaw:  int8((p.Yaw / 360) * 256),
 				})
 			} else if (dx != 0 || dy != 0 || dz != 0) && (dyaw != 0 || dpitch != 0) {
 				moved = true
-				ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityLookMove{
-					EntityID: ce.ID,
+				e.World.QueuePacket(int(p.CX), int(p.CZ), e.Uuid, protocol.EntityLookMove{
+					EntityID: e.ID,
 					DX:       int8(dx * 32),
 					DY:       int8(dy * 32),
 					DZ:       int8(dz * 32),
-					Yaw:      int8((ce.Yaw / 360) * 256),
-					Pitch:    int8((ce.Pitch / 360) * 256),
+					Yaw:      int8((p.Yaw / 360) * 256),
+					Pitch:    int8((p.Pitch / 360) * 256),
 				})
-				ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityHeadLook{
-					EntityID: ce.ID,
-					HeadYaw:  int8((ce.Yaw / 360) * 256),
+				e.World.QueuePacket(int(p.CX), int(p.CZ), e.Uuid, protocol.EntityHeadLook{
+					EntityID: e.ID,
+					HeadYaw:  int8((p.Yaw / 360) * 256),
 				})
 			} else if dx != 0 || dy != 0 || dz != 0 {
 				moved = true
-				ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityMove{
-					EntityID: ce.ID,
+				e.World.QueuePacket(int(p.CX), int(p.CZ), e.Uuid, protocol.EntityMove{
+					EntityID: e.ID,
 					DX:       int8(dx * 32),
 					DY:       int8(dy * 32),
 					DZ:       int8(dz * 32),
 				})
 			} else if dyaw != 0 || dpitch != 0 {
 				moved = true
-				ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityLook{
-					EntityID: ce.ID,
-					Yaw:      int8((ce.Yaw / 360) * 256),
-					Pitch:    int8((ce.Pitch / 360) * 256),
+				e.World.QueuePacket(int(p.CX), int(p.CZ), e.Uuid, protocol.EntityLook{
+					EntityID: e.ID,
+					Yaw:      int8((p.Yaw / 360) * 256),
+					Pitch:    int8((p.Pitch / 360) * 256),
 				})
-				ce.World.QueuePacket(int(ce.CX), int(ce.CZ), ce.Uuid, protocol.EntityHeadLook{
-					EntityID: ce.ID,
-					HeadYaw:  int8((ce.Yaw / 360) * 256),
+				e.World.QueuePacket(int(p.CX), int(p.CZ), e.Uuid, protocol.EntityHeadLook{
+					EntityID: e.ID,
+					HeadYaw:  int8((p.Yaw / 360) * 256),
 				})
 			}
 			if moved {
-				ce.World.UpdateSpawnData(int(ce.CX), int(ce.CZ), super, true, super.SpawnPackets())
+				e.World.UpdateSpawnData(int(p.CX), int(p.CZ), mov, true, mov.SpawnPackets())
 			}
 		}
 
-		me.LastX, me.LastY, me.LastZ = ce.X, ce.Y, ce.Z
-		me.LastYaw, me.LastPitch = ce.Yaw, ce.Pitch
+		m.LastX, m.LastY, m.LastZ = p.X, p.Y, p.Z
+		m.LastYaw, m.LastPitch = p.Yaw, p.Pitch
 	}
 
 	return

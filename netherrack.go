@@ -37,7 +37,7 @@ const (
 	//The currently supported protocol verison
 	ProtocolVersion = protocol.Version
 	//The currently supported Minecraft version
-	MinecraftVersion = "13w41a"
+	MinecraftVersion = "13w41b"
 )
 
 var protocolVersionString = strconv.Itoa(ProtocolVersion) //Save int-string conversion in list ping
@@ -236,6 +236,7 @@ func (server *Server) World(name string) *world.World {
 func (server *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
 	defer time.Sleep(time.Second / 2) //Allow for last messages to be sent before closing
+	defer log.Println("Killed")
 
 	mcConn := &protocol.Conn{
 		Out:            conn,
@@ -286,7 +287,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 	username, uuid, err := mcConn.Login(packet.(protocol.Handshake), server.authenticator)
 	if err != nil {
 		log.Printf("Player %s(%s) login error: %s", uuid, username, err)
-		mcConn.WritePacket(protocol.LoginDisconnect{err.Error()})
+		mcConn.WritePacket(protocol.LoginDisconnect{(&message.Message{Text: err.Error(), Color: message.Red}).JSONString()})
 		return
 	}
 

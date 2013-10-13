@@ -1,4 +1,9 @@
 /*
+
+type System interface {
+	Update(e interface{})
+	Valid(e interface{}) bool
+}
    Copyright 2013 Matthew Collins (purggames@gmail.com)
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,30 +21,26 @@
 
 package entity
 
-import (
-	"github.com/NetherrackDev/netherrack/world"
-)
+import ()
 
-type Common struct {
-	ID   int32
-	Uuid string
-	//Exported for setting when embedded
-	Server Server
-	//Exported for setting when embedded
-	World *world.World
-
-	CX, CZ     int32
-	X, Y, Z    float64
-	Yaw, Pitch float32
-
-	CurrentTick uint64
+type System interface {
+	Update(e interface{})
+	Valid(e interface{}) bool
 }
 
-func (ce *Common) Update() {
-	ce.CurrentTick++
+var systems = []System{}
+
+//Shouldn't be called after init
+func RegisterSystem(sys System) {
+	systems = append(systems, sys)
 }
 
-//Returns the entity's UUID
-func (ce *Common) UUID() string {
-	return ce.Uuid
+func Systems(e interface{}) []System {
+	matches := make([]System, 0, 5)
+	for _, sys := range systems {
+		if sys.Valid(e) {
+			matches = append(matches, sys)
+		}
+	}
+	return matches
 }

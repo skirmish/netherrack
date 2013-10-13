@@ -17,19 +17,38 @@
 package entity
 
 import (
-	"github.com/NetherrackDev/netherrack/protocol"
+	"github.com/NetherrackDev/netherrack/world"
 	"sync"
 )
 
-type Entity interface {
-	//Returns the entity's UUID
-	UUID() string
-	//Returns wether the entity is saveable to the chunk
-	Saveable() bool
-	//
-	SpawnPackets() []protocol.Packet
-	//
-	DespawnPackets() []protocol.Packet
+type EntityComponent struct {
+	ID     int32
+	Uuid   string
+	Server Server
+	World  *world.World
+
+	CurrentTick uint64
+
+	Systems []System
+}
+
+func (e *EntityComponent) Init(root interface{}) {
+	e.Systems = Systems(root)
+}
+
+func (e *EntityComponent) Update(root interface{}) {
+	for _, s := range e.Systems {
+		s.Update(root)
+	}
+}
+
+//Returns the entity's UUID
+func (e *EntityComponent) UUID() string {
+	return e.Uuid
+}
+
+func (e *EntityComponent) Entity() *EntityComponent {
+	return e
 }
 
 //Contains methods that a entity needs for a server

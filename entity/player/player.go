@@ -44,8 +44,10 @@ type Server interface {
 
 //A local player is a player connected directly to this server
 type Player struct {
-	entity.Common
-	entity.Moving
+	entity.EntityComponent
+	//Parts
+	entity.PositionComponent
+	entity.LastPositionComponent
 
 	conn     *protocol.Conn
 	uuid     string
@@ -86,10 +88,11 @@ func NewPlayer(uuid, username string, conn *protocol.Conn, server Server) *Playe
 		LockChan:      make(chan chan struct{}),
 		permission:    map[string]bool{},
 	}
-	p.Common.Server = server
-	p.Common.ID = entity.GetID()
-	p.Common.Uuid = uuid
+	p.EntityComponent.Server = server
+	p.ID = entity.GetID()
+	p.Uuid = uuid
 	p.pingID = -1
+	p.Init(p)
 	go p.packetReader()
 	go p.packetWriter()
 	return p
@@ -110,7 +113,7 @@ func (p *Player) QueuePacket(packet protocol.Packet) {
 
 func (p *Player) CanCall(command string) bool {
 	//thinkofdeath's uuid. Gives all permissions for testing
-	//reasons. May be remove in a later version
+	//reasons.
 	if p.Uuid == "4566e69fc90748ee8d71d7ba5aa00d20" {
 		return true
 	}
@@ -183,7 +186,9 @@ func (p *Player) Start() {
 				p.QueuePacket(protocol.KeepAlive{p.pingID})
 			}
 			lcx, lcz := p.LastCX, p.LastCZ
-			if p.UpdateMovement(p, &p.Common) {
+			p.Update(p)
+			if p.MovedChunk {
+				p.MovedChunk = false
 				for x := lcx - 10; x <= lcx+10; x++ {
 					for z := lcz - 10; z <= lcz+10; z++ {
 						if x < p.CX-10 || x > p.CX+10 || z < p.CZ-10 || z > p.CZ+10 {
@@ -199,7 +204,6 @@ func (p *Player) Start() {
 					}
 				}
 			}
-			p.Common.Update()
 		case packet := <-p.readPackets:
 			p.processPacket(packet)
 		case lock := <-p.LockChan:
