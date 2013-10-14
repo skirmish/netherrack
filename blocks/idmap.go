@@ -112,7 +112,7 @@ var Blocks = [256]Block{
 	92:  CakeBlock,
 	93:  RedstoneRepeater,
 	94:  RedstoneRepeaterActive,
-	95:  LockedChest,
+	95:  StainedGlass,
 	96:  Trapdoor,
 	97:  MonsterEgg,
 	98:  StoneBricks,

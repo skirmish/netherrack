@@ -37,7 +37,7 @@ var (
 	Log                      = Block{ID: 17, LightFiltered: 15, PlacementSound: "dig.wood"}
 	Leaves                   = Block{ID: 18, LightFiltered: 1, PlacementSound: "dig.grass"}
 	Sponge                   = Block{ID: 19, LightFiltered: 15, PlacementSound: "dig.grass"}
-	Glass                    = Block{ID: 20, LightFiltered: 15, PlacementSound: "step.stone"}
+	Glass                    = Block{ID: 20, PlacementSound: "step.stone"}
 	LapisLazuliOre           = Block{ID: 21, LightFiltered: 15, PlacementSound: "dig.stone"}
 	LapisLazuliBlock         = Block{ID: 22, LightFiltered: 15, PlacementSound: "dig.stone"}
 	Dispenser                = Block{ID: 23, LightFiltered: 15, PlacementSound: "dig.stone"}
@@ -112,7 +112,7 @@ var (
 	CakeBlock                = Block{ID: 92, PlacementSound: "dig.cloth"}
 	RedstoneRepeater         = Block{ID: 93, PlacementSound: "dig.wood"}
 	RedstoneRepeaterActive   = Block{ID: 94, PlacementSound: "dig.wood"}
-	LockedChest              = Block{ID: 95, LightEmitted: 15, PlacementSound: "dig.wood"}
+	StainedGlass             = Block{ID: 95, PlacementSound: "step.stone"}
 	Trapdoor                 = Block{ID: 96, PlacementSound: "dig.wood"}
 	MonsterEgg               = Block{ID: 97, LightFiltered: 15, PlacementSound: "dig.stone"}
 	StoneBricks              = Block{ID: 98, LightFiltered: 15, PlacementSound: "dig.stone"}
