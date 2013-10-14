@@ -591,7 +591,8 @@ func encodeMetadata(conn *Conn, field reflect.Value) {
 			ty = 4
 			index[0] = (i & 0x1F) | (ty << 5)
 			conn.Out.Write(index)
-			writeRunes(conn, []rune(v))
+			writeVarInt(conn, VarInt(len(v)))
+			conn.Out.Write([]byte(v))
 		case Slot:
 			manual = true
 			ty = 5
@@ -664,11 +665,13 @@ func decodeMetadata(conn *Conn, field reflect.Value) error {
 			v = math.Float32frombits(binary.BigEndian.Uint32(bs))
 
 		case 4:
-			val, err := readRunes(conn)
+			l, err := readVarInt(conn)
 			if err != nil {
 				return err
 			}
-			v = string(val)
+			b := make([]byte, l)
+			_, err = conn.In.Read(b)
+			v = string(string(b))
 		case 5:
 			val := reflect.New(slotType).Elem()
 
@@ -703,16 +706,6 @@ func encodeString(conn *Conn, field reflect.Value) {
 	conn.Out.Write([]byte(field.String()))
 }
 
-func writeRunes(conn *Conn, val []rune) {
-	length := len(val)
-	bs := make([]byte, length*2+2)
-	binary.BigEndian.PutUint16(bs, uint16(length))
-	for i, r := range val {
-		binary.BigEndian.PutUint16(bs[2+i*2:], uint16(r))
-	}
-	conn.Out.Write(bs)
-}
-
 func decodeString(conn *Conn, field reflect.Value) error {
 	l, err := readVarInt(conn)
 	if err != nil {
@@ -722,25 +715,6 @@ func decodeString(conn *Conn, field reflect.Value) error {
 	_, err = conn.In.Read(b)
 	field.SetString(string(b))
 	return err
-}
-
-func readRunes(conn *Conn) ([]rune, error) {
-	bs := conn.rb[:2]
-	_, err := io.ReadFull(conn.In, bs)
-	if err != nil {
-		return nil, err
-	}
-	length := binary.BigEndian.Uint16(bs)
-	bs = make([]byte, length*2)
-	_, err = io.ReadFull(conn.In, bs)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]rune, length)
-	for i := range out {
-		out[i] = rune(binary.BigEndian.Uint16(bs[i*2:]))
-	}
-	return out, nil
 }
 
 func encodeBool(conn *Conn, field reflect.Value) {
