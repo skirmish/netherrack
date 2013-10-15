@@ -17,7 +17,6 @@
 package netherrack
 
 import (
-	"encoding/binary"
 	"github.com/NetherrackDev/netherrack/entity/player"
 	"github.com/NetherrackDev/netherrack/message"
 	"github.com/NetherrackDev/netherrack/protocol"
@@ -27,8 +26,6 @@ import (
 	"net"
 	"runtime"
 	"runtime/debug"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -39,8 +36,6 @@ const (
 	//The currently supported Minecraft version
 	MinecraftVersion = "13w41b"
 )
-
-var protocolVersionString = strconv.Itoa(ProtocolVersion) //Save int-string conversion in list ping
 
 //Stores server related infomation
 type Server struct {
@@ -323,29 +318,4 @@ func (server *Server) QueuePacket(packet protocol.Packet) {
 //Sends the message to every player on the server
 func (server *Server) SendMessage(msg *message.Message) {
 	server.QueuePacket(protocol.ServerMessage{msg.JSONString()})
-}
-
-func (server *Server) buildServerPing() string {
-	return strings.Join([]string{
-		"§1",
-		protocolVersionString,
-		MinecraftVersion,
-		"Netherrack Server",
-		"0",
-		"100",
-	}, "\x00")
-}
-
-func readString(data []byte) (off int, str string) {
-	length := binary.BigEndian.Uint16(data)
-	if int(length)*2+2 > len(data) {
-		runtime.Goexit()
-	}
-	off += 2 + int(length)*2
-	runes := make([]rune, length)
-	for i, _ := range runes {
-		runes[i] = rune(binary.BigEndian.Uint16(data[2+i*2:]))
-	}
-	str = string(runes)
-	return
 }
