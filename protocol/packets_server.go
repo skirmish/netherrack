@@ -94,7 +94,7 @@ type UseBed struct {
 }
 
 type Animation struct {
-	EntityID  int32
+	EntityID  VarInt
 	Animation byte
 }
 
