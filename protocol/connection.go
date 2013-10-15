@@ -867,29 +867,20 @@ func decodeFloat64(conn *Conn, field reflect.Value) error {
 	return nil
 }
 
-//Modified from encoding/binary
+type byteReader struct {
+	io.Reader
+	buf [1]byte
+}
+
+func (b byteReader) ReadByte() (byte, error) {
+	bs := b.buf[:]
+	_, err := b.Read(bs)
+	return bs[0], err
+}
+
 func readVarInt(conn *Conn) (VarInt, error) {
-	var ux uint64
-	var s uint
-	bs := conn.rb[:1]
-	for i := 0; i <= 5; i++ {
-		_, err := conn.In.Read(bs)
-		if err != nil {
-			return 0, err
-		}
-		b := bs[0]
-		if b < 0x80 {
-			if i > 5 || i == 5 && b > 1 {
-				return 0, fmt.Errorf("VarInt too large")
-			}
-			ux = ux | uint64(b)<<s
-			break
-		}
-		ux |= uint64(b&0x7f) << s
-		s += 7
-	}
-	x := int64(uint32(ux))
-	return VarInt(x), nil
+	x, err := binary.ReadUvarint(byteReader{conn.In, [1]byte{}})
+	return VarInt(int32(uint32(x))), err
 }
 
 //Modified from encoding/binary
