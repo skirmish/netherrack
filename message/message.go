@@ -27,9 +27,9 @@ type Message struct {
 	//Translatable string. Don't use Text and Translate at the same time
 	Translate string `json:"translate,omitempty"`
 	//Arguments for Translate. Replaces %s in the translated string
-	With []*Message `json:"with,omitempty"`
+	With []Message `json:"with,omitempty"`
 	//Messages in this slice will be appened to the final string
-	Extra []*Message `json:"extra,omitempty"`
+	Extra []Message `json:"extra,omitempty"`
 	//Controls whether the text is bold
 	Bold bool `json:"bold,omitempty"`
 	//Controls whether the text is italic

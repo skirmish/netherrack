@@ -17,6 +17,7 @@
 package netherrack
 
 import (
+	"encoding/json"
 	"github.com/NetherrackDev/netherrack/entity/player"
 	"github.com/NetherrackDev/netherrack/message"
 	"github.com/NetherrackDev/netherrack/protocol"
@@ -35,6 +36,14 @@ const (
 	ProtocolVersion = protocol.Version
 	//The currently supported Minecraft version
 	MinecraftVersion = "13w41b"
+)
+
+var (
+	//For use in Pings
+	DefaultPingVersion = PingVersion{
+		Name:     MinecraftVersion,
+		Protocol: ProtocolVersion,
+	}
 )
 
 //Stores server related infomation
@@ -58,6 +67,11 @@ type Server struct {
 		packet chan protocol.Packet
 		add    chan *player.Player
 		remove chan *player.Player
+	}
+
+	ping struct {
+		sync.RWMutex
+		str string
 	}
 }
 
@@ -268,8 +282,8 @@ func (server *Server) handleConnection(conn net.Conn) {
 		if _, ok := packet.(protocol.StatusGet); !ok || err != nil {
 			return
 		}
-		//TODO: Un-hard code this
-		mcConn.WritePacket(protocol.StatusResponse{`{"description":{"text":"A Minecraft Server","color":"red"},"players":{"max":20,"online":1,"sample":[{"name":"Thinkofdeath","id":""}]},"version":{"name":"13w41b","protocol":0}}`})
+
+		mcConn.WritePacket(protocol.StatusResponse{server.getPing()})
 		packet, err = mcConn.ReadPacket()
 		if err != nil {
 			return
@@ -318,4 +332,20 @@ func (server *Server) QueuePacket(packet protocol.Packet) {
 //Sends the message to every player on the server
 func (server *Server) SendMessage(msg *message.Message) {
 	server.QueuePacket(protocol.ServerMessage{msg.JSONString()})
+}
+
+func (server *Server) SetPing(ping Ping) {
+	server.ping.Lock()
+	defer server.ping.Unlock()
+	by, err := json.Marshal(&ping)
+	if err != nil {
+		panic(err)
+	}
+	server.ping.str = string(by)
+}
+
+func (server *Server) getPing() string {
+	server.ping.RLock()
+	defer server.ping.RUnlock()
+	return server.ping.str
 }
