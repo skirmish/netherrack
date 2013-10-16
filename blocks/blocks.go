@@ -177,6 +177,7 @@ var (
 	ActivatorRail            = Block{ID: 157, PlacementSound: "step.stone"}
 	Dropper                  = Block{ID: 158, LightFiltered: 15, PlacementSound: "dig.stone"}
 	StainedClay              = Block{ID: 159, LightFiltered: 15, PlacementSound: "dig.stone"}
+	StainedGlassPane         = Block{ID: 160, PlacementSound: "step.stone"}
 	HayBlock                 = Block{ID: 170, LightFiltered: 15, PlacementSound: "dig.grass"}
 	Carpet                   = Block{ID: 171, PlacementSound: "dig.cloth"}
 	HardenedClay             = Block{ID: 172, LightFiltered: 15, PlacementSound: "dig.stone"}
