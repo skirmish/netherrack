@@ -184,11 +184,7 @@ func _decodeString(dec *Decoder, p unsafe.Pointer) error {
 	if err != nil {
 		return err
 	}
-	sl := (*reflect.SliceHeader)(unsafe.Pointer(&by))
-	*(*string)(p) = *(*string)(unsafe.Pointer(&reflect.StringHeader{
-		Data: sl.Data,
-		Len:  l,
-	}))
+	*(*string)(p) = string(by)
 	return nil
 }
 
