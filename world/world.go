@@ -47,6 +47,7 @@ type World struct {
 	entityChunk     chan entityChunk
 	placeBlock      chan blockChange
 	getBlock        chan blockGet
+	light           chan lightEvent
 	chunkPacket     chan chunkPacket
 	updateSpawnData chan packetUpdate
 	timeOfDay       chan chan int64
@@ -78,8 +79,11 @@ type cachedCompressor struct {
 func (world *World) init() {
 	world.joinChunk = make(chan joinChunk, 500)
 	world.leaveChunk = make(chan joinChunk, 500)
+
 	world.placeBlock = make(chan blockChange, 1000)
 	world.getBlock = make(chan blockGet, 1000)
+	world.light = make(chan lightEvent, 1000)
+
 	world.chunkPacket = make(chan chunkPacket, 1000)
 	world.entityChunk = make(chan entityChunk, 500)
 	world.RequestClose = make(chan *Chunk, 20)
@@ -135,12 +139,17 @@ func (world *World) run() {
 			world.chunk(jc.x, jc.z).Join(jc.watcher)
 		case lc := <-world.leaveChunk:
 			world.chunk(lc.x, lc.z).Leave(lc.watcher)
+
 		case bp := <-world.placeBlock:
 			cx, cz := bp.X>>4, bp.Z>>4
 			world.chunk(cx, cz).blockPlace <- bp
 		case bg := <-world.getBlock:
 			cx, cz := bg.X>>4, bg.Z>>4
 			world.chunk(cx, cz).blockGet <- bg
+		case l := <-world.light:
+			cx, cz := l.X>>4, l.Z>>4
+			world.chunk(cx, cz).light <- l
+
 		case cp := <-world.chunkPacket:
 			world.chunk(cp.X, cp.Z).chunkPacket <- cp
 		case ec := <-world.entityChunk:
@@ -227,9 +236,41 @@ func (world *World) QueuePacket(x, z int, uuid string, packet protocol.Packet) {
 	}
 }
 
-type blockGet struct {
+type lightEvent struct {
 	X, Y, Z int
-	Ret     chan [2]byte
+	Sky     bool
+	Value   interface{}
+}
+
+type lightChange struct {
+	Level byte
+}
+
+func (world *World) setLight(x, y, z int, level byte, sky bool) {
+	if y < 0 || y >= 255 {
+		return
+	}
+	world.light <- lightEvent{x, y, z, sky, lightChange{level}}
+}
+
+type lightGet struct {
+	Ret chan byte
+}
+
+//Gets the block and data at the location
+func (world *World) Light(x, y, z int, sky bool) (level byte) {
+	if y < 0 || y >= 255 {
+		if sky {
+			return 15
+		}
+		return 0
+	}
+	ret := make(chan byte, 1)
+	world.light <- lightEvent{
+		x, y, z, sky, lightGet{ret},
+	}
+	d := <-ret
+	return d
 }
 
 //Sets the block and data at the location
@@ -237,6 +278,11 @@ func (world *World) SetBlock(x, y, z int, block, data byte) {
 	world.placeBlock <- blockChange{
 		x, y, z, block, data,
 	}
+}
+
+type blockGet struct {
+	X, Y, Z int
+	Ret     chan [2]byte
 }
 
 //Gets the block and data at the location

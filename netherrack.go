@@ -28,14 +28,13 @@ import (
 	"runtime"
 	"runtime/debug"
 	"sync"
-	"time"
 )
 
 const (
 	//The currently supported protocol verison
 	ProtocolVersion = protocol.Version
 	//The currently supported Minecraft version
-	MinecraftVersion = "13w41b"
+	MinecraftVersion = "1.7.2"
 )
 
 var (
@@ -80,6 +79,7 @@ func NewServer() *Server {
 	server := &Server{
 		authenticator: auth.Instance,
 	}
+	world.DEBUGSERVER = server
 	server.worlds.m = make(map[string]*world.World)
 	server.worlds.waitMap = make(map[string]*sync.WaitGroup)
 	server.worlds.tryClose = make(chan world.TryClose, 2)
@@ -251,7 +251,6 @@ func (server *Server) World(name string) *world.World {
 
 func (server *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
-	defer time.Sleep(time.Second / 2) //Allow for last messages to be sent before closing
 	defer log.Println("Killed")
 
 	mcConn := &protocol.Conn{

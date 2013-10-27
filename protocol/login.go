@@ -33,7 +33,7 @@ var (
 	privateKey     *rsa.PrivateKey
 )
 
-const Version = 0
+const Version = 4
 
 func init() {
 	var err error
@@ -94,6 +94,10 @@ func (conn *Conn) Login(handshake Handshake, authenticator Authenticator) (usern
 		serverBytes := make([]byte, 10)
 		rand.Read(serverBytes)
 		serverID = hex.EncodeToString(serverBytes)
+	} else {
+		if len(username) > 16 {
+			username = username[:16]
+		}
 	}
 
 	conn.WritePacket(EncryptionKeyRequest{

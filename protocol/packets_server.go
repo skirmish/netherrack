@@ -38,6 +38,7 @@ type JoinGame struct {
 	Dimension  int8
 	Difficulty byte
 	MaxPlayers byte
+	LevelType  string
 }
 
 type ServerMessage struct {
@@ -71,6 +72,7 @@ type Respawn struct {
 	Dimension  int32
 	Difficulty byte
 	Gamemode   byte
+	LevelType  string
 }
 
 type PlayerPositionLook struct {
@@ -277,8 +279,8 @@ type ChunkData struct {
 }
 
 type MultiBlockChange struct {
-	X           VarInt
-	Z           VarInt
+	X           int32
+	Z           int32
 	RecordCount int16
 	Data        []byte `ltype:"int32"`
 }
@@ -350,13 +352,12 @@ type Effect struct {
 }
 
 type SoundEffect struct {
-	Name          string
-	X             int32
-	Y             int32
-	Z             int32
-	Volume        float32
-	Pitch         byte
-	SoundCategory byte
+	Name   string
+	X      int32
+	Y      int32
+	Z      int32
+	Volume float32
+	Pitch  byte
 }
 
 type Particle struct {

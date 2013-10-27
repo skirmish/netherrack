@@ -131,6 +131,7 @@ func (p *Player) Start() {
 		Dimension:  int8(p.World.Dimension()),
 		Difficulty: 0,
 		MaxPlayers: 0,
+		LevelType:  "default",
 	}
 
 	p.Handler.EnterWorld(login)
@@ -168,7 +169,7 @@ func (p *Player) Start() {
 		case <-tick.C:
 			if p.CurrentTick%60 == 0 {
 				p.QueuePacket(protocol.TimeUpdate{
-					TimeOfDay: p.World.TimeOfDay(),
+					TimeOfDay: -16000, //p.World.TimeOfDay(),
 				})
 			}
 			if p.CurrentTick%(15*10) == 0 { //Every 15 seconds
@@ -278,8 +279,6 @@ func (p *Player) processPacket(packet protocol.Packet) {
 			return
 		}
 		p.pingID = -1
-	case protocol.Disconnect:
-		p.disconnect(packet.Reason)
 	}
 }
 

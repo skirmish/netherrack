@@ -27,19 +27,19 @@ type Message struct {
 	//Translatable string. Don't use Text and Translate at the same time
 	Translate string `json:"translate,omitempty"`
 	//Arguments for Translate. Replaces %s in the translated string
-	With []Message `json:"with,omitempty"`
+	With []*Message `json:"with,omitempty"`
 	//Messages in this slice will be appened to the final string
-	Extra []Message `json:"extra,omitempty"`
+	Extra []*Message `json:"extra,omitempty"`
 	//Controls whether the text is bold
-	Bold bool `json:"bold,omitempty"`
+	Bold *bool `json:"bold,omitempty"`
 	//Controls whether the text is italic
-	Italic bool `json:"italic,omitempty"`
+	Italic *bool `json:"italic,omitempty"`
 	//Controls whether the text is underlined
-	Underlined bool `json:"underlined,omitempty"`
+	Underlined *bool `json:"underlined,omitempty"`
 	//Controls whether the text is striked out
-	Strikethrough bool `json:"strikethrough,omitempty"`
+	Strikethrough *bool `json:"strikethrough,omitempty"`
 	//Controls whether the text is randomised
-	Obfuscated bool `json:"obfuscated,omitempty"`
+	Obfuscated *bool `json:"obfuscated,omitempty"`
 	//Controls the color of the text
 	Color Color `json:"color,omitempty"`
 	//Controls what happens if the text is clicked
@@ -47,6 +47,13 @@ type Message struct {
 	//Controls what happens if the text is hovered over
 	HoverEvent *HoverEvent `json:"hoverEvent,omitempty"`
 }
+
+var (
+	_false = false
+	False  = &_false
+	_true  = true
+	True   = &_true
+)
 
 //Returns a json encoded string of the message
 func (m *Message) JSONString() string {
