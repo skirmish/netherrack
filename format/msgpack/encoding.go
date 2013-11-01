@@ -95,7 +95,7 @@ func encodeStruct(t reflect.Type) interface{} {
 		fields = append(fields, e)
 	}
 	var b []byte
-	l := len(fields)
+	l := uint64(len(fields))
 	switch {
 	case l <= 15:
 		b = make([]byte, 1)
@@ -137,7 +137,7 @@ func encodeString(t reflect.Type) interface{} {
 func _encodeString(enc *Encoder, p unsafe.Pointer) error {
 	str := (*reflect.StringHeader)(p)
 	var b []byte
-	l := str.Len
+	l := uint64(str.Len)
 	switch {
 	case l <= 31:
 		b = enc.b[:1]
@@ -354,7 +354,7 @@ func encodeSlice(t reflect.Type) interface{} {
 	return encodeReflectFunc(func(enc *Encoder, v reflect.Value) error {
 		p := v.Pointer()
 		var b []byte
-		l := v.Len()
+		l := uint64(v.Len())
 		switch {
 		case l <= 15:
 			b = enc.b[:1]
@@ -374,7 +374,7 @@ func encodeSlice(t reflect.Type) interface{} {
 		}
 		if ok {
 			encF := slEnc.(encodeFunc)
-			for i := 0; i < l; i++ {
+			for i := uint64(0); i < l; i++ {
 				err := encF(enc, unsafe.Pointer(p+size*uintptr(i)))
 				if err != nil {
 					return err
@@ -382,8 +382,8 @@ func encodeSlice(t reflect.Type) interface{} {
 			}
 		} else {
 			encF := slEnc.(encodeReflectFunc)
-			for i := 0; i < l; i++ {
-				err := encF(enc, v.Index(i))
+			for i := uint64(0); i < l; i++ {
+				err := encF(enc, v.Index(int(i)))
 				if err != nil {
 					return err
 				}
@@ -395,7 +395,7 @@ func encodeSlice(t reflect.Type) interface{} {
 
 func _encodeByteSlice(enc *Encoder, p unsafe.Pointer) error {
 	b := *(*[]byte)(p)
-	l := len(b)
+	l := uint64(len(b))
 	var bs []byte
 	switch {
 	case l <= 0xFF:
@@ -449,7 +449,7 @@ func encodeMap(t reflect.Type) interface{} {
 	_, eOk := eEnc.(encodeFunc)
 	return encodeReflectFunc(func(enc *Encoder, v reflect.Value) error {
 		var b []byte
-		l := v.Len()
+		l := uint64(v.Len())
 		switch {
 		case l <= 15:
 			b = enc.b[:1]
@@ -537,7 +537,7 @@ func _encodeInterface(enc *Encoder, v reflect.Value) error {
 			return err
 		}
 	}
-	l := buf.Len()
+	l := uint64(buf.Len())
 	var bs []byte
 	switch {
 	case l <= 0xFF:
