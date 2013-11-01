@@ -20,6 +20,9 @@ import (
 	"github.com/NetherrackDev/netherrack/message"
 )
 
+//Ping is json encoded before being sent to the the client.
+//Version and Players.Online will automaticly be replaced with
+//the correct details
 type Ping struct {
 	Version     PingVersion     `json:"version"`
 	Players     PingPlayers     `json:"players"`
@@ -27,17 +30,23 @@ type Ping struct {
 	Favicon     string          `json:"favicon,omitempty"`
 }
 
+//PingVersion is the version section of minecraft's server list ping
 type PingVersion struct {
 	Name     string `json:"name"`
 	Protocol int    `json:"protocol"`
 }
 
+//PingPlayers contains the number of currently online players and the
+//max number of players. It can optionally contain a sample list of players.
+//Online will automatically be replaced with the number of online players
 type PingPlayers struct {
 	Max    int          `json:"max"`
 	Online int          `json:"online"`
 	Sample []PingPlayer `json:"sample,omitempty"`
 }
 
+//PingPlayer is a player to be displayed on the sample player list in the
+//minecraft client
 type PingPlayer struct {
 	Name string `json:"name"`
 	Id   string `json:"id"`

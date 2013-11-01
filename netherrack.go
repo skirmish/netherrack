@@ -14,6 +14,13 @@
    limitations under the License.
 */
 
+/*
+	Netherrack is a minecraft server framework for Go (http://golang.org).
+
+	This is still a work in progress and there is still a lot of features
+	that are currently missing. The api for this will mostly likely change
+	a lot whilst i'm developing this and minecraft changes.
+*/
 package netherrack
 
 import (
@@ -28,6 +35,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 )
 
 const (
@@ -38,14 +46,15 @@ const (
 )
 
 var (
-	//For use in Pings
-	DefaultPingVersion = PingVersion{
+	defaultPingVersion = PingVersion{
 		Name:     MinecraftVersion,
 		Protocol: ProtocolVersion,
 	}
 )
 
-//Stores server related infomation
+//Server is the contains loaded worlds and handles
+//network connections from players. The Handler must be set
+//before use
 type Server struct {
 	listener net.Listener
 	running  bool
@@ -62,7 +71,7 @@ type Server struct {
 
 	Handler ServerHandler
 
-	chat struct {
+	global struct {
 		packet chan protocol.Packet
 		add    chan *player.Player
 		remove chan *player.Player
@@ -70,26 +79,29 @@ type Server struct {
 
 	ping struct {
 		sync.RWMutex
-		str string
+		data Ping
 	}
+
+	playerCount int32
 }
 
-//Creates a server
+//NewServer creates a server which has its internals setup. This must be
+//used to create a Server
 func NewServer() *Server {
 	server := &Server{
 		authenticator: auth.Instance,
 	}
-	world.DEBUGSERVER = server
 	server.worlds.m = make(map[string]*world.World)
 	server.worlds.waitMap = make(map[string]*sync.WaitGroup)
 	server.worlds.tryClose = make(chan world.TryClose, 2)
-	server.chat.packet = make(chan protocol.Packet, 200)
-	server.chat.add = make(chan *player.Player, 20)
-	server.chat.remove = make(chan *player.Player, 20)
+	server.global.packet = make(chan protocol.Packet, 200)
+	server.global.add = make(chan *player.Player, 20)
+	server.global.remove = make(chan *player.Player, 20)
 	return server
 }
 
-//Starts the minecraft server. This will block while the server is running
+//Start starts the minecraft server. This will block while the server is running
+//until the server stops
 func (server *Server) Start(address string) error {
 	server.running = true
 	log.Printf("NumProcs: %d\n", runtime.GOMAXPROCS(-1))
@@ -103,7 +115,7 @@ func (server *Server) Start(address string) error {
 	}
 	server.listener = listen
 
-	go server.chatServer()
+	go server.globalServer()
 	go server.worldServer()
 	for {
 		conn, err := listen.Accept()
@@ -114,11 +126,18 @@ func (server *Server) Start(address string) error {
 	}
 }
 
+//Handles unloading worlds
 func (server *Server) worldServer() {
 	for {
 		tc := <-server.worlds.tryClose
+		//A world is trying to close, so we lock the server's
+		//world handling so new players can't try and join whilist
+		//its saving
 		server.worlds.Lock()
 		tc.Ret <- struct{}{}
+		//If a player managed to join before the lock was obtained
+		//then the world will return false on this channel and
+		//stay loaded
 		if <-tc.Done {
 			log.Println("World closed " + tc.World.Name)
 			delete(server.worlds.m, tc.World.Name)
@@ -128,29 +147,30 @@ func (server *Server) worldServer() {
 	}
 }
 
-func (server *Server) chatServer() {
+//Handles sending packets to all players on the server
+func (server *Server) globalServer() {
 	players := map[string]*player.Player{}
 	for {
 		select {
-		case packet := <-server.chat.packet:
+		case packet := <-server.global.packet:
 			for _, p := range players {
 				p.QueuePacket(packet)
 			}
-		case p := <-server.chat.add:
+		case p := <-server.global.add:
 			players[p.UUID()] = p
-		case p := <-server.chat.remove:
+		case p := <-server.global.remove:
 			players[p.UUID()] = p
 		}
 	}
 }
 
-//Returns the address the server is currently listening on
+//Addr returns the address the server is currently listening on
 //once started.
 func (server *Server) Addr() net.Addr {
 	return server.listener.Addr()
 }
 
-//Changes the authenticator usered by the server. This panics
+//SetAuthenticator changes the authenticator usered by the server. This panics
 //if the server is started.
 func (server *Server) SetAuthenticator(auth protocol.Authenticator) {
 	if server.running {
@@ -159,17 +179,21 @@ func (server *Server) SetAuthenticator(auth protocol.Authenticator) {
 	server.authenticator = auth
 }
 
-//Sets the default world for the server
+//SetDefaultWorld sets the default world for the server. This panics
+//if the server is started.
 func (server *Server) SetDefaultWorld(def string) {
+	if server.running {
+		panic("Server is running")
+	}
 	server.worlds.def = def
 }
 
-//Returns the default world for the server
+//DefaultWorld returns the default world for the server
 func (server *Server) DefaultWorld() *world.World {
 	return server.World(server.worlds.def)
 }
 
-//Gets the world by name. If the world isn't loaded but it exists
+//LoadWorld gets the world by name. If the world isn't loaded but it exists
 //then it is loaded. If it doesn't exist then it is created using
 //the passed system.
 func (server *Server) LoadWorld(name string, system world.System, gen world.Generator, dimension world.Dimension) *world.World {
@@ -191,7 +215,7 @@ func (server *Server) LoadWorld(name string, system world.System, gen world.Gene
 
 		//This can happen if World is called before LoadWorld.
 		//This will try again until it loads the world.
-		//TODO: Make it so this isn't needed
+		//TODO: Maybe make it so this isn't needed
 		if w == nil {
 			w = server.LoadWorld(name, system, gen, dimension)
 		}
@@ -211,7 +235,7 @@ func (server *Server) LoadWorld(name string, system world.System, gen world.Gene
 	return w
 }
 
-//Gets the world by name. If the world isn't loaded but it exists
+//World gets the world by name. If the world isn't loaded but it exists
 //then it is loaded.
 func (server *Server) World(name string) *world.World {
 	//Check if the world is loaded
@@ -251,7 +275,6 @@ func (server *Server) World(name string) *world.World {
 
 func (server *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
-	defer log.Println("Killed")
 
 	mcConn := &protocol.Conn{
 		Out:            conn,
@@ -261,20 +284,21 @@ func (server *Server) handleConnection(conn net.Conn) {
 		WriteDirection: protocol.Clientbound,
 	}
 
-	log.Println("Connection")
-
 	packet, err := mcConn.ReadPacket()
 	if err != nil {
-		log.Println(err)
+		//The client either had a early connection issue or
+		//it isn't a minecraft client
 		return
 	}
-
 	handshake, ok := packet.(protocol.Handshake)
 	if !ok {
-		log.Println("Wrong packet")
+		//Client sent the wrong packet. This shouldn't
+		//happen because in the handshaking protocol (default state)
+		//only has the handshake packet as a valid packet
 		return
 	}
 
+	//Status ping
 	if handshake.State == 1 {
 		mcConn.State = protocol.Status
 		packet, err := mcConn.ReadPacket()
@@ -282,7 +306,17 @@ func (server *Server) handleConnection(conn net.Conn) {
 			return
 		}
 
-		mcConn.WritePacket(protocol.StatusResponse{server.getPing()})
+		ping := server.getPing()
+		ping.Version = defaultPingVersion
+
+		online := atomic.LoadInt32(&server.playerCount)
+		ping.Players.Online = int(online)
+
+		by, err := json.Marshal(ping)
+		if err != nil {
+			panic(err)
+		}
+		mcConn.WritePacket(protocol.StatusResponse{string(by)})
 		packet, err = mcConn.ReadPacket()
 		if err != nil {
 			return
@@ -296,9 +330,11 @@ func (server *Server) handleConnection(conn net.Conn) {
 	}
 
 	if handshake.State != 2 {
-		log.Println("Invalid state")
 		return
 	}
+
+	defer log.Printf("Killed %s", conn.RemoteAddr())
+	log.Printf("Connection %s", conn.RemoteAddr())
 
 	username, uuid, err := mcConn.Login(packet.(protocol.Handshake), server.authenticator)
 	if err != nil {
@@ -309,42 +345,44 @@ func (server *Server) handleConnection(conn net.Conn) {
 
 	p := player.NewPlayer(uuid, username, mcConn, server)
 
-	server.chat.add <- p
+	//Adds the player to server
+	server.global.add <- p
+	atomic.AddInt32(&server.playerCount, 1)
+	defer func() {
+		server.global.remove <- p
+		atomic.AddInt32(&server.playerCount, -1)
+	}()
 
 	ok, msg := server.Handler.PlayerJoin(p)
 	if ok {
 		mcConn.WritePacket(protocol.Disconnect{msg})
-		server.chat.remove <- p
+		server.global.remove <- p
 		return
 	}
 
+	//This will block until the player logouts or is kicked
 	p.Start()
-
-	server.chat.remove <- p
 }
 
-//Sends the packet to every player on the server
+//QueuePacket queues the packet to be send to every player on the server
 func (server *Server) QueuePacket(packet protocol.Packet) {
-	server.chat.packet <- packet
+	server.global.packet <- packet
 }
 
-//Sends the message to every player on the server
+//SendMessage sends the message to every player on the server
 func (server *Server) SendMessage(msg *message.Message) {
 	server.QueuePacket(protocol.ServerMessage{msg.JSONString()})
 }
 
+//SetPing set the ping to be showed on minecraft's server browser
 func (server *Server) SetPing(ping Ping) {
 	server.ping.Lock()
 	defer server.ping.Unlock()
-	by, err := json.Marshal(&ping)
-	if err != nil {
-		panic(err)
-	}
-	server.ping.str = string(by)
+	server.ping.data = ping
 }
 
-func (server *Server) getPing() string {
+func (server *Server) getPing() Ping {
 	server.ping.RLock()
 	defer server.ping.RUnlock()
-	return server.ping.str
+	return server.ping.data
 }

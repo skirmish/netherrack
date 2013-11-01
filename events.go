@@ -20,7 +20,9 @@ import (
 	"github.com/NetherrackDev/netherrack/entity/player"
 )
 
+//ServerHandler handles events for the server
 type ServerHandler interface {
-	//returns whether to disconnect and disconnect message
+	//Called when a player joins the server (after authing).
+	//Returns whether to disconnect and disconnect message
 	PlayerJoin(player *player.Player) (bool, string)
 }

@@ -16,6 +16,7 @@
 
 package blocks
 
+//Blocks is an id to block map
 var Blocks = [256]Block{
 	0:   Air,
 	1:   Stone,
@@ -177,6 +178,11 @@ var Blocks = [256]Block{
 	157: ActivatorRail,
 	158: Dropper,
 	159: StainedClay,
+	160: StainedGlassPane,
+	161: Leaves2,
+	162: Log2,
+	163: AcaciaWoodStairs,
+	164: DarkOakWoodStairs,
 	170: HayBlock,
 	171: Carpet,
 	172: HardenedClay,

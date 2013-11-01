@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+//Package blocks contains basic infomation on minecraft blocks
 package blocks
 
 var (
@@ -178,6 +179,10 @@ var (
 	Dropper                  = Block{ID: 158, LightFiltered: 15, PlacementSound: "dig.stone"}
 	StainedClay              = Block{ID: 159, LightFiltered: 15, PlacementSound: "dig.stone"}
 	StainedGlassPane         = Block{ID: 160, PlacementSound: "step.stone"}
+	Leaves2                  = Block{ID: 161, LightFiltered: 1, PlacementSound: "dig.grass"}
+	Log2                     = Block{ID: 162, LightFiltered: 15, PlacementSound: "dig.wood"}
+	AcaciaWoodStairs         = Block{ID: 163, LightFiltered: 15, PlacementSound: "dig.wood"}
+	DarkOakWoodStairs        = Block{ID: 164, LightFiltered: 15, PlacementSound: "dig.wood"}
 	HayBlock                 = Block{ID: 170, LightFiltered: 15, PlacementSound: "dig.grass"}
 	Carpet                   = Block{ID: 171, PlacementSound: "dig.cloth"}
 	HardenedClay             = Block{ID: 172, LightFiltered: 15, PlacementSound: "dig.stone"}
@@ -186,6 +191,7 @@ var (
 	LargeFlowers             = Block{ID: 175, PlacementSound: "dig.grass"}
 )
 
+//Block stores infomation on a block type
 type Block struct {
 	ID             byte
 	LightEmitted   byte

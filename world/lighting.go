@@ -18,7 +18,6 @@ package world
 
 import (
 	"github.com/NetherrackDev/netherrack/blocks"
-	"github.com/NetherrackDev/netherrack/protocol"
 )
 
 type lightMode int
@@ -143,22 +142,6 @@ type lightPropData struct {
 	world   *World
 	x, y, z int
 	level   byte
-}
-
-// DEBUGSERVER.QueuePacket(protocol.BlockChange{
-// 	X:    int32(x + off.x),
-// 	Y:    byte(y + off.y),
-// 	Z:    int32(z + off.z),
-// 	Type: protocol.VarInt(blocks.Poppy.ID),
-// 	Data: byte(tempLevel % 9),
-// })
-// time.Sleep(5 * time.Millisecond)
-
-//DO NOT KEEP THIS
-var DEBUGSERVER SERVER
-
-type SERVER interface {
-	QueuePacket(protocol.Packet)
 }
 
 func removeLight(world *World, x, y, z int, level byte, sky bool) (updates []lightPropData, reprops []lightPropData) {

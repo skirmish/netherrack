@@ -15,8 +15,8 @@
 */
 
 /*
-This is designed to replicate vanilla's superflat worlds.
-Currently only basic worlds are supported.
+	Package flat is designed to replicate vanilla's superflat worlds.
+	Currently only basic worlds are supported.
 */
 package flat
 
