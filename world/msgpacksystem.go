@@ -179,12 +179,12 @@ check:
 	reg.SectionCounts[idx] = count
 	reg.needsSave = true
 
+	reg.chunkcount++
+	reg.Unlock()
+
 	mw.nsLock.Lock()
 	mw.needsSave = true
 	mw.nsLock.Unlock()
-
-	reg.chunkcount++
-	reg.Unlock()
 
 	n, err := reg.file.WriteAt(buf.Bytes(), int64(offset)*regionSectionSize)
 	if err != nil || n != buf.Len() {
